@@ -6,9 +6,13 @@
 
 ## Image transformation: Vix Vips
 
-Uses [Vix Vips](https://github.com/akash-akya/vix) (NIF based binding for `libvips`) to transform into WEBP format, resize and produce thumbnails.
+Uses [Vix Vips](https://github.com/akash-akya/vix) (NIF based binding for `libvips`) to transform inputs into WEBP format, resize and produce thumbnails on the server.
+
+All tasks and HTTP calls are conccurent.
 
 ## Generate the Database migration schema
+
+Postgres database to persist users' data and uploaded URLs.
 
 ```bash
 mix ecto.gen.erd
