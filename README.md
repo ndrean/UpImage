@@ -1,8 +1,8 @@
 # UpImg
 
-## Authentication
+## Authentication/Authorization
 
-`Github` and `Google One-Tap` authentication (no password required).
+Minimum friction: full authorization for authenticated users. Using `Github` or `Google One-Tap` authentication, no password required.
 
 ## Image transformation: Vix Vips
 
