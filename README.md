@@ -55,3 +55,47 @@ To serve some SVGs located in "/priv/static/images" (as `<img src={~p"/my-svg.sv
 ```
 
 To handle failed task in `Task.async_stream`, use `on_timeout: :kill_task` so that a failed task will send `{:exit, :timeout}`.
+
+About the **reset of Uploads**.
+One solution is to "reduce" while `cancel_upload` all the refs, then reset the "uploaded_files_locally".
+
+In the HTML, when the template is updated, we check for the errors, and if any, send a message to firstly display it, and then reset the upload and reset the uploaded list. The user will have a fresh form.
+
+```elixir
+def are_files_uploadable?(image_list) do
+  error_list = Map.get(image_list, :errors)
+
+  case Enum.empty?(error_list) do
+    true ->
+      true
+
+    false ->
+      send(self(), {:upload_error, error_list})
+      false
+  end
+end
+```
+
+```elixir
+def handle_info({:upload_error, error_list}, socket) do
+  errors =
+    error_list |> Enum.reduce([], fn {_ref, msg}, list -> [error_to_string(msg) | list] end)
+
+  send(self(), {:cancel_upload})
+  {:noreply, put_flash(socket, :error, inspect(errors))}
+end
+```
+
+and then:
+
+```elixir
+def handle_info({:cancel_upload}, socket) do
+  # clean the uploads
+  socket =
+    socket.assigns.uploads.image_list.entries
+    |> Enum.map(& &1.ref)
+    |> Enum.reduce(socket, fn ref, socket -> cancel_upload(socket, :image_list, ref) end)
+
+  {:noreply, assign(socket, :uploaded_files_locally, [])}
+end
+```
