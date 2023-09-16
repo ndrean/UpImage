@@ -4,6 +4,10 @@
 
 `Github` and `Google One-Tap` authentication (no password required).
 
+## Image transformation: Vix Vips
+
+Uses [Vix Vips](https://github.com/akash-akya/vix) (NIF based binding for `libvips`) to transform into WEBP format, resize and produce thumbnails.
+
 ## Generate the Database migration schema
 
 ```bash
