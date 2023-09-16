@@ -33,7 +33,9 @@ config :up_img, UpImgWeb.Endpoint,
   ]
 ```
 
-About configuration. To properly configure the app (with Google & Github & AWS credentials):
+### About configuration
+
+To properly configure the app (with Google & Github & AWS credentials):
 
 - set the env variables in ".env" (and run `source .env`),
 - set up a keyword list with eg `config :my_app, :google, client_id: System.get_env(...)` in "/config/dev.exs" and "/config/runtime.exs".
@@ -54,6 +56,8 @@ def config([first, second]) do
 end
 ```
 
+### Serving SVG
+
 To serve some SVGs located in "/priv/static/images" (as `<img src={~p"/my-svg.svg"}/>`) instead of polluting the HTML markup, you can add the SVG file in the "/priv/static/images" directory and append the static list that Phoenix will server:
 
 ```elixir
@@ -64,7 +68,8 @@ To serve some SVGs located in "/priv/static/images" (as `<img src={~p"/my-svg.sv
 
 To handle failed task in `Task.async_stream`, use `on_timeout: :kill_task` so that a failed task will send `{:exit, :timeout}`.
 
-About the **reset of Uploads**.
+### About the **reset of Uploads**
+
 One solution is to "reduce" while `cancel_upload` all the refs, then reset the "uploaded_files_locally".
 
 In the HTML, when the template is updated, we check for the errors, and if any, send a message to firstly display it, and then reset the upload and reset the uploaded list. The user will have a fresh form.
