@@ -68,27 +68,41 @@ defmodule UpImgWeb.NoClientLive do
 
         client_name = clean_name(entry.client_name)
 
-        entry =
-          entry
-          |> Map.put(:client_name, client_name)
-          |> Map.put(:image_path, build_path(client_name))
-          |> Map.put(:image_url, set_image_url(client_name))
-          |> Map.merge(%{thumb_url: nil, thumb_path: nil, errors: []})
+        check_if_exists =
+          Enum.find(socket.assigns.uploaded_files_locally, &(&1.client_name == client_name))
 
-        # Copying the file from temporary system folder to static folder
-        :ok =
-          File.stream!(path, [], 64_000)
-          |> Stream.into(File.stream!(entry.image_path))
-          |> Stream.run()
+        case check_if_exists do
+          nil ->
+            entry =
+              entry
+              |> Map.put(:client_name, client_name)
+              |> Map.put(:image_path, build_path(client_name))
+              |> Map.put(:image_url, set_image_url(client_name))
+              |> Map.merge(%{thumb_url: nil, thumb_path: nil, errors: []})
 
+            # Copying the file from temporary system folder to static folder
+            :ok =
+              File.stream!(path, [], 64_000)
+              |> Stream.into(File.stream!(entry.image_path))
+              |> Stream.run()
+
+            {:ok, entry}
+
+          _ ->
+            {:ok, :not_unique}
+        end
+      end)
+
+    case uploaded_file do
+      :not_unique ->
+        {:noreply, socket}
+
+      entry ->
         pid = self()
 
         Task.start(fn -> transform_image(pid, entry, socket.assigns.screen) end)
-
-        {:ok, entry}
-      end)
-
-    {:noreply, update(socket, :uploaded_files_locally, &(&1 ++ [uploaded_file]))}
+        {:noreply, update(socket, :uploaded_files_locally, &(&1 ++ [uploaded_file]))}
+    end
   end
 
   @doc """
