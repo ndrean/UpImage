@@ -1,5 +1,9 @@
 # UpImg
 
+## Authentication
+
+`Github` and `Google One-Tap` authentication (no password required).
+
 ## Generate the Database migration schema
 
 ```bash
