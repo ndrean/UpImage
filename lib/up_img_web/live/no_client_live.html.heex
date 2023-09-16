@@ -1,0 +1,76 @@
+<div
+  id="lv_no_client"
+  class="px-4 py-10 sm:px-6 sm:py-28 lg:px-8 xl:px-28 xl:py-32"
+  phx-hook="ScreenSize"
+>
+  <div class="flex flex-col justify-around md:flex-row" phx-hook="ActivityTracker" id="track">
+    <UpImgWeb.UploadForm.render uploads={@uploads} />
+
+    <div class="flex flex-col flex-1 mt-10 md:mt-0 md:ml-4">
+      <UpImgWeb.NoClientPreloading.display
+        uploaded_files_locally={@uploaded_files_locally}
+        uploads={@uploads}
+      />
+      <div class="flex flex-col flex-1 mt-10">
+        <h2 class="text-base font-semibold leading-7 text-gray-900">Uploaded files to S3</h2>
+        <p class="mt-1 text-sm leading-6 text-gray-600">
+          Here is the list of uploaded files in S3. 🪣
+        </p>
+
+        <p class={"
+          #{if length(@streams.uploaded_files_to_S3.inserts) == 0 do "block" else "hidden" end}
+          text-xs leading-7 text-gray-400 text-center my-10"}>
+          No files uploaded.
+        </p>
+
+        <ul
+          phx-update="stream"
+          phx-viewport-bottom="load-more"
+          id="uploaded_files_S3"
+          role="list"
+          class="divide-y divide-gray-100"
+        >
+          <li
+            :for={{dom_id, file} <- @streams.uploaded_files_to_S3}
+            id={dom_id}
+            class="uploaded-s3-item relative flex justify-between gap-x-6 py-5"
+          >
+            <div
+              :if={Map.has_key?(file, :thumb_url) && Map.has_key?(file, :resized_url)}
+              class="flex gap-x-4"
+            >
+              <div class="min-w-0 flex-auto">
+                <p>
+                  <a
+                    class="text-sm leading-6 break-all underline text-indigo-600"
+                    href={file.resized_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <img
+                      class="block max-w-12 max-h-12 w-auto h-auto flex-none bg-gray-50"
+                      src={file.thumb_url}
+                      onerror="imgError(this);"
+                    />
+                  </a>
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center justify-end gap-x-6">
+              <.button
+                type="button"
+                phx-click="delete-uploaded"
+                phx-value-key={dom_id}
+                phx-value-resized={file.resized_url}
+                phx-value-thumb={file.thumb_url}
+                phx-value-uuid={file.uuid}
+              >
+                <.icon name="hero-trash" />
+              </.button>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
