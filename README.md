@@ -116,3 +116,11 @@ def handle_info({:cancel_upload}, socket) do
   {:noreply, assign(socket, :uploaded_files_locally, [])}
 end
 ```
+
+### File names: SHA256
+
+Files are named by their SHA256 hash so are (almost) unique.
+
+### Unique file upload
+
+You can upload the same file several times to S3, it will have the same name. You can't however send twice the same file in one go.
