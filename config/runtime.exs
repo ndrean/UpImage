@@ -82,7 +82,8 @@ if config_env() == :prod do
     ciphers: [
       default:
         {Cloak.Ciphers.AES.GCM,
-         tag: "AES.GCM.V1", key: "w28uSIT59ONTQXe5lCprcSCC2nHQSjZO0pJEvstzOJ8=", iv_length: 12}
+         tag: "AES.GCM.V1", key: System.get_env("CLOAK_KEY"), iv_length: 12}
+      #  tag: "AES.GCM.V1", key: "w28uSIT59ONTQXe5lCprcSCC2nHQSjZO0pJEvstzOJ8=", iv_length: 12}
     ]
 
   # ## SSL Support
