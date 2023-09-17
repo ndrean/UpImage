@@ -1,17 +1,13 @@
 defmodule UpImg.Github do
-  def gen_secret do
-    Base.url_encode64(:crypto.strong_rand_bytes(16), padding: false)
-  end
-
   def client_id, do: UpImg.config([:github, :client_id])
   def secret, do: UpImg.config([:github, :client_secret])
 
   def authorize_url do
-    state = gen_secret()
+    state = UpImg.gen_secret()
 
     URI.append_query(
       URI.new!("https://github.com/login/oauth/authorize?"),
-      URI.encode_query(%{state: state, client_id: client_id(), scope: "user:email"})
+      URI.encode_query(state: state, client_id: client_id(), scope: "user:email")
     )
     |> URI.to_string()
   end

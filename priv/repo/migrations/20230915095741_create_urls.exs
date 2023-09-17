@@ -13,5 +13,7 @@ defmodule UpImg.Repo.Migrations.CreateUrls do
 
       timestamps()
     end
+
+    create(unique_index(:urls, [:thumb_url, :user_id], name: :thumb_url_user_index))
   end
 end

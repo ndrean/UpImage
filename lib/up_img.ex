@@ -1,13 +1,16 @@
 defmodule UpImg do
   @moduledoc """
-  UpImg keeps the contexts that define your domain
-  and business logic.
-
-  Contexts are also responsible for managing your data, regardless
-  if it comes from the database, an external API or others.
+  Utilities.
   """
   use UpImgWeb, :verified_routes
   alias UpImg.Accounts
+
+  @doc """
+  Generates a random base64 encoded secret key.
+  """
+  def gen_secret do
+    Base.url_encode64(:crypto.strong_rand_bytes(16), padding: false)
+  end
 
   @doc """
   Looks up `Application` config or raises if keyspace is not configured.
@@ -78,11 +81,9 @@ defmodule UpImg do
 
   def profile_path(username) when is_binary(username) do
     unverified_path(UpImgWeb.Endpoint, UpImgWeb.Router, ~p"/#{username}")
-    |> dbg()
   end
 
   def profile_path(%Accounts.User{} = current_user) do
     profile_path(current_user.username)
-    |> dbg()
   end
 end

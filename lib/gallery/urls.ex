@@ -25,7 +25,18 @@ defmodule UpImg.Gallery.Url do
     url
     |> cast(attrs, @keys)
     |> validate_required([:thumb_url, :resized_url, :user_id])
+    |> unique_constraint([:thumb_url, :user_id], name: :thumb_url_user_index)
+  end
 
-    # |> unique_constraint(:origin_url, name: :urls_origin_url_user_id_index)
+  def traverse(changeset) do
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+      Enum.reduce(opts, msg, fn {key, value}, acc ->
+        String.replace(acc, "%{#{key}}", to_string(value))
+      end)
+    end)
+    |> Enum.reduce("", fn {_k, v}, acc ->
+      joined_errors = Enum.join(v, "; ")
+      "#{joined_errors}"
+    end)
   end
 end

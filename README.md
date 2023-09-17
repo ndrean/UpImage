@@ -8,7 +8,7 @@ Minimum friction: full authorization for authenticated users. Using `Github` or 
 
 Uses [Vix Vips](https://github.com/akash-akya/vix) (NIF based binding for `libvips`) to transform inputs into WEBP format, resize and produce thumbnails on the server.
 
-All tasks and HTTP calls are conccurent.
+All tasks and HTTP calls are concurent.
 
 ## Generate the Database migration schema
 
@@ -22,6 +22,12 @@ dot -Tpng ecto_erd.dot > erd.png
 ![ERD](erd.png)
 
 ## Notes for dev mode
+
+### Temporary saved on the server
+
+The files are temporarily saved on the server. They are deleted when uploaded. After 10 miniutes of inactivity, the files are pruned.
+
+### File change watch
 
 To stop rebuild when file changes, remove the folder "image_uploads" from the watched list by setting:
 
@@ -37,6 +43,10 @@ config :up_img, UpImgWeb.Endpoint,
   ]
 ```
 
+### Streams of Uploads from S3
+
+All the users' uploaded files are displayed as streams. To limit data usage, a thumbnail (5-10 kB) is displayed which links to the resized/webp format of the original image.
+
 ### About configuration
 
 To properly configure the app (with Google & Github & AWS credentials):
@@ -44,7 +54,7 @@ To properly configure the app (with Google & Github & AWS credentials):
 - set the env variables in ".env" (and run `source .env`),
 - set up a keyword list with eg `config :my_app, :google, client_id: System.get_env(...)` in "/config/dev.exs" and "/config/runtime.exs".
 - in the app, you then can call `Application.fetch_env!(:my_app, :google)|> Keyword.get(:client_id)`
-- you can also use the helper `MyApp.config([main_key, secondary_key])`. It should raise if the runtime time is missing.
+- you can also use the helper `MyApp.config([main_key, secondary_keys...])`. It should raise if the runtime time is missing.
 
 If you don't have a nested keyword list, a simple helper can be:
 
@@ -74,9 +84,7 @@ To handle failed task in `Task.async_stream`, use `on_timeout: :kill_task` so th
 
 ### About the **reset of Uploads**
 
-One solution is to "reduce" while `cancel_upload` all the refs, then reset the "uploaded_files_locally".
-
-In the HTML, when the template is updated, we check for the errors, and if any, send a message to firstly display it, and then reset the upload and reset the uploaded list. The user will have a fresh form.
+One solution is to "reduce" and `cancel_upload` all the refs along the socket, then reset the "uploaded_files_locally" and send a message.
 
 ```elixir
 def are_files_uploadable?(image_list) do
@@ -123,4 +131,4 @@ Files are named by their SHA256 hash so are (almost) unique.
 
 ### Unique file upload
 
-You can upload the same file several times to S3, it will have the same name. You can't however send twice the same file in one go.
+You can't temporarilly upload several times the same file. You can however upload it several times but you will get a warning that you attempt to save the same file. It has to be unique (to save on space).

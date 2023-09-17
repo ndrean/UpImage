@@ -2,9 +2,8 @@ const ActivityTracker = {
   mounted() {
     let pushActivity = (() => {
       let active = true;
-      //   delay 1 min
+      //   delay 10 min
       const delay = 10 * 60 * 1000;
-      console.log({ active });
 
       return () => {
         if (active) {

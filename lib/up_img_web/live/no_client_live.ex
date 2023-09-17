@@ -212,20 +212,32 @@ defmodule UpImgWeb.NoClientLive do
       |> Map.put(:user_id, current_user.id)
 
     # streams does not accept a map but accepts an UploadEntry struct
-    new_file =
-      %Phoenix.LiveView.UploadEntry{}
-      |> Map.merge(data)
 
-    %Url{}
-    |> Url.changeset(data)
-    |> Repo.insert()
-    |> case do
+    case Url.changeset(%Url{}, data) |> Repo.insert() do
       {:ok, _} ->
+        new_file =
+          %Phoenix.LiveView.UploadEntry{}
+          |> Map.merge(data)
+
         {:noreply, stream_insert(socket, :uploaded_files_to_S3, new_file)}
 
-      {:error, msg} ->
-        Logger.warning(msg)
-        {:noreply, put_flash(socket, :error, @inserted_in_bucket_but_db_failed)}
+      {:error, changeset} ->
+        changeset.errors |> dbg()
+        # %{"resized_url" => resized, "thumb_url" => thumb} = changeset.params
+
+        # [resized, thumb]
+        # |> Enum.map(&Path.basename/1)
+        # |> Task.async_stream(fn key ->
+        #   ExAws.S3.delete_object(UpImg.bucket(), key)
+        #   |> ExAws.request!()
+        # end)
+        # |> Stream.run()
+
+        errors =
+          Url.traverse(changeset)
+          |> dbg()
+
+        {:noreply, put_flash(socket, :error, errors)}
     end
   end
 
@@ -233,6 +245,13 @@ defmodule UpImgWeb.NoClientLive do
   @impl true
   def handle_info({:upload_error}, socket) do
     {:noreply, put_flash(socket, :error, @error_saving_in_bucket)}
+  end
+
+  # callback from deletion failure from bucket
+  @impl true
+  def handle_info({:failed_deletion_from_bucket}, socket) do
+    Logger.warning("failed_deletion_from_bucket")
+    {:noreply, put_flash(socket, :error, @error_delete_object_in_bucket)}
   end
 
   # callback from successfull object deletion from bucket
@@ -263,13 +282,6 @@ defmodule UpImgWeb.NoClientLive do
          socket
          |> put_flash(:error, @error_in_db_but_deleted_from_bucket)}
     end
-  end
-
-  # callback from deletion failure from bucket
-  @impl true
-  def handle_info({:failed_deletion_from_bucket}, socket) do
-    Logger.warning("failed_deletion_from_bucket")
-    {:noreply, put_flash(socket, :error, @error_delete_object_in_bucket)}
   end
 
   # error callback to "remove_safely" of local files
@@ -312,17 +324,18 @@ defmodule UpImgWeb.NoClientLive do
 
     pid = self()
 
-    Task.start(fn ->
-      socket.assigns.uploaded_files_locally
-      |> Enum.each(fn %{
-                        thumb_path: thumb_path,
-                        resized_path: resized_path,
-                        client_name: client_name
-                      } ->
-        [thumb_path, resized_path, build_path(client_name)]
-        |> Enum.each(&remove_safely(pid, &1))
-      end)
+    # Task.start(fn ->
+    socket.assigns.uploaded_files_locally
+    |> Enum.each(fn %{
+                      thumb_path: thumb_path,
+                      resized_path: resized_path,
+                      client_name: client_name
+                    } ->
+      [thumb_path, resized_path, build_path(client_name)]
+      |> Enum.each(&remove_safely(pid, &1))
     end)
+
+    # end)
 
     {:noreply, push_redirect(socket, to: ~p"/")}
   end
@@ -333,9 +346,7 @@ defmodule UpImgWeb.NoClientLive do
   def handle_event("page-size", p, socket), do: {:noreply, assign(socket, :screen, p)}
 
   @impl true
-  def handle_event("validate", _params, socket) do
-    {:noreply, socket}
-  end
+  def handle_event("validate", _params, socket), do: {:noreply, socket}
 
   # triggered by the "upload" front-end button: file per file
   @impl true
