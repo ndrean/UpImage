@@ -31,9 +31,4 @@ defmodule UpImgWeb.GoogleCallbackController do
         |> redirect(to: "/")
     end
   end
-
-  def handle_oauth(conn, p) do
-    p |> dbg()
-    halt(conn)
-  end
 end

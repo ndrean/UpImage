@@ -58,28 +58,6 @@ defmodule UpImg.Github do
     end
   end
 
-  # defp fetch_emails({:error, _} = err), do: err
-
-  # defp fetch_emails({:ok, user}) do
-  #   resp =
-  #     http(
-  #       "api.github.com",
-  #       "GET",
-  #       "/user/emails",
-  #       [],
-  #       [{"accept", "application/vnd.github.v3+json"}, {"Authorization", "token #{user.token}"}]
-  #     )
-
-  #   case resp do
-  #     {:ok, info} ->
-  #       emails = Jason.decode!(info)
-  #       {:ok, Map.merge(user, %{primary_email: primary_email(emails), emails: emails})}
-
-  #     {:error, _reason} = err ->
-  #       err
-  #   end
-  # end
-
   defp http(host, method, path, query, headers, body \\ "") do
     {:ok, conn} = Mint.HTTP.connect(:https, host, 443)
 
@@ -118,8 +96,4 @@ defmodule UpImg.Github do
         end
     end
   end
-
-  # defp primary_email(emails) do
-  #   Enum.find(emails, fn email -> email["primary"] end)["email"] || Enum.at(emails, 0)
-  # end
 end

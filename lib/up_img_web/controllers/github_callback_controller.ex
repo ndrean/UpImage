@@ -3,16 +3,15 @@ defmodule UpImgWeb.GithubCallbackController do
   require Logger
 
   alias UpImg.Accounts
+  alias UpImg.Github
+  alias UpImgWeb.UserAuth
 
   def new(conn, %{"code" => code, "state" => state}) do
-    client = github_client(conn)
-
-    with {:ok, info} <- client.exchange_access_token(code: code, state: state),
-         #  %{info: info, primary_email: primary, token: token} = info,
+    with {:ok, info} <- Github.exchange_access_token(code: code, state: state),
          {:ok, user} <- Accounts.register_github_user(info) do
       conn
       |> put_flash(:info, "Welcome #{user.email}")
-      |> UpImgWeb.UserAuth.log_in_user(user)
+      |> UserAuth.log_in_user(user)
     else
       {:error, %Ecto.Changeset{} = changeset} ->
         Logger.debug("failed GitHub insert #{inspect(changeset.errors)}")
@@ -35,11 +34,5 @@ defmodule UpImgWeb.GithubCallbackController do
 
   def new(conn, %{"provider" => "github", "error" => "access_denied"}) do
     redirect(conn, to: "/")
-  end
-
-  defp github_client(conn) do
-    conn.assigns[:github_client] ||
-      UpImg.Github
-      |> dbg()
   end
 end

@@ -12,6 +12,37 @@ The email is encrypted and is not searchable (because the output of the encrypti
 
 Use `[{:cloak, "~> 1.1"},{:cloak_ecto, "~> 1.2"}]` and `{:argon2_elixir, "~> 3.2"}`. Do not use `Bcrypt` because you want to be able to use a pre-defined hash to query the email.
 
+[Usage of Cloak.Ecot.Binary](https://hexdocs.pm/cloak_ecto/Cloak.Ecto.Binary.html#content) to encrypt the email.
+
+The salt is set by an env var. For the key rotation, read <https://github.com/dwyl/phoenix-ecto-encryption-example#33-key-rotation>
+
+The set up is:
+
+```elixir
+defmodule UpImg.MyVault do
+  use Cloak.Vault, otp_app: :up_img
+
+  @impl GenServer
+  def init(config) do
+    config =
+      Keyword.put(config, :ciphers,
+        default: {
+          Cloak.Ciphers.AES.GCM,
+          tag: "AES.GCM.V1", key: decode_env!("CLOAK_KEY"), iv_length: 12
+        }
+      )
+
+    {:ok, config}
+  end
+
+  defp decode_env!(var) do
+    var
+    |> System.get_env()
+    |> Base.decode64!()
+  end
+end
+```
+
 [Usage of the Ecto Type Cloak.Ecto.SHA256](https://hexdocs.pm/cloak_ecto/Cloak.Ecto.SHA256.html#module-usage)
 The email is encrypted and the email is hashed.
 
