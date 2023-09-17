@@ -16,9 +16,19 @@ Use `[{:cloak, "~> 1.1"},{:cloak_ecto, "~> 1.2"}]` and `{:argon2_elixir, "~> 3.2
 
 The salt is set by an env var. For the key rotation, read <https://github.com/dwyl/phoenix-ecto-encryption-example#33-key-rotation>
 
-The set up is:
+The (easiest) set up is:
 
 ```elixir
+# Application.ex
+children = [
+  ...
+  UpImg.MyVault
+]
+
+defmodule UpImg.Encrypted.Binary do
+  use Cloak.Ecto.Binary, vault: UpImg.MyVault
+end
+
 defmodule UpImg.MyVault do
   use Cloak.Vault, otp_app: :up_img
 
@@ -44,7 +54,7 @@ end
 ```
 
 [Usage of the Ecto Type Cloak.Ecto.SHA256](https://hexdocs.pm/cloak_ecto/Cloak.Ecto.SHA256.html#module-usage)
-The email is encrypted and the email is hashed.
+The email is encrypted and the email is hashed. We use the Cloak special types:
 
 ```elixir
 @derive {Inspect, except: [:email]}
@@ -61,7 +71,7 @@ schema "users" do
 end
 ```
 
-The changeset is:
+A changeset for a provider is shown below. Don't pass in a hash of the email. This is enforced in te `put_change`.
 
 ```elixir
 def google_registration_changeset(profil) do
@@ -81,7 +91,7 @@ def google_registration_changeset(profil) do
 end
 ```
 
-We can check is the user should be created or exists with the simple query:
+We can check if the user should be created or exists with the simple query:
 
 ```elixir
 def get_user_by_provider(provider, email) when provider in ["github"] do

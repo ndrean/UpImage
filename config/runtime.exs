@@ -78,13 +78,13 @@ if config_env() == :prod do
     client_id: System.fetch_env!("GOOGLE_CLIENT_ID"),
     client_secret: System.fetch_env!("GOOGLE_CLIENT_SECRET")
 
-  config :up_img, UpImg.MyVault,
-    ciphers: [
-      default:
-        {Cloak.Ciphers.AES.GCM,
-         tag: "AES.GCM.V1", key: System.get_env("CLOAK_KEY"), iv_length: 12}
-      #  tag: "AES.GCM.V1", key: "w28uSIT59ONTQXe5lCprcSCC2nHQSjZO0pJEvstzOJ8=", iv_length: 12}
-    ]
+  # config :up_img, UpImg.MyVault,
+  #   ciphers: [
+  #     default:
+  #       {Cloak.Ciphers.AES.GCM,
+  #        tag: "AES.GCM.V1", key: System.get_env("CLOAK_KEY"), iv_length: 12}
+  #     #  tag: "AES.GCM.V1", key: "w28uSIT59ONTQXe5lCprcSCC2nHQSjZO0pJEvstzOJ8=", iv_length: 12}
+  #   ]
 
   # ## SSL Support
   #
