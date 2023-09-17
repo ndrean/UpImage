@@ -62,8 +62,12 @@ defmodule Example.HomeLive do
   @impl true
   def render("live.html", assigns) do
     ~H"""
-    <script src="https://cdn.jsdelivr.net/npm/phoenix@1.7.2/priv/static/phoenix.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/phoenix_live_view@0.18.18/priv/static/phoenix_live_view.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/phoenix@1.7.2/priv/static/phoenix.min.js">
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/phoenix_live_view@0.18.18/priv/static/phoenix_live_view.min.js"
+    >
+    </script>
     <script>
       let liveSocket = new window.LiveView.LiveSocket("/live", window.Phoenix.Socket)
       liveSocket.connect()
@@ -93,12 +97,18 @@ defmodule Example.HomeLive do
 
           <progress value={entry.progress} max="100"><%= entry.progress %>%</progress>
 
-          <button type="button" phx-click="cancel-upload" phx-value-ref={entry.ref} aria-label="cancel">&times;</button>
+          <button
+            type="button"
+            phx-click="cancel-upload"
+            phx-value-ref={entry.ref}
+            aria-label="cancel"
+          >
+            &times;
+          </button>
 
           <%= for err <- upload_errors(@uploads.image, entry) do %>
             <p class="alert alert-danger">1: <%= err %></p>
           <% end %>
-
         </article>
       <% end %>
 
@@ -111,7 +121,7 @@ defmodule Example.HomeLive do
 
     <p :if={@uploaded_urls == []}>No files yet.</p>
     <div :for={url <- @uploaded_urls}>
-      <img src={url} style="max-width: 400px">
+      <img src={url} style="max-width: 400px" />
     </div>
     """
   end

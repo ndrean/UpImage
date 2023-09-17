@@ -16,7 +16,6 @@ defmodule UpImgWeb.NoClientLive do
   @error_delete_object_in_bucket "Failed to delete from bucket"
   @error_saving_in_bucket "Could not save in the bucket"
   @error_in_db_but_deleted_from_bucket "Object deleted in bucket but not found in database"
-  @inserted_in_bucket_but_db_failed "Object save in bucket but failed in db"
   @timeout_bucket "Upload to bucket, timeout"
 
   @impl true
@@ -222,22 +221,7 @@ defmodule UpImgWeb.NoClientLive do
         {:noreply, stream_insert(socket, :uploaded_files_to_S3, new_file)}
 
       {:error, changeset} ->
-        changeset.errors |> dbg()
-        # %{"resized_url" => resized, "thumb_url" => thumb} = changeset.params
-
-        # [resized, thumb]
-        # |> Enum.map(&Path.basename/1)
-        # |> Task.async_stream(fn key ->
-        #   ExAws.S3.delete_object(UpImg.bucket(), key)
-        #   |> ExAws.request!()
-        # end)
-        # |> Stream.run()
-
-        errors =
-          Url.traverse(changeset)
-          |> dbg()
-
-        {:noreply, put_flash(socket, :error, errors)}
+        {:noreply, put_flash(socket, :error, Url.traverse(changeset))}
     end
   end
 

@@ -5,11 +5,23 @@ defmodule UpImg do
   use UpImgWeb, :verified_routes
   alias UpImg.Accounts
 
+  @rand_size 16
+  @hash_algorithm :sha256
+
   @doc """
   Generates a random base64 encoded secret key.
   """
+
+  def gen_token do
+    :crypto.strong_rand_bytes(@rand_size)
+  end
+
+  def hash_token(token) do
+    :crypto.hash(@hash_algorithm, token)
+  end
+
   def gen_secret do
-    Base.url_encode64(:crypto.strong_rand_bytes(16), padding: false)
+    Base.url_encode64(gen_token(), padding: false)
   end
 
   @doc """

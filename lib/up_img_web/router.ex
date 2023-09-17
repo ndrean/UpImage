@@ -1,5 +1,6 @@
 defmodule UpImgWeb.Router do
   use UpImgWeb, :router
+  alias GoogleCallbackController
   alias UpImg.Plug.CheckCsrf
   import UpImgWeb.UserAuth, only: [redirect_if_user_is_authenticated: 2]
 
@@ -31,6 +32,7 @@ defmodule UpImgWeb.Router do
     pipe_through [:google, :redirect_if_user_is_authenticated]
 
     post "/google/callback", GoogleCallbackController, :handle
+    post "/google/oauth", GoogleCallbackController, :handle_oauth
   end
 
   scope "/", UpImgWeb do

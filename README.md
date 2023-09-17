@@ -4,6 +4,67 @@
 
 Minimum friction: full authorization for authenticated users. Using `Github` or `Google One-Tap` authentication, no password required.
 
+### Encrypt email and query it
+
+[Email encryption and hash](https://github.com/dwyl/fields#why-do-we-have-both-emailencrypted-and-emailhash-)
+
+The email is encrypted and is not searchable (because the output of the encryption is always unique, thus different, so it can't match). Its hash version (via `:sha256`) is however searchable and cannot be "unhashed".
+
+Use `[{:cloak, "~> 1.1"},{:cloak_ecto, "~> 1.2"}]` and `{:argon2_elixir, "~> 3.2"}`. Do not use `Bcrypt` because you want to be able to use a pre-defined hash to query the email.
+
+[Usage of the Ecto Type Cloak.Ecto.SHA256](https://hexdocs.pm/cloak_ecto/Cloak.Ecto.SHA256.html#module-usage)
+The email is encrypted and the email is hashed.
+
+```elixir
+@derive {Inspect, except: [:email]}
+schema "users" do
+  field :email, UpImg.Encrypted.Binary
+  field :hashed_email, Cloak.Ecto.SHA256
+  field :provider, :string
+  field :name, :string
+  field :username, :string
+  field :confirmed_at, :naive_datetime
+
+  has_many :urls, Url
+  timestamps()
+end
+```
+
+The changeset is:
+
+```elixir
+def google_registration_changeset(profil) do
+  params = %{
+    "email" => profil.email,
+    "provider" => "google",
+    "name" => profil.name,
+    "username" => profil.given_name
+  }
+
+  changeset =
+    %User{}
+    |> cast(params, [:email, :hashed_email, :name, :username, :provider])
+    |> validate_required([:email, :name, :username])
+
+  put_change(changeset, :hashed_email, get_field(changeset, :email))
+end
+```
+
+We can check is the user should be created or exists with the simple query:
+
+```elixir
+def get_user_by_provider(provider, email) when provider in ["github"] do
+  query =
+    from(u in User,
+      where:
+        u.provider == ^provider and
+          u.hashed_email == ^email
+    )
+
+  Repo.one(query)
+end
+```
+
 ## Image transformation: Vix Vips
 
 Uses [Vix Vips](https://github.com/akash-akya/vix) (NIF based binding for `libvips`) to transform inputs into WEBP format, resize and produce thumbnails on the server.

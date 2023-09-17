@@ -19,7 +19,6 @@ defmodule UpImg.Github do
     state
     |> fetch_exchange_response(code)
     |> fetch_user_info()
-    |> fetch_emails()
   end
 
   defp fetch_exchange_response(state, code) do
@@ -54,43 +53,31 @@ defmodule UpImg.Github do
       )
 
     case resp do
-      {:ok, info} -> {:ok, %{info: Jason.decode!(info), token: token}}
+      {:ok, info} -> {:ok, Jason.decode!(info)}
       {:error, _reason} = err -> err
     end
   end
 
-  defp fetch_emails({:error, _} = err), do: err
+  # defp fetch_emails({:error, _} = err), do: err
 
-  defp fetch_emails({:ok, user}) do
-    resp =
-      http(
-        "api.github.com",
-        "GET",
-        "/user/emails",
-        [],
-        [{"accept", "application/vnd.github.v3+json"}, {"Authorization", "token #{user.token}"}]
-      )
+  # defp fetch_emails({:ok, user}) do
+  #   resp =
+  #     http(
+  #       "api.github.com",
+  #       "GET",
+  #       "/user/emails",
+  #       [],
+  #       [{"accept", "application/vnd.github.v3+json"}, {"Authorization", "token #{user.token}"}]
+  #     )
 
-    case resp do
-      {:ok, info} ->
-        emails = Jason.decode!(info)
-        {:ok, Map.merge(user, %{primary_email: primary_email(emails), emails: emails})}
+  #   case resp do
+  #     {:ok, info} ->
+  #       emails = Jason.decode!(info)
+  #       {:ok, Map.merge(user, %{primary_email: primary_email(emails), emails: emails})}
 
-      {:error, _reason} = err ->
-        err
-    end
-  end
-
-  # def random_string do
-  #   binary = <<
-  #     System.system_time(:nanosecond)::64,
-  #     :erlang.phash2({node(), self()})::16,
-  #     :erlang.unique_integer()::16
-  #   >>
-
-  #   binary
-  #   |> Base.url_encode64()
-  #   |> String.replace(["/", "+"], "-")
+  #     {:error, _reason} = err ->
+  #       err
+  #   end
   # end
 
   defp http(host, method, path, query, headers, body \\ "") do
@@ -132,7 +119,7 @@ defmodule UpImg.Github do
     end
   end
 
-  defp primary_email(emails) do
-    Enum.find(emails, fn email -> email["primary"] end)["email"] || Enum.at(emails, 0)
-  end
+  # defp primary_email(emails) do
+  #   Enum.find(emails, fn email -> email["primary"] end)["email"] || Enum.at(emails, 0)
+  # end
 end

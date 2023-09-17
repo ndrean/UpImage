@@ -4,10 +4,9 @@ defmodule UpImgWeb.SignInLive do
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-    <%!-- class="sm:mx-auto sm:w-full sm:max-w-md" --%>
-      <div >
-
-        <img src={~p"/images/camera.svg"} width={200} class="mx-auto h-24 w-auto" alt="workflow"/>
+      <%!-- class="sm:mx-auto sm:w-full sm:max-w-md" --%>
+      <div>
+        <img src={~p"/images/camera.svg"} width={200} class="mx-auto h-24 w-auto" alt="workflow" />
 
         <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Sign in to your account
@@ -21,8 +20,7 @@ defmodule UpImgWeb.SignInLive do
               href={UpImg.Github.authorize_url()}
               class="w-full flex items-center justify-around py-2 border border-transparent rounded-md shadow-sm text-sm font-medium bg-slate-200 hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              <img src={~p"/images/github-mark.svg"} width={24}/>
-              Sign in with Github
+              <img src={~p"/images/github-mark.svg"} width={24} /> Sign in with Github
             </a>
           </div>
           <div>

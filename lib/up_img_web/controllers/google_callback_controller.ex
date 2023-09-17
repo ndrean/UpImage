@@ -6,8 +6,7 @@ defmodule UpImgWeb.GoogleCallbackController do
   def handle(conn, %{"credential" => credential}) do
     with {:ok, profil} <-
            ElixirGoogleCerts.verified_identity(%{jwt: credential}),
-         token <- Phoenix.Token.sign(UpImgWeb.Endpoint, "google_id", profil.id),
-         {:ok, user} <- Accounts.register_google_user(profil, token) do
+         {:ok, user} <- Accounts.register_google_user(profil) do
       conn
       |> Plug.Conn.fetch_session()
       |> Phoenix.Controller.fetch_flash()
@@ -31,5 +30,10 @@ defmodule UpImgWeb.GoogleCallbackController do
         |> put_flash(:error, "We were unable to contact Google. Please try again later")
         |> redirect(to: "/")
     end
+  end
+
+  def handle_oauth(conn, p) do
+    p |> dbg()
+    halt(conn)
   end
 end

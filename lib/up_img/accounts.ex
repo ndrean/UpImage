@@ -1,10 +1,10 @@
 defmodule UpImg.Accounts do
+  # import Ecto.Changeset
   import Ecto.Query
-  import Ecto.Changeset
 
-  alias UpImg.Repo
-  alias UpImg.Accounts.Identity
+  # alias UpImg.Accounts.Identity
   alias UpImg.Accounts.User
+  alias UpImg.Repo
 
   ## Database getters
 
@@ -64,77 +64,52 @@ defmodule UpImg.Accounts do
 
   ## User registration
 
-  def get_user_by_provider(provider, email) when provider in [:github] do
+  def get_user_by_provider(provider, email) when provider in ["github"] do
     query =
       from(u in User,
-        join: i in assoc(u, :identities),
         where:
-          i.provider == ^to_string(provider) and
-            fragment("lower(?)", u.email) == ^String.downcase(email)
+          u.provider == ^provider and
+            u.hashed_email == ^email
       )
 
     Repo.one(query)
   end
 
-  def get_user_by_provider(provider, email) when provider in [:google] do
+  def get_user_by_provider(provider, email) when provider in ["google"] do
     query =
       from(u in User,
-        join: i in assoc(u, :identities),
         where:
-          i.provider == ^to_string(provider) and
-            fragment("lower(?)", u.email) == ^String.downcase(email)
+          u.provider == ^provider and
+            u.hashed_email == ^email
       )
 
     Repo.one(query)
   end
 
-  @spec register_github_user(binary, any, any) :: any
   @doc """
   Registers a user from their GithHub information.
   """
-  def register_github_user(primary_email, info, token) do
-    if user = get_user_by_provider(:github, primary_email) do
-      update_github_token(user, token)
-    else
-      info
-      |> User.github_registration_changeset(primary_email, token)
-      |> Repo.insert()
+  def register_github_user(info) do
+    case get_user_by_provider("github", info["email"]) do
+      nil ->
+        info
+        |> User.github_registration_changeset()
+        |> Repo.insert()
+
+      user ->
+        {:ok, user}
     end
   end
 
-  def register_google_user(profil, token) do
-    if user = get_user_by_provider(:google, profil.email) do
-      update_google_token(user, token)
-    else
-      profil
-      |> User.google_registration_changeset(token)
-      |> Repo.insert()
+  def register_google_user(profil) do
+    case get_user_by_provider("google", profil.email) do
+      nil ->
+        profil
+        |> User.google_registration_changeset()
+        |> Repo.insert()
+
+      user ->
+        {:ok, user}
     end
-  end
-
-  defp update_google_token(%User{} = user, token) do
-    identity =
-      Repo.one!(from(i in Identity, where: i.user_id == ^user.id and i.provider == "google"))
-
-    {:ok, _} =
-      identity
-      |> change()
-      |> put_change(:provider_token, token)
-      |> Repo.update()
-
-    {:ok, Repo.preload(user, :identities, force: true)}
-  end
-
-  defp update_github_token(%User{} = user, new_token) do
-    identity =
-      Repo.one!(from(i in Identity, where: i.user_id == ^user.id and i.provider == "github"))
-
-    {:ok, _} =
-      identity
-      |> change()
-      |> put_change(:provider_token, new_token)
-      |> Repo.update()
-
-    {:ok, Repo.preload(user, :identities, force: true)}
   end
 end

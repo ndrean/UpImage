@@ -11,9 +11,10 @@ defmodule UpImgWeb.NoClientPreloading do
       <div>
         <h2 class="text-base font-semibold leading-7 text-gray-900">Uploaded files locally</h2>
         <p class="mt-1 text-sm leading-6 text-gray-600">
-          The images below are temporarilly saved on the server. You can <b>upload</b> them to S3 or <b>prune</b> them.
+          The images below are temporarilly saved on the server. You can <b>upload</b>
+          them to S3 or <b>prune</b>
+          them.
         </p>
-
 
         <p class={"
             #{if length(@uploaded_files_locally) == 0 do "block" else "hidden" end}

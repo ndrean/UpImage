@@ -17,7 +17,8 @@ defmodule UpImg.Application do
       # Start Finch
       {Finch, name: UpImg.Finch},
       # Start the Endpoint (http/https)
-      UpImgWeb.Endpoint
+      UpImgWeb.Endpoint,
+      UpImg.MyVault
       # Start a worker by calling: UpImg.Worker.start_link(arg)
       # {UpImg.Worker, arg}
     ]

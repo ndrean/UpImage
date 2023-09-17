@@ -11,7 +11,8 @@ config :up_img,
   ecto_repos: [UpImg.Repo]
 
 config :up_img,
-  google_cb: "/google/callback"
+  google_cb: "/google/callback",
+  google_oauth: "/google/oauth"
 
 # Configures the endpoint
 config :up_img, UpImgWeb.Endpoint,
@@ -31,6 +32,8 @@ config :up_img, UpImgWeb.Endpoint,
 # For production it's recommended to configure a different adapter
 # at the `config/runtime.exs`.
 config :up_img, UpImg.Mailer, adapter: Swoosh.Adapters.Local
+
+# config :up_img, :bcrypt, salt: "0QNVS4BU0DRyZCilme4afxJsQ9DfF"
 
 # Configure esbuild (the version is required)
 config :esbuild,

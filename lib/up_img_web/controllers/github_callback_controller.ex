@@ -8,8 +8,8 @@ defmodule UpImgWeb.GithubCallbackController do
     client = github_client(conn)
 
     with {:ok, info} <- client.exchange_access_token(code: code, state: state),
-         %{info: info, primary_email: primary, token: token} = info,
-         {:ok, user} <- Accounts.register_github_user(primary, info, token) do
+         #  %{info: info, primary_email: primary, token: token} = info,
+         {:ok, user} <- Accounts.register_github_user(info) do
       conn
       |> put_flash(:info, "Welcome #{user.email}")
       |> UpImgWeb.UserAuth.log_in_user(user)
