@@ -34,9 +34,6 @@ defmodule UpImg.Gallery.Url do
         String.replace(acc, "%{#{key}}", to_string(value))
       end)
     end)
-    |> Enum.reduce("", fn {_k, v}, acc ->
-      joined_errors = Enum.join(v, "; ")
-      "#{joined_errors}"
-    end)
+    |> Enum.reduce("", fn {_k, v}, _acc -> Enum.join(v) end)
   end
 end
