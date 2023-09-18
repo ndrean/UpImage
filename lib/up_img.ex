@@ -68,10 +68,10 @@ defmodule UpImg do
   @doc """
   Defines the Google callback endpoint. It must correspond to the settings in the Google Dev console.
   """
-  def google_cb do
+  def google_callback do
     Path.join(
       UpImgWeb.Endpoint.url(),
-      Application.get_application(__MODULE__) |> Application.get_env(:google_cb)
+      Application.get_application(__MODULE__) |> Application.get_env(:google_callback)
     )
   end
 
@@ -88,8 +88,8 @@ defmodule UpImg do
     UpImgWeb.Endpoint.static_path("/image_uploads/#{name}")
   end
 
-  def home_path(nil = _current_user), do: "/"
-  def home_path(%Accounts.User{} = current_user), do: profile_path(current_user)
+  # def home_path(nil = _current_user), do: "/"
+  # def home_path(%Accounts.User{} = current_user), do: profile_path(current_user)
 
   def profile_path(username) when is_binary(username) do
     unverified_path(UpImgWeb.Endpoint, UpImgWeb.Router, ~p"/#{username}")

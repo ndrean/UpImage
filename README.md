@@ -6,11 +6,13 @@ Minimum friction: full authorization for authenticated users. Using `Github` or 
 
 ### Encrypt email and query it
 
-[Email encryption and hash](https://github.com/dwyl/fields#why-do-we-have-both-emailencrypted-and-emailhash-)
+The email is encrypted (this is reversible) and is not searchable (because repeating an encryption on an input will walways given a different output - ciphertext - thus unique, so you can never match it). Its hash version (via `:sha256`) is however searchable (because repeating a hash on an input will always give the same output - hash - and cannot be "unhashed" (ie reversed to plaintext), thus considered as "safe".
 
-The email is encrypted and is not searchable (because the output of the encryption is always unique, thus different, so it can't match). Its hash version (via `:sha256`) is however searchable and cannot be "unhashed".
+[A blog on Erlang crypto](https://www.thegreatcodeadventure.com/elixir-encryption-with-erlang-crypto/)
 
-Use `[{:cloak, "~> 1.1"},{:cloak_ecto, "~> 1.2"}]` and `{:argon2_elixir, "~> 3.2"}`. Do not use `Bcrypt` because you want to be able to use a pre-defined hash to query the email.
+[Very useful blog on email encryption and hash](https://github.com/dwyl/fields#why-do-we-have-both-emailencrypted-and-emailhash-)
+
+We used: `[{:cloak, "~> 1.1"},{:cloak_ecto, "~> 1.2"}]` and `{:argon2_elixir, "~> 3.2"}`. Do not use `Bcrypt` because you want to be able to use a pre-defined hash to query the email.
 
 [Usage of Cloak.Ecot.Binary](https://hexdocs.pm/cloak_ecto/Cloak.Ecto.Binary.html#content) to encrypt the email.
 
@@ -54,7 +56,7 @@ end
 ```
 
 [Usage of the Ecto Type Cloak.Ecto.SHA256](https://hexdocs.pm/cloak_ecto/Cloak.Ecto.SHA256.html#module-usage)
-The email is encrypted and the email is hashed. We use the Cloak special types:
+The email is encrypted and the email is hashed. We use the Cloak special types for the Ecto schema
 
 ```elixir
 @derive {Inspect, except: [:email]}
@@ -67,6 +69,22 @@ schema "users" do
   field :confirmed_at, :naive_datetime
 
   has_many :urls, Url
+  timestamps()
+end
+```
+
+:exclamation: Note that the migration (to Postgres) should use the type `:binary` and not `:string`.
+
+```elixir
+# migration
+create table(:users) do
+  add :email, :binary, null: false
+  add :hashed_email, :binary, null: false
+  add :username, :string, null: false
+  add :name, :string
+  add :provider, :string
+  add :confirmed_at, :naive_datetime
+
   timestamps()
 end
 ```

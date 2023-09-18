@@ -7,10 +7,11 @@ defmodule UpImgWeb.NoClientLive do
   alias Vix.Vips.Image
   alias Vix.Vips.Operation
 
-  on_mount UpImgWeb.NoClientUserInit
   require Logger
 
   @thumb_size 200
+
+  @upload_dir Application.app_dir(:up_img, ["priv", "static", "image_uploads"])
 
   @delete_bucket_and_db "Sucessfully deleted from bucket and database"
   @error_delete_object_in_bucket "Failed to delete from bucket"
@@ -20,6 +21,8 @@ defmodule UpImgWeb.NoClientLive do
 
   @impl true
   def mount(_, _, socket) do
+    File.mkdir_p(@upload_dir)
+
     init_assigns = %{
       limit: 4,
       page: 0,
@@ -33,7 +36,7 @@ defmodule UpImgWeb.NoClientLive do
       |> assign(init_assigns)
       |> allow_upload(:image_list,
         accept: ~w(.jpg .jpeg .png .webp),
-        max_entries: 10,
+        max_entries: 5,
         chunk_size: 64_000,
         auto_upload: true,
         max_file_size: 2_000_000,

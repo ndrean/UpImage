@@ -11,6 +11,10 @@ defmodule UpImgWeb.SignInLive do
         <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Sign in to your account
         </h2>
+        <p class="text-xs pt-4">You are asked to register an account.
+        We don't use your data and only keep the minimum needed to retrieve your files from the service (your name and email).
+        Furthermore, your email is encrypted.
+        </p>
       </div>
 
       <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
@@ -18,7 +22,7 @@ defmodule UpImgWeb.SignInLive do
           <div class="space-y-6 mb-4">
             <a
               href={UpImg.Github.authorize_url()}
-              class="w-full flex items-center justify-around py-2 border border-transparent rounded-md shadow-sm text-sm font-medium bg-slate-200 hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              class="w-full flex items-center justify-around py-2 border border-transparent rounded-md shadow-sm text-sm font-bold bg-indigo-200 hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               <img src={~p"/images/github-mark.svg"} width={24} /> Sign in with Github
             </a>
@@ -34,7 +38,7 @@ defmodule UpImgWeb.SignInLive do
                 data-client_id={UpImg.google_client_id()}
                 data-context="signin"
                 data-ux_mode="popup"
-                data-login_uri={UpImg.google_cb()}
+                data-login_uri={UpImg.google_callback()}
                 data-itp_support="true"
               >
               </div>

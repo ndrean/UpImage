@@ -10,7 +10,7 @@ defmodule UpImgWeb.GoogleCallbackController do
       conn
       |> Plug.Conn.fetch_session()
       |> Phoenix.Controller.fetch_flash()
-      |> put_flash(:info, "Welcome #{user.email}")
+      |> Phoenix.Controller.put_flash(:info, "Welcome #{user.email}")
       |> UpImgWeb.UserAuth.log_in_user(user)
     else
       {:error, %Ecto.Changeset{} = changeset} ->

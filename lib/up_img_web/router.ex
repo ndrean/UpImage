@@ -2,7 +2,7 @@ defmodule UpImgWeb.Router do
   use UpImgWeb, :router
   alias GoogleCallbackController
   alias UpImg.Plug.CheckCsrf
-  import UpImgWeb.UserAuth, only: [redirect_if_user_is_authenticated: 2]
+  alias UpImgWeb.Plug.FetchUser
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -13,46 +13,42 @@ defmodule UpImgWeb.Router do
     plug :put_secure_browser_headers
   end
 
-  # pipeline :api do
-  #   plug :accepts, ["json"]
-  # end
-
-  scope "/", UpImgWeb do
-    pipe_through [:browser, :redirect_if_user_is_authenticated]
-
-    get "/oauth/callbacks/github", GithubCallbackController, :new
-  end
-
   pipeline :google do
     plug CheckCsrf
     plug :accepts, ["json"]
   end
 
-  scope "/", UpImgWeb do
-    pipe_through [:google, :redirect_if_user_is_authenticated]
-
-    post "/google/callback", GoogleCallbackController, :handle
-    post "/google/oauth", GoogleCallbackController, :handle_oauth
+  pipeline :redirect_if_user do
+    plug FetchUser
   end
 
   scope "/", UpImgWeb do
-    pipe_through :browser
+    pipe_through [:browser]
+
+    get "/oauth/callbacks/github", GithubCallbackController, :new
+  end
+
+  scope "/", UpImgWeb do
+    pipe_through [:google]
+
+    post "/google/callback", GoogleCallbackController, :handle
+  end
+
+  scope "/", UpImgWeb do
+    pipe_through [:browser, :redirect_if_user]
     get "/", RedirectController, :redirect_authenticated
 
     delete "/signout", LogOutController, :sign_out
 
     live_session :default, on_mount: [{UpImgWeb.UserAuth, :current_user}] do
       live "/signin", SignInLive
+      live "/welcome", WelcomeLive
     end
-
-    # get "/",  PageController, :home
 
     live_session :authenticated,
       on_mount: [{UpImgWeb.UserAuth, :ensure_authenticated}] do
       live "/liveview_clientless", NoClientLive
-      live "/:profile_username/songs/new", ProfileLive, :new
-      live "/:profile_username", ProfileLive, :show
-      live "/profile/settings", SettingsLive, :edit
+      live "/:profile_username", ProfileLive
     end
   end
 
@@ -74,7 +70,7 @@ defmodule UpImgWeb.Router do
       pipe_through :browser
 
       live_dashboard "/dashboard", metrics: UpImgWeb.Telemetry
-      forward "/mailbox", Plug.Swoosh.MailboxPreview
+      # forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
   end
 end

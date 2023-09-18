@@ -1,14 +1,13 @@
 defmodule UpImgWeb.RedirectController do
   use UpImgWeb, :controller
 
-  import UpImgWeb.UserAuth, only: [fetch_current_user: 2]
-  plug :fetch_current_user
-
+  # uses thes Plug.fetch_user
   def redirect_authenticated(conn, _params) do
     if conn.assigns.current_user do
-      UpImgWeb.UserAuth.redirect_if_user_is_authenticated(conn, [])
+      redirect(conn, to: ~p"/#{conn.assigns.current_user.name}")
+      |> halt()
     else
-      redirect(conn, to: ~p"/signin")
+      redirect(conn, to: ~p"/welcome")
     end
   end
 end

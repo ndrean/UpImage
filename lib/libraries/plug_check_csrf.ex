@@ -13,22 +13,27 @@ defmodule UpImg.Plug.CheckCsrf do
 
     case {g_csrf_from_cookies, g_csrf_from_params} do
       {nil, _} ->
+        # tested ok
         halt_process(conn, "CSRF cookie missing")
 
       {_, nil} ->
+        # test ok
         halt_process(conn, "CSRF token missing")
 
       {cookie, param} when cookie != param ->
+        # test ok
         halt_process(conn, "CSRF token mismatch")
 
       _ ->
-        IO.puts("ok CSRF---------------")
+        # test ok
         conn
     end
   end
 
   defp halt_process(conn, msg) do
+    # test ok
     conn
+    |> Plug.Conn.fetch_session()
     |> Phoenix.Controller.fetch_flash()
     |> Phoenix.Controller.put_flash(:error, msg)
     |> Phoenix.Controller.redirect(to: ~p"/")

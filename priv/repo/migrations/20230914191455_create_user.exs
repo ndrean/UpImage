@@ -15,6 +15,6 @@ defmodule UpImg.Repo.Migrations.CreateUser do
       timestamps()
     end
 
-    create unique_index(:users, [:email])
+    create unique_index(:users, [:hashed_email])
   end
 end

@@ -1,7 +1,6 @@
 defmodule UpImg.Accounts.User do
   use Ecto.Schema
   import Ecto.Changeset
-  # alias UpImg.Accounts.Identity
   alias UpImg.Accounts.User
   alias UpImg.Gallery.Url
 

@@ -1,9 +1,12 @@
 <header class="px-4 sm:px-6 lg:px-8">
   <div class="flex items-center justify-between border-b border-zinc-100 py-3 text-sm">
     <div class="flex items-center gap-4">
-      <a href="/">
-        <img src={~p"/images/logo.svg"} width="36" />
-      </a>
+      <%= if @current_user  do %>
+        <.link href={"/#{@current_user.name}"}><.icon name="hero-home" /></.link>
+      <% else %>
+        <.link href={~p"/"}><.icon name="hero-home" /></.link>
+      <% end %>
+
       <p class="bg-brand/5 text-brand rounded-full px-2 font-medium leading-6">
         v<%= Application.spec(:phoenix, :vsn) %>, Vix: <%= Vix.Vips.version() %>
       </p>
