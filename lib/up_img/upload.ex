@@ -17,6 +17,9 @@ defmodule UpImg.Upload do
   If the upload fails for whatever reason (invalid content type, invalid CID, request to S3 fails),
   the an error is returned `{:error, reason}`.
   """
+
+  def bucket, do: UpImg.bucket()
+
   def upload(image) do
     with {:ok, file} <- hash_file(image),
          {:ok, upload_resp_body} <-
@@ -62,11 +65,11 @@ defmodule UpImg.Upload do
     {:ok, upload_response_body} =
       image.path
       |> S3.Upload.stream_file()
-      |> S3.upload(UpImg.bucket(), file,
+      |> S3.upload(bucket(), file,
         acl: :public_read,
         content_type: image.content_type
       )
-      |> ExAws.request(get_ex_aws_request_config_override())
+      |> ExAws.request()
 
     {:ok, upload_response_body}
   rescue

@@ -4,16 +4,13 @@ defmodule UpImgWeb.NoClientPreloading do
   alias Phoenix.LiveView.JS
 
   def display(assigns) do
-    # assigns.uploads.image_list |> dbg()
-
     ~H"""
     <div class="flex flex-col flex-1 mt-10 md:mt-0 md:ml-4">
       <div>
         <h2 class="text-base font-semibold leading-7 text-gray-900">Uploaded files locally</h2>
         <p class="mt-1 text-sm leading-6 text-gray-600">
           The images below are temporarilly saved on the server. You can <b>upload</b>
-          them to S3 or <b>prune</b>
-          them.
+          them to S3 or <b>prune</b> them.
         </p>
 
         <p class={"

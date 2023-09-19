@@ -1,6 +1,8 @@
 defmodule ElixirGoogleCerts do
   @moduledoc """
-  Elixir module to use Google One tap from a controller.
+  Elixir module to use Google One tap from a controller. It uses Google public key in PEM format.
+
+  It depends on the JOSE library.
   """
 
   @g_certs1_url "https://www.googleapis.com/oauth2/v1/certs"
@@ -9,20 +11,16 @@ defmodule ElixirGoogleCerts do
   @json_lib Phoenix.json_library()
 
   @doc """
-  This is run after the plug "check_csrf".
+  This is run **after** the plug "check_csrf".
 
-  It takes a map with the JWT token and a nonce. It checks that
-  the received nonce is equal to the emitted one, and deciphers the JWT
-  against Google public key (PEM or JWK).
-
+  It takes a map with the JWT token. It deciphers the JWT against Google public key (PEM).
 
   ## Example
 
       ```
       iex> ElixirGoogleCerts.verfified_identity(%{jwt: received_jwt})
+      {:ok, profile} | {:error, reason}
     ```
-
-  It returns `{:ok, profile}` or `{:error, reason}`.
   """
 
   def verified_identity(%{jwt: jwt}) do
@@ -64,10 +62,9 @@ defmodule ElixirGoogleCerts do
     end
   end
 
-  # no specific HTTP client
   defp fetch(url) do
-    case :httpc.request(:get, {~c"#{url}", []}, [], []) do
-      {:ok, {{_version, 200, _}, _headers, body}} ->
+    case Finch.build(:get, url) |> Finch.request(UpImg.Finch) do
+      {:ok, %{body: body}} ->
         {:ok, %{body: body}}
 
       error ->
@@ -75,35 +72,27 @@ defmodule ElixirGoogleCerts do
     end
   end
 
+  # no specific HTTP client: not valid with Fly.io
+  # defp fetch(url) do
+  #   case :httpc.request(:get, {~c"#{url}", []}, [], []) do
+  #     {:ok, {{_version, 200, _}, _headers, body}} ->
+  #       {:ok, %{body: body}}
+
+  #     error ->
+  #       {:error, inspect(error)}
+  #   end
+  # end
+
   # ---- Google checking recommendations
-  @doc """
-  Token is not expired. Returns `true` or `false`.
-  """
-  def not_expired(exp) do
+
+  defp not_expired(exp) do
     exp > DateTime.to_unix(DateTime.utc_now())
   end
 
-  @doc """
-  Checks the received nonce against the one set in the HTML.
-
-  Returns `true` or `false`.
-  """
-  def check_nonce(nonce, g_nonce), do: nonce === g_nonce
-
-  @doc """
-  Confirm the received Google_Client_ID against the one stored in the app.
-
-  Returns `true` or `false`.
-  """
-  def check_user(aud, azp) do
+  defp check_user(aud, azp) do
     aud == aud() || azp == aud()
   end
 
-  @doc """
-  Confirm the received issuer is the one stored in the app.
-
-  Returns `true` or `false`.
-  """
-  def check_iss(iss), do: iss == @iss
+  defp check_iss(iss), do: iss == @iss
   defp aud, do: System.get_env("GOOGLE_CLIENT_ID")
 end

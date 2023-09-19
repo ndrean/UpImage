@@ -1,4 +1,7 @@
 defmodule UpImg.MyVault do
+  @moduledoc """
+  Configure the vault
+  """
   use Cloak.Vault, otp_app: :up_img
 
   @impl GenServer
@@ -7,16 +10,12 @@ defmodule UpImg.MyVault do
       Keyword.put(config, :ciphers,
         default: {
           Cloak.Ciphers.AES.GCM,
-          tag: "AES.GCM.V1", key: decode_env!("CLOAK_KEY"), iv_length: 12
+          tag: "AES.GCM.V1", key: decode_env!(), iv_length: 12
         }
       )
 
     {:ok, config}
   end
 
-  defp decode_env!(var) do
-    var
-    |> System.get_env()
-    |> Base.decode64!()
-  end
+  defp decode_env!, do: UpImg.vault_key() |> Base.decode64!()
 end

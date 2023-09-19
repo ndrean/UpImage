@@ -2,11 +2,11 @@
 
 ## Authentication/Authorization
 
-Minimum friction: full authorization for authenticated users. Using `Github` or `Google One-Tap` authentication, no password required.
+Minimum friction: full authorization for authenticated users. We used `Github` or `Google One-Tap` authentication, no password required: "find_or_create".
 
 ### Encrypt email and query it
 
-The email is encrypted (this is reversible) and is not searchable (because repeating an encryption on an input will walways given a different output - ciphertext - thus unique, so you can never match it). Its hash version (via `:sha256`) is however searchable (because repeating a hash on an input will always give the same output - hash - and cannot be "unhashed" (ie reversed to plaintext), thus considered as "safe".
+The email is encrypted (reversible) but is not searchable (because repeating an encryption on an input will walways given a different output - ciphertext - thus unique, so you can never match it). Its hash version (via `:sha256`) is however searchable because repeating a hash on an input will always give the same output, a hash. It _cannot_ -in terms of computation time, ie no better than a random search - be "unhashed" (ie reversed to plaintext), thus is considered as "safe".
 
 [A blog on Erlang crypto](https://www.thegreatcodeadventure.com/elixir-encryption-with-erlang-crypto/)
 
@@ -40,18 +40,14 @@ defmodule UpImg.MyVault do
       Keyword.put(config, :ciphers,
         default: {
           Cloak.Ciphers.AES.GCM,
-          tag: "AES.GCM.V1", key: decode_env!("CLOAK_KEY"), iv_length: 12
+          tag: "AES.GCM.V1", key: decode_env!(), iv_length: 12
         }
       )
 
     {:ok, config}
   end
 
-  defp decode_env!(var) do
-    var
-    |> System.get_env()
-    |> Base.decode64!()
-  end
+  defp decode_env!, do: System.get_env("VAULT_KEY") |> Base.decode64!()
 end
 ```
 
@@ -141,13 +137,19 @@ dot -Tpng ecto_erd.dot > erd.png
 
 ![ERD](erd.png)
 
-## Notes for dev mode
+## Notes
+
+### Credentials for Github, Google and AWS S3
+
+- Create credentials for Github: <https://github.com/settings/developers> and pass callback URL
+- Create credentials for Google: <https://console.cloud.google.com/apis/credentials/> and pass Authorized Javascript origins and Authorized redirects URLs.
+- set up callback URI for both, once you get the app URL (http://localhost:4000 firstly, then https://up-image.fly.dev once deployed)
 
 ### Temporary saved on the server
 
-The files are temporarily saved on the server. They are deleted when uploaded. After 10 miniutes of inactivity, the files are pruned.
+The files are temporarily saved on the server. They are deleted when uploaded. After 10 minutes of inactivity the temporary files are pruned if the app is still open. After 1 hour, the liveview is disconnected and the users' temporary files are pruned.
 
-### File change watch
+### Dev mode: file change watch
 
 To stop rebuild when file changes, remove the folder "image_uploads" from the watched list by setting:
 
@@ -172,27 +174,12 @@ All the users' uploaded files are displayed as streams. To limit data usage, a t
 To properly configure the app (with Google & Github & AWS credentials):
 
 - set the env variables in ".env" (and run `source .env`),
-- set up a keyword list with eg `config :my_app, :google, client_id: System.get_env(...)` in "/config/dev.exs" and "/config/runtime.exs".
+- set up a keyword list with eg `config :my_app, :google, client_id: System.get_env(...)` in "/config/runtime.exs".
 - in the app, you then can call `Application.fetch_env!(:my_app, :google)|> Keyword.get(:client_id)`
-- you can also use the helper `MyApp.config([main_key, secondary_keys...])`. It should raise if the runtime time is missing.
-
-If you don't have a nested keyword list, a simple helper can be:
-
-```elixir
-#my_app.ex
-def config([first, second]) do
-  case Application.get_application(__MODULE__)
-        |> Application.fetch_env!(first)
-        |> Keyword.get(second) do
-    nil -> raise "No config found for: #{first}, #{second}"
-    res -> res
-  end
-end
-```
 
 ### Serving SVG
 
-To serve some SVGs located in "/priv/static/images" (as `<img src={~p"/my-svg.svg"}/>`) instead of polluting the HTML markup, you can add the SVG file in the "/priv/static/images" directory and append the static list that Phoenix will server:
+You can serve SVGs located in "/priv/static/images" (as `<img src={~p"/my-svg.svg"}/>`) instead of polluting the HTML markup. Append the static list that Phoenix will server:
 
 ```elixir
 #my_app_web.ex
@@ -200,11 +187,13 @@ To serve some SVGs located in "/priv/static/images" (as `<img src={~p"/my-svg.sv
  ~w(assets fonts images favicon.ico robots.txt image_uploads)
 ```
 
+### Handle failed `Task.async_stream`
+
 To handle failed task in `Task.async_stream`, use `on_timeout: :kill_task` so that a failed task will send `{:exit, :timeout}`.
 
-### About the **reset of Uploads**
+### **Reset of Uploads**
 
-One solution is to "reduce" and `cancel_upload` all the refs along the socket, then reset the "uploaded_files_locally" and send a message.
+In case a user loads a "bad" file", you will get an error. We are not in the case of managing errors within the form. One solution to handle this case is to "reduce" and `cancel_upload` all the refs along the socket, then reset the "uploaded_files_locally" and perhaps send a message that describes the error (too many files, too large). This will reset the users' entries.
 
 ```elixir
 def are_files_uploadable?(image_list) do
@@ -247,8 +236,23 @@ end
 
 ### File names: SHA256
 
-Files are named by their SHA256 hash so are (almost) unique.
+Files are named by their SHA256 hash (with `:crypto_hash`) so file names are (almost) unique.
 
 ### Unique file upload
 
 You can't temporarilly upload several times the same file. You can however upload it several times but you will get a warning that you attempt to save the same file. It has to be unique (to save on space).
+
+## Fly Postgres
+
+Example:
+
+```bash
+Postgres cluster up-image-db created
+Username: postgres
+Password: 5I8ZjqkuDnTwZ6W
+Hostname: up-image-db.internal
+Flycast: fdaa:0:57e6:0:1::4
+Proxy port: 5432
+Postgres port: 5433
+Database_URL: postgres://postgres:5I8ZjqkuDnTwZ6W@up-image-db.flycast:5432
+```

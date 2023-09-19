@@ -2,13 +2,14 @@ import Config
 
 # Configure your database
 config :up_img, UpImg.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "up_img_dev",
+  username: System.fetch_env!("DB_USER"),
+  password: System.fetch_env!("DB_PWD"),
+  hostname: System.fetch_env!("DB_HOST"),
+  database: System.fetch_env!("DB_NAME"),
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
-  pool_size: 10
+  pool_size: 10,
+  socket_options: [:inet6]
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
@@ -29,20 +30,22 @@ config :up_img, UpImgWeb.Endpoint,
     tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
   ]
 
-config :ex_aws,
-  access_key_id: System.get_env("AWS_ACCESS_KEY_ID"),
-  secret_access_key: System.get_env("AWS_SECRET_ACCESS_KEY"),
-  region: System.get_env("AWS_REGION"),
-  bucket: System.get_env("AWS_S3_BUCKET"),
-  request_config_override: %{}
+# config :ex_aws,
+#   access_key_id: System.get_env("AWS_ACCESS_KEY_ID"),
+#   secret_access_key: System.get_env("AWS_SECRET_ACCESS_KEY"),
+#   region: System.get_env("AWS_REGION"),
+#   bucket: System.get_env("AWS_S3_BUCKET"),
+#   request_config_override: %{}
 
-config :up_img, :github,
-  client_id: System.fetch_env!("UPIMG_GITHUB_CLIENT_ID"),
-  client_secret: System.fetch_env!("UPIMG_GITHUB_CLIENT_SECRET")
+# config :up_img, :github,
+#   github_client_id: System.get_env("GITHUB_CLIENT_ID"),
+#   github_client_secret: System.get_env("GITHUB_CLIENT_SECRET")
 
-config :up_img, :google,
-  client_id: System.fetch_env!("GOOGLE_CLIENT_ID"),
-  client_secret: System.fetch_env!("GOOGLE_CLIENT_SECRET")
+# config :up_img, :google,
+#   google_client_id: System.get_env("GOOGLE_CLIENT_ID"),
+#   google_client_secret: System.get_env("GOOGLE_CLIENT_SECRET")
+
+config :up_img, :vault_key, System.fetch_env!("CLOAK_KEY")
 
 # ## SSL Support
 #
@@ -91,4 +94,4 @@ config :phoenix, :stacktrace_depth, 20
 config :phoenix, :plug_init_mode, :runtime
 
 # Disable swoosh api client as it is only required for production adapters.
-config :swoosh, :api_client, false
+# config :swoosh, :api_client, false

@@ -38,7 +38,7 @@ defmodule UpImg do
       iex> MyApp.config([:files, :host, :port])
   """
   def config([main_key | rest] = keyspace) when is_list(keyspace) do
-    main = Application.fetch_env!(Application.get_application(__MODULE__), main_key)
+    main = Application.get_env(Application.get_application(__MODULE__), main_key)
 
     Enum.reduce(rest, main, fn next_key, current ->
       case Keyword.fetch(current, next_key) do
@@ -51,7 +51,7 @@ defmodule UpImg do
   # for a non nested simple case, you can do:
   def config([main, second]) do
     case Application.get_application(__MODULE__)
-         |> Application.fetch_env!(main)
+         |> Application.get_env(main)
          |> Keyword.get(second) do
       nil -> raise "No config found for: #{main}, #{second}"
       res -> res
@@ -63,10 +63,24 @@ defmodule UpImg do
       UpImgWeb.Endpoint.static_path("/images/#{name}")
   end
 
-  def google_client_id, do: config([:google, :client_id])
+  def fetch_key(main, key),
+    do:
+      Application.get_application(__MODULE__)
+      |> Application.fetch_env!(main)
+      |> Keyword.get(key)
+
+  def gh_id, do: fetch_key(:github, :github_client_id)
+  def gh_secret, do: fetch_key(:github, :github_client_secret)
+
+  def google_id, do: fetch_key(:google, :google_client_id)
+  def google_secret, do: fetch_key(:google, :google_client_secret)
+
+  def vault_key, do: Application.get_env(:up_img, :vault_key)
+
+  def bucket, do: Application.get_env(:ex_aws, :bucket)
 
   @doc """
-  Defines the Google callback endpoint. It must correspond to the settings in the Google Dev console.
+  Defines the callback endpoints. It must correspond to the settings in the Google Dev console and Github credentials.
   """
   def google_callback do
     Path.join(
@@ -75,8 +89,11 @@ defmodule UpImg do
     )
   end
 
-  def bucket do
-    Application.get_env(:ex_aws, :bucket)
+  def github_callback do
+    Path.join(
+      UpImgWeb.Endpoint.url(),
+      Application.get_application(__MODULE__) |> Application.get_env(:github_callback)
+    )
   end
 
   def set_image_url(name) do

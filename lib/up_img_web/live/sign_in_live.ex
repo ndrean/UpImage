@@ -12,9 +12,8 @@ defmodule UpImgWeb.SignInLive do
           Sign in to your account
         </h2>
         <p class="text-xs pt-4">You are asked to register an account.
-        We don't use your data and only keep the minimum needed to retrieve your files from the service (your name and email).
-        Furthermore, your email is encrypted.
-        </p>
+          We don't use your data and only keep the minimum needed to retrieve your files from the service (your name and email).
+          Furthermore, your email is encrypted.</p>
       </div>
 
       <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
@@ -34,8 +33,8 @@ defmodule UpImgWeb.SignInLive do
               <div
                 phx-update="ignore"
                 id="g_id_onload"
+                data-client_id={UpImg.google_id()}
                 data-auto_prompt="true"
-                data-client_id={UpImg.google_client_id()}
                 data-context="signin"
                 data-ux_mode="popup"
                 data-login_uri={UpImg.google_callback()}
@@ -53,7 +52,6 @@ defmodule UpImgWeb.SignInLive do
                 data-text="signin_with"
                 data-size="large"
                 data-logo_alignment="left"
-                data-width="350"
               >
               </div>
             </div>

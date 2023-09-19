@@ -1,4 +1,9 @@
 defmodule UpImg.Plug.CheckCsrf do
+  @moduledoc """
+  Plug to check the CSRF state concordance when receiving data from Google.
+
+  Denies to treat the HTTP request if fails.
+  """
   use UpImgWeb, :verified_routes
   def init(opts), do: opts
 
@@ -13,7 +18,7 @@ defmodule UpImg.Plug.CheckCsrf do
 
     case {g_csrf_from_cookies, g_csrf_from_params} do
       {nil, _} ->
-        # tested ok
+        # test ok
         halt_process(conn, "CSRF cookie missing")
 
       {_, nil} ->

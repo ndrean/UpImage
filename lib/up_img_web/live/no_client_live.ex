@@ -21,7 +21,7 @@ defmodule UpImgWeb.NoClientLive do
 
   @impl true
   def mount(_, _, socket) do
-    File.mkdir_p(@upload_dir)
+    File.mkdir_p!(@upload_dir)
 
     init_assigns = %{
       limit: 4,
@@ -516,8 +516,11 @@ defmodule UpImgWeb.NoClientLive do
   end
 
   def set_image_url(name) do
-    UpImgWeb.Endpoint.url() <>
-      UpImgWeb.Endpoint.static_path("/image_uploads/#{name}")
+    Path.join([
+      UpImgWeb.Endpoint.url(),
+      UpImgWeb.Endpoint.static_path("/image_uploads"),
+      name
+    ])
   end
 
   def url_path(name) do
@@ -529,8 +532,9 @@ defmodule UpImgWeb.NoClientLive do
     rootname <> Path.extname(name)
   end
 
-  def build_path(name),
-    do: Application.app_dir(:up_img, ["priv", "static", "image_uploads", name])
+  def build_path(name) do
+    Application.app_dir(:up_img, ["priv", "static", "image_uploads", name])
+  end
 
   # def thumb_name(name), do: Path.rootname(name) <> "-th" <> Path.extname(name)
   def thumb_name(name), do: Path.rootname(name) <> "-th" <> ".webp"

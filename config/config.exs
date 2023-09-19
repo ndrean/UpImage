@@ -11,7 +11,8 @@ config :up_img,
   ecto_repos: [UpImg.Repo]
 
 config :up_img,
-  google_callback: "/google/callback"
+  google_callback: "/google/callback",
+  github_callback: "/github/callback"
 
 # Configures the endpoint
 config :up_img, UpImgWeb.Endpoint,
