@@ -222,7 +222,6 @@ defmodule UpImgWeb.NoClientLive do
      )}
   end
 
-  # success callback from upload to S3.
   # update the stream and the db
   @impl true
   def handle_info({:bucket_success, map}, socket) do
