@@ -161,17 +161,24 @@ defmodule UpImgWeb.NoClientLive do
         thumb_path: thumb_path
       })
 
-    with {:ok, img_origin} <- Image.new_from_file(image_path),
-         {:ok, scale} <- get_scale(img_origin, screen),
-         {:ok, img_resized} <- Operation.resize(img_origin, scale),
-         :ok <- Operation.webpsave(img_resized, resized_path),
-         {:ok, img_thumb} <- Operation.thumbnail(image_path, @thumb_size),
-         :ok <- Operation.webpsave(img_thumb, thumb_path) do
-      send(pid, {:transform_success, entry})
-      # else
-      #   {:error, msg} ->
-      #     send(pid, {:transform_error, msg})
-    end
+    {:ok, img_origin} = Image.new_from_file(image_path)
+    {:ok, scale} = get_scale(img_origin, screen)
+    {:ok, img_resized} = Operation.resize(img_origin, scale)
+    :ok = Operation.webpsave(img_resized, resized_path)
+    {:ok, img_thumb} = Operation.thumbnail(image_path, @thumb_size)
+    :ok = Operation.webpsave(img_thumb, thumb_path)
+
+    # with {:ok, img_origin} <- Image.new_from_file(image_path),
+    #      {:ok, scale} <- get_scale(img_origin, screen),
+    #      {:ok, img_resized} <- Operation.resize(img_origin, scale),
+    #      :ok <- Operation.webpsave(img_resized, resized_path),
+    #      {:ok, img_thumb} <- Operation.thumbnail(image_path, @thumb_size),
+    #      :ok <- Operation.webpsave(img_thumb, thumb_path) do
+    #   send(pid, {:transform_success, entry})
+    # else
+    #   {:error, msg} ->
+    #     send(pid, {:transform_error, msg})
+    # end
   end
 
   @doc """
@@ -195,19 +202,13 @@ defmodule UpImgWeb.NoClientLive do
     {:noreply, socket}
   end
 
-  # def handle_info({ref, :transform_error, msg}, socket) do
-  #   IO.puts("transform error")
-  #   Process.demonitor(ref, [:flush])
-  #   {:noreply, put_flash(socket, :error, inspect(msg))}
-  # end
-
   def handle_info({:DOWN, _ref, :process, _, {%{message: message}, _}}, socket) do
     {:noreply, put_flash(socket, :error, message)}
   end
 
-  def handle_info({:transform_success, _entry}, socket) do
-    {:noreply, socket}
-  end
+  # def handle_info({:transform_success, _entry}, socket) do
+  #   {:noreply, socket}
+  # end
 
   # callback to update the socket once the transformation is done
   @impl true
