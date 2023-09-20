@@ -25,7 +25,7 @@ defmodule UpImgWeb.NoClientLive do
     File.mkdir_p!(@upload_dir)
 
     {:ok, l} = Application.app_dir(:up_img, ["priv", "static", "image_uploads"]) |> File.ls()
-    Logger.info("uploads folder: #{inspect(l)}")
+    Logger.info("uploads folder: #{length(l)}")
 
     cleaner_pid = nil
     # case Gallery.Clean.start(user_id: socket.assigns.current_user.id, timer: @cleaning_timer) do
