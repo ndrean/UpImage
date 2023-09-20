@@ -94,7 +94,7 @@ defmodule UpImgWeb.NoClientLive do
               |> Map.put(:client_name, client_name)
               |> Map.put(:image_path, build_path(client_name))
               |> Map.put(:image_url, set_image_url(client_name))
-              |> Map.merge(%{thumb_url: nil, thumb_path: nil, errors: []})
+              |> Map.merge(%{resized_url: nil, thumb_url: nil, thumb_path: nil, errors: []})
 
             # Copying the file from temporary system folder to static folder
             :ok =
@@ -116,7 +116,8 @@ defmodule UpImgWeb.NoClientLive do
       entry ->
         pid = self()
 
-        Task.Supervisor.start_child(UpImg.TaskSup, fn ->
+        # Task.Supervisor.start_child(UpImg.TaskSup, fn ->
+        Task.Supervisor.async_nolink(UpImg.TaskSup, fn ->
           transform_image(pid, entry, socket.assigns.screen)
         end)
 
@@ -167,9 +168,9 @@ defmodule UpImgWeb.NoClientLive do
          {:ok, img_thumb} <- Operation.thumbnail(image_path, @thumb_size),
          :ok <- Operation.webpsave(img_thumb, thumb_path) do
       send(pid, {:transform_success, entry})
-    else
-      {:error, msg} ->
-        send(pid, {:transform_error, msg})
+      # else
+      #   {:error, msg} ->
+      #     send(pid, {:transform_error, msg})
     end
   end
 
@@ -190,13 +191,28 @@ defmodule UpImgWeb.NoClientLive do
 
   # callback from transformation operation.
   @impl true
-  def handle_info({:transform_error, msg}, socket) do
-    {:noreply, put_flash(socket, :error, inspect(msg))}
+  def handle_info({:transform_err, msg}, socket) do
+    {:noreply, socket}
+  end
+
+  # def handle_info({ref, :transform_error, msg}, socket) do
+  #   IO.puts("transform error")
+  #   Process.demonitor(ref, [:flush])
+  #   {:noreply, put_flash(socket, :error, inspect(msg))}
+  # end
+
+  def handle_info({:DOWN, _ref, :process, _, {%{message: message}, _}}, socket) do
+    {:noreply, put_flash(socket, :error, message)}
+  end
+
+  def handle_info({:transform_success, _entry}, socket) do
+    {:noreply, socket}
   end
 
   # callback to update the socket once the transformation is done
   @impl true
-  def handle_info({:transform_success, entry}, socket) do
+  def handle_info({ref, {:transform_success, entry}}, socket) do
+    Process.demonitor(ref, [:flush])
     local_images = socket.assigns.uploaded_files_locally
 
     img = find_image(local_images, entry.uuid)

@@ -43,9 +43,9 @@ defmodule UpImgWeb.NoClientPreloading do
               </div>
             </div>
             <div class="flex flex-col items-center justify-center space-y-4">
-              <.button phx-click="remove-selected" phx-value-uuid={file.uuid} class="bg-sky-500/50 hover:bg-red-600">
+              <button phx-click="remove-selected" phx-value-uuid={file.uuid} class="submit_button rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm bg-red-500 hover:bg-red-700">
                 <.icon name="hero-trash" />
-              </.button>
+              </button>
               <button
                 id={"#submit_button-#{file.uuid}"}
                 phx-click={
