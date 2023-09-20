@@ -2,16 +2,20 @@
   <div class="flex items-center justify-between border-b border-zinc-100 py-3 text-sm">
     <div class="flex items-center gap-4">
       <%= if @current_user  do %>
-        <.link navigate={"/#{@current_user.name}"}><.icon name="hero-home" /></.link>
+        <.link navigate={"/#{@current_user.name}"} alt="user page">
+          <.icon name="hero-home" />
+        </.link>
       <% else %>
-        <.link navigate={~p"/"}><.icon name="hero-home" /></.link>
+        <.link navigate={~p"/"} alt="home page"><.icon name="hero-home" /></.link>
       <% end %>
 
       <p class="bg-brand/5 text-brand rounded-full px-2 font-medium leading-6">
         v<%= Application.spec(:phoenix, :vsn) %>, Vix: <%= Vix.Vips.version() %>
       </p>
 
-      <p :if={@current_user}><.link href={~p"/signout"} method="delete">Log out </.link></p>
+      <p :if={@current_user}>
+        <.link href={~p"/signout"} method="delete" alt="log out">Log out </.link>
+      </p>
     </div>
   </div>
 </header>
