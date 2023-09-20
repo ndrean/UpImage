@@ -50,7 +50,7 @@ defmodule UpImgWeb.NoClientLive do
         max_entries: 20,
         chunk_size: 64_000,
         auto_upload: true,
-        max_file_size: 2_000_000,
+        max_file_size: 5_000_000,
         progress: &handle_progress/3
       )
       |> stream_configure(:uploaded_files_to_S3, dom_id: &"uploaded-s3-#{&1.uuid}")

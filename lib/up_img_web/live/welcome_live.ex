@@ -36,7 +36,7 @@ defmodule UpImgWeb.WelcomeLive do
             Furthermore, your email is encrypted.
           </p>
           <p class="mt-10 text-lg leading-8 text-gray-600">
-          You can upload pictures. These pictures will be transformed into WEBP format. You are limited to sizes no more than <b>2Mb</b>.
+          You can upload pictures. These pictures will be transformed into WEBP format. You are limited to sizes no more than <b>5Mb</b>.
 
           </p>
         </div>
