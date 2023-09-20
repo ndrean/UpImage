@@ -30,20 +30,20 @@ config :up_img, UpImgWeb.Endpoint,
     tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
   ]
 
-# config :ex_aws,
-#   access_key_id: System.get_env("AWS_ACCESS_KEY_ID"),
-#   secret_access_key: System.get_env("AWS_SECRET_ACCESS_KEY"),
-#   region: System.get_env("AWS_REGION"),
-#   bucket: System.get_env("AWS_S3_BUCKET"),
-#   request_config_override: %{}
+config :ex_aws,
+  access_key_id: System.get_env("AWS_ACCESS_KEY_ID"),
+  secret_access_key: System.get_env("AWS_SECRET_ACCESS_KEY"),
+  region: System.get_env("AWS_REGION"),
+  bucket: System.get_env("AWS_S3_BUCKET"),
+  request_config_override: %{}
 
-# config :up_img, :github,
-#   github_client_id: System.get_env("GITHUB_CLIENT_ID"),
-#   github_client_secret: System.get_env("GITHUB_CLIENT_SECRET")
+config :up_img, :github,
+  github_client_id: System.get_env("GITHUB_CLIENT_ID"),
+  github_client_secret: System.get_env("GITHUB_CLIENT_SECRET")
 
-# config :up_img, :google,
-#   google_client_id: System.get_env("GOOGLE_CLIENT_ID"),
-#   google_client_secret: System.get_env("GOOGLE_CLIENT_SECRET")
+config :up_img, :google,
+  google_client_id: System.get_env("GOOGLE_CLIENT_ID"),
+  google_client_secret: System.get_env("GOOGLE_CLIENT_SECRET")
 
 config :up_img, :vault_key, System.fetch_env!("CLOAK_KEY")
 

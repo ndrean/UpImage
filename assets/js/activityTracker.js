@@ -1,4 +1,4 @@
-const ActivityTracker = {
+export default {
   mounted() {
     let pushActivity = (() => {
       let active = true;
@@ -25,5 +25,3 @@ const ActivityTracker = {
     window.addEventListener("resize", pushActivity);
   },
 };
-
-export default ActivityTracker;

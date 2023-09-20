@@ -8,7 +8,7 @@ defmodule UpImgWeb.WelcomeLive do
         <div class="text-center">
           <img src={~p"/images/camera.svg"} width={200} class="mx-auto h-24 w-auto" alt="workflow" />
           <h1 class="text-4xl mt-4 font-bold tracking-tight text-gray-900 sm:text-6xl">
-            Simple file upload
+            Simple file uploader to WEBP
           </h1>
 
           <%= if @current_user do %>
@@ -36,8 +36,8 @@ defmodule UpImgWeb.WelcomeLive do
             Furthermore, your email is encrypted.
           </p>
           <p class="mt-10 text-lg leading-8 text-gray-600">
-            You can upload up to 5 files at a time. The file can only be an <b>image</b>
-            and no more than <b>2Mb</b>.
+          You can upload pictures. These pictures will be transformed into WEBP format. You are limited to sizes no more than <b>2Mb</b>.
+
           </p>
         </div>
       </div>

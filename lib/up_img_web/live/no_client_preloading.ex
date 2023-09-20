@@ -42,8 +42,8 @@ defmodule UpImgWeb.NoClientPreloading do
                 </p>
               </div>
             </div>
-            <div class="flex items-center justify-end gap-x-6">
-              <.button phx-click="remove-selected" phx-value-uuid={file.uuid}>
+            <div class="flex flex-col items-center justify-center space-y-4">
+              <.button phx-click="remove-selected" phx-value-uuid={file.uuid} class="bg-sky-500/50 hover:bg-red-600">
                 <.icon name="hero-trash" />
               </.button>
               <button
@@ -53,7 +53,7 @@ defmodule UpImgWeb.NoClientPreloading do
                     value: %{uuid: file.uuid}
                   )
                 }
-                class="submit_button rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                class="submit_button rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-lime-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >
                 <.icon name="hero-cloud-arrow-up" />
               </button>
@@ -65,7 +65,7 @@ defmodule UpImgWeb.NoClientPreloading do
     """
   end
 
-  def error_to_string(:too_large), do: "Too large."
+  def error_to_string(:too_large), do: "File is too large."
   def error_to_string(:not_accepted), do: "You have selected an unacceptable file type."
   def error_to_string(:too_many_files), do: "You uploaded too many files"
   # coveralls-ignore-start

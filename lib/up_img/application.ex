@@ -11,7 +11,9 @@ defmodule UpImg.Application do
       {Phoenix.PubSub, name: UpImg.PubSub},
       {Finch, name: UpImg.Finch},
       UpImgWeb.Endpoint,
-      UpImg.MyVault
+      UpImg.MyVault,
+      {Task.Supervisor, name: UpImg.TaskSup}
+      # {Gallery.FileCleaner, [:user_id, 1]}
     ]
 
     opts = [strategy: :one_for_one, name: UpImg.Supervisor]

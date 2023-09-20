@@ -1,6 +1,8 @@
 defmodule UpImgWeb.SignInLive do
   use UpImgWeb, :live_view
+  require Logger
 
+  @impl true
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -62,7 +64,14 @@ defmodule UpImgWeb.SignInLive do
     """
   end
 
+  @impl true
   def mount(_params, _session, socket) do
     {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("tabclosed", _unsigned_params, socket) do
+    Logger.warning("closing------")
+    {:noreply, socket}
   end
 end

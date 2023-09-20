@@ -10,6 +10,7 @@ defmodule UpImgWeb.NoClientLive do
   require Logger
 
   @thumb_size 200
+  # @cleaning_timer 60 * 1_000
 
   @upload_dir Application.app_dir(:up_img, ["priv", "static", "image_uploads"])
 
@@ -23,12 +24,22 @@ defmodule UpImgWeb.NoClientLive do
   def mount(_, _, socket) do
     File.mkdir_p!(@upload_dir)
 
+    cleaner_pid = nil
+    # case Gallery.Clean.start(user_id: socket.assigns.current_user.id, timer: @cleaning_timer) do
+    #   {:ok, pid} ->
+    #     pid
+
+    #   {:error, {:already_started, pid}} ->
+    #     pid
+    # end
+
     init_assigns = %{
       limit: 4,
       page: 0,
       offset: 3,
       uploaded_files_locally: [],
-      errors: []
+      errors: [],
+      cleaner_pid: cleaner_pid
     }
 
     socket =
@@ -36,7 +47,7 @@ defmodule UpImgWeb.NoClientLive do
       |> assign(init_assigns)
       |> allow_upload(:image_list,
         accept: ~w(.jpg .jpeg .png .webp),
-        max_entries: 5,
+        max_entries: 20,
         chunk_size: 64_000,
         auto_upload: true,
         max_file_size: 2_000_000,
@@ -102,7 +113,10 @@ defmodule UpImgWeb.NoClientLive do
       entry ->
         pid = self()
 
-        Task.start(fn -> transform_image(pid, entry, socket.assigns.screen) end)
+        Task.Supervisor.start_child(UpImg.TaskSup, fn ->
+          transform_image(pid, entry, socket.assigns.screen)
+        end)
+
         {:noreply, update(socket, :uploaded_files_locally, &(&1 ++ [uploaded_file]))}
     end
   end
@@ -305,24 +319,25 @@ defmodule UpImgWeb.NoClientLive do
      |> paginate(socket.assigns.page + 1)}
   end
 
+  def handle_event("tabclosed", _unsigned_params, socket) do
+    pid = self()
+
+    Task.start(fn ->
+      clean_local_uploaded_files(pid, socket.assigns.uploaded_files_locally)
+    end)
+
+    {:noreply, socket}
+  end
+
   # remove temp files from server if user inactive.
   def handle_event("inactivity", _p, socket) do
     Logger.warning("inactive---------")
 
     pid = self()
 
-    # Task.start(fn ->
-    socket.assigns.uploaded_files_locally
-    |> Enum.each(fn %{
-                      thumb_path: thumb_path,
-                      resized_path: resized_path,
-                      client_name: client_name
-                    } ->
-      [thumb_path, resized_path, build_path(client_name)]
-      |> Enum.each(&remove_safely(pid, &1))
+    Task.start(fn ->
+      clean_local_uploaded_files(pid, socket.assigns.uploaded_files_locally)
     end)
-
-    # end)
 
     {:noreply, push_redirect(socket, to: ~p"/")}
   end
@@ -422,6 +437,17 @@ defmodule UpImgWeb.NoClientLive do
     {:noreply,
      socket
      |> update(:uploaded_files_locally, &Enum.filter(&1, fn img -> img.uuid != uuid end))}
+  end
+
+  def clean_local_uploaded_files(pid, files) do
+    Enum.each(files, fn %{
+                          thumb_path: thumb_path,
+                          resized_path: resized_path,
+                          client_name: client_name
+                        } ->
+      [thumb_path, resized_path, build_path(client_name)]
+      |> Enum.each(&remove_safely(pid, &1))
+    end)
   end
 
   # In Task.async_stream, use "on_timeout: :kill_task" to intercept the timeout error

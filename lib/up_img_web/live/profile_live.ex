@@ -8,7 +8,7 @@ defmodule UpImgWeb.ProfileLive do
       <div class="mx-auto max-w-2xl py-32 sm:py-48 lg:py-56">
         <div class="text-center">
           <h1 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-            Simple file upload
+            Simple file uploader to WEBP
           </h1>
 
           <div class="mt-10 flex items-center justify-center gap-x-6">
@@ -25,8 +25,7 @@ defmodule UpImgWeb.ProfileLive do
             Furthermore, your email is encrypted.
           </p>
           <p class="mt-10 text-lg leading-8 text-gray-600">
-            You can upload up to 5 files. The file can only be an <b>image</b>
-            and no more than <b>2Mb</b>.
+            You can upload pictures. These pictures will be transformed into WEBP format. You are limited to sizes no more than <b>2Mb</b>.
           </p>
         </div>
       </div>

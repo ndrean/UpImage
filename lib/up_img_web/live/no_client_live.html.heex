@@ -3,7 +3,11 @@
   <div class="flex flex-col justify-around md:flex-row" phx-hook="ActivityTracker" id="track">
     <UpImgWeb.UploadForm.render uploads={@uploads} />
 
-    <div class="flex flex-col flex-1 mt-10 md:mt-0 md:ml-4">
+    <div
+      class="flex flex-col flex-1 mt-10 md:mt-0 md:ml-4"
+      phx-hook="TabClosed"
+      id="upload-observer"
+    >
       <UpImgWeb.NoClientPreloading.display
         uploaded_files_locally={@uploaded_files_locally}
         uploads={@uploads}
@@ -61,6 +65,7 @@
                 phx-value-resized={file.resized_url}
                 phx-value-thumb={file.thumb_url}
                 phx-value-uuid={file.uuid}
+                class="bg-slate-500 hover:bg-red-600"
               >
                 <.icon name="hero-trash" />
               </.button>
