@@ -257,10 +257,10 @@ Example of credentials:
 ```bash
 Postgres cluster up-image-db created
 Username: postgres
-Password: XXYY5I8ZjqkuDnTwZ6W
+Password: <FLY_PWD>
 Hostname: up-image-db.internal
 Flycast: fdaa:0:57e6:0:1::4
 Proxy port: 5432
 Postgres port: 5433
-Database_URL: postgres://postgres:XXYY5I8ZjqkuDnTwZ6W@up-image-db.flycast:5432
+Database_URL: <FLY_STRING>
 ```
