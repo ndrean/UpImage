@@ -2,11 +2,13 @@
   <div class="flex items-center justify-between border-b border-zinc-100 py-3 text-sm">
     <div class="flex items-center gap-4">
       <%= if @current_user  do %>
-        <.link navigate={"/#{@current_user.name}"} alt="user page">
+        <.link navigate={"/#{@current_user.name}"} alt="user page" aria-label="current user page">
           <.icon name="hero-home" />
         </.link>
       <% else %>
-        <.link navigate={~p"/"} alt="home page"><.icon name="hero-home" /></.link>
+        <.link navigate={~p"/"} alt="home page" aria-label="home page">
+          <.icon name="hero-home" />
+        </.link>
       <% end %>
 
       <p class="bg-brand/5 text-brand rounded-full px-2 font-medium leading-6">

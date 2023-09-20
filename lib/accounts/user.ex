@@ -28,7 +28,8 @@ defmodule UpImg.Accounts.User do
     changeset =
       %User{}
       |> cast(params, [:email, :hashed_email, :name, :username, :provider])
-      |> validate_required([:email, :name, :username])
+      |> validate_required([:email, :name, :username, :provider])
+      |> unique_constraint([:hashed_email, :provider], name: :hashed_email_provider)
 
     put_change(changeset, :hashed_email, get_field(changeset, :email))
   end
@@ -37,17 +38,19 @@ defmodule UpImg.Accounts.User do
   A user changeset for github registration.
   """
   def github_registration_changeset(info) do
-    params = %{
-      "email" => info["email"],
-      "provider" => "github",
-      "name" => info["name"],
-      "username" => info["login"]
-    }
+    params =
+      %{
+        "email" => info["email"],
+        "provider" => "github",
+        "name" => info["name"],
+        "username" => info["login"]
+      }
 
     changeset =
       %User{}
       |> cast(params, [:email, :hashed_email, :name, :username, :provider])
-      |> validate_required([:email, :name, :username])
+      |> validate_required([:email, :name, :username, :provider])
+      |> unique_constraint([:hashed_email, :provider], name: :hashed_email_provider)
 
     put_change(changeset, :hashed_email, get_field(changeset, :email))
   end

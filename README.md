@@ -142,14 +142,12 @@ dot -Tpng ecto_erd.dot > erd.png
 ### Credentials for Github, Google and AWS S3
 
 - Create credentials for Github: <https://github.com/settings/developers> and pass callback URL
-  
+
 <img width="666" alt="Screenshot 2023-09-19 at 21 09 22" src="https://github.com/ndrean/UpImage/assets/6793008/35f41cc6-e8ba-4536-8384-d236fbe0d133">
 
-
 - Create credentials for Google: <https://console.cloud.google.com/apis/credentials/> and pass Authorized Javascript origins and Authorized redirects URLs.
-  
-  <img width="484" alt="Screenshot 2023-09-19 at 21 07 17" src="https://github.com/ndrean/UpImage/assets/6793008/85da0045-6ca2-4726-a6d1-66fa4e8bb56f">
 
+  <img width="484" alt="Screenshot 2023-09-19 at 21 07 17" src="https://github.com/ndrean/UpImage/assets/6793008/85da0045-6ca2-4726-a6d1-66fa4e8bb56f">
 
 - set up callback URI for both, once you get the app URL (http://localhost:4000 firstly, then https://up-image.fly.dev once deployed)
 
@@ -252,15 +250,15 @@ You can't temporarilly upload several times the same file. You can however uploa
 
 ## Fly Postgres
 
-Example:
+Example of credentials:
 
 ```bash
 Postgres cluster up-image-db created
 Username: postgres
-Password: 5I8ZjqkuDnTwZ6W
+Password: XXYY5I8ZjqkuDnTwZ6W
 Hostname: up-image-db.internal
 Flycast: fdaa:0:57e6:0:1::4
 Proxy port: 5432
 Postgres port: 5433
-Database_URL: postgres://postgres:5I8ZjqkuDnTwZ6W@up-image-db.flycast:5432
+Database_URL: postgres://postgres:XXYY5I8ZjqkuDnTwZ6W@up-image-db.flycast:5432
 ```
