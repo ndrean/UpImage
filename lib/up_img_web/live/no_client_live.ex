@@ -128,6 +128,7 @@ defmodule UpImgWeb.NoClientLive do
   """
   def transform_image(pid, entry, screen) do
     %{client_name: client_name, image_path: image_path} = entry
+    Logger.info(screen)
 
     # image_path
     # "/Users/.../image_uploads/Screenshot2023-08-04at210431.png"
