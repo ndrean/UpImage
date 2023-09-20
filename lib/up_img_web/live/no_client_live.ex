@@ -24,6 +24,9 @@ defmodule UpImgWeb.NoClientLive do
   def mount(_, _, socket) do
     File.mkdir_p!(@upload_dir)
 
+    {:ok, l} = Application.app_dir(:up_img, ["priv", "static", "image_uploads"]) |> File.ls() |> length()
+    Logger.info("uploads folder: #{l}")
+
     cleaner_pid = nil
     # case Gallery.Clean.start(user_id: socket.assigns.current_user.id, timer: @cleaning_timer) do
     #   {:ok, pid} ->
@@ -128,7 +131,7 @@ defmodule UpImgWeb.NoClientLive do
   """
   def transform_image(pid, entry, screen) do
     %{client_name: client_name, image_path: image_path} = entry
-    Logger.info(screen)
+    # Logger.info(screen)
 
     # image_path
     # "/Users/.../image_uploads/Screenshot2023-08-04at210431.png"

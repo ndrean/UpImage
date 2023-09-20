@@ -29,7 +29,7 @@ defmodule UpImgWeb.NoClientPreloading do
                 <p>
                   <.link
                     class="text-sm leading-6 break-all underline text-indigo-600"
-                    href={file.image_url}
+                    href={file.resized_url}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
