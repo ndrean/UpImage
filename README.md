@@ -69,7 +69,7 @@ schema "users" do
 end
 ```
 
-:exclamation: Note that the migration (to Postgres) should use the type `:binary` and not `:string`.
+:exclamation: Note that the migration (to Postgres) should use the type `:binary` and _not_ the type `:string`.
 
 ```elixir
 # migration
@@ -83,9 +83,10 @@ create table(:users) do
 
   timestamps()
 end
+create unique_index(:users, [:hashed_email, :provider], name: :hashed_email_provider)
 ```
 
-A changeset for a provider is shown below. Don't pass in a hash of the email. This is enforced in te `put_change`.
+A changeset for a provider is shown below. Don't pass in a hash of the email. This is _enforced_ in the `put_change`.
 
 ```elixir
 def google_registration_changeset(profil) do
@@ -100,6 +101,7 @@ def google_registration_changeset(profil) do
     %User{}
     |> cast(params, [:email, :hashed_email, :name, :username, :provider])
     |> validate_required([:email, :name, :username])
+    |> unique_constraint([:hashed_email, :provider], name: :hashed_email_provider)
 
   put_change(changeset, :hashed_email, get_field(changeset, :email))
 end

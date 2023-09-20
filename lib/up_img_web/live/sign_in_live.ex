@@ -13,7 +13,7 @@ defmodule UpImgWeb.SignInLive do
         <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Create or Sign in to your account
         </h2>
-        <p class="text-xs pt-4">You are asked to register an account. You can use **only one email** per provider.
+        <p class="text-xs pt-4">You are asked to register an account. You can use <b>only one email</b> per provider.
           We don't use your data and only keep the minimum needed to retrieve your files from the service (your name and email).
           Furthermore, your email is encrypted.</p>
       </div>
