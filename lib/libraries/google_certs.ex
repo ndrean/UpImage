@@ -5,7 +5,6 @@ defmodule ElixirGoogleCerts do
   It depends on the JOSE library.
   """
 
-  require Logger
 
   @g_certs1_url "https://www.googleapis.com/oauth2/v1/certs"
   @iss "https://accounts.google.com"
@@ -38,7 +37,6 @@ defmodule ElixirGoogleCerts do
         true <- not_expired(exp),
         true <- check_iss(claims["iss"]),
         true <- check_user(claims["aud"], claims["azp"]) do
-          Logger.info(inspect(jwt))
       {:ok, %{email: email, name: name, id: sub, given_name: given_name}}
     else
       {:error, msg} -> {:error, msg}
