@@ -59,7 +59,8 @@ defmodule UpImgWeb.NoClientLive do
       |> stream_configure(:uploaded_files_to_S3, dom_id: &"uploaded-s3-#{&1.uuid}")
       |> paginate(0)
       |> push_event("screen", %{})
-      |> push_event("js-exec", %{to: "#spinner", attr: "data-ok-done"})
+
+    # |> push_event("js-exec", %{to: "#spinner", attr: "data-ok-done"})
 
     {:ok, socket}
 

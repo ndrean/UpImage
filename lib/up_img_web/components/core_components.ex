@@ -28,7 +28,7 @@ defmodule UpImgWeb.CoreComponents do
   def loader(assigns) do
     ~H"""
     <div
-      class="bg-slate-100"
+      class="bg-slate-100 hidden"
       id={@id}
       data-plz-wait={show_loader(@id)}
       data-ok-done={hide_loader(@id)}
