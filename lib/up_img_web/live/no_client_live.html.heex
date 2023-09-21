@@ -58,17 +58,17 @@
               </div>
             </div>
             <div class="flex items-center justify-end gap-x-6">
-              <.button
+              <button
                 type="button"
                 phx-click="delete-uploaded"
                 phx-value-key={dom_id}
                 phx-value-resized={file.resized_url}
                 phx-value-thumb={file.thumb_url}
                 phx-value-uuid={file.uuid}
-                class="bg-slate-500 hover:bg-red-600"
+                class="submit_button rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm bg-red-500 hover:bg-red-700"
               >
                 <.icon name="hero-trash" />
-              </.button>
+              </button>
             </div>
           </li>
         </ul>
