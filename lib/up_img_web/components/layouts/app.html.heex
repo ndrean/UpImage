@@ -2,21 +2,38 @@
   <div class="flex items-center justify-between border-b border-zinc-100 py-3 text-sm">
     <div class="flex items-center gap-4">
       <%= if @current_user  do %>
-        <.link navigate={"/#{@current_user.name}"} alt="user page" aria-label="current user page">
+        <.link
+          navigate={"/#{@current_user.name}"}
+          alt="user page"
+          aria-label="current user page"
+          class="bg-[midnightblue] text-[bisque] p-2 rounded hover:scale-125"
+        >
           <.icon name="hero-home" />
         </.link>
       <% else %>
-        <.link navigate={~p"/"} alt="home page" aria-label="home page">
+        <.link
+          navigate={~p"/"}
+          alt="home page"
+          aria-label="home page"
+          class="bg-[midnightblue] text-[bisque] p-2 rounded hover:scale-125"
+        >
           <.icon name="hero-home" />
         </.link>
       <% end %>
 
-      <p class="bg-brand/5 text-brand rounded-full px-2 font-medium leading-6">
-        v<%= Application.spec(:phoenix, :vsn) %>, Vix: <%= Vix.Vips.version() %>
-      </p>
+      <.link
+        :if={@current_user}
+        href={~p"/signout"}
+        method="delete"
+        alt="log out"
+        aria-label="log out"
+        class="bg-[midnightblue] text-[bisque] p-2 text-base  rounded hover:scale-125"
+      >
+        Log out
+      </.link>
 
-      <p :if={@current_user}>
-        <.link href={~p"/signout"} method="delete" alt="log out">Log out </.link>
+      <p class="bg-brand/5 text-brand rounded-full px-2 font-bold leading-6">
+        v<%= Application.spec(:phoenix, :vsn) %>, Vix: <%= Vix.Vips.version() %>
       </p>
     </div>
   </div>
