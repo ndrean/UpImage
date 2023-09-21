@@ -75,7 +75,7 @@ defmodule UpImgWeb.NoClientLive do
   # With `auto_upload: true`, we can consume files here
   # loop while receiving chunks
   def handle_progress(:image_list, entry, socket) when entry.done? == false do
-    {:noreply, socket}
+    {:noreply, push_event(socket, "js-exec", %{to: "#spinner", attr: "data-plz-wait"})}
   end
 
   def handle_progress(:image_list, entry, socket) when entry.done? do
