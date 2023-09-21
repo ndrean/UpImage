@@ -37,26 +37,26 @@ defmodule UpImg do
       iex> MyApp.config([:files, :uploads_dir])
       iex> MyApp.config([:files, :host, :port])
   """
-  def config([main_key | rest] = keyspace) when is_list(keyspace) do
-    main = Application.get_env(Application.get_application(__MODULE__), main_key)
+  # def config([main_key | rest] = keyspace) when is_list(keyspace) do
+  #   main = Application.get_env(Application.get_application(__MODULE__), main_key)
 
-    Enum.reduce(rest, main, fn next_key, current ->
-      case Keyword.fetch(current, next_key) do
-        {:ok, val} -> val
-        :error -> raise ArgumentError, "no config found under #{inspect(keyspace)}"
-      end
-    end)
-  end
+  #   Enum.reduce(rest, main, fn next_key, current ->
+  #     case Keyword.fetch(current, next_key) do
+  #       {:ok, val} -> val
+  #       :error -> raise ArgumentError, "no config found under #{inspect(keyspace)}"
+  #     end
+  #   end)
+  # end
 
-  # for a non nested simple case, you can do:
-  def config([main, second]) do
-    case Application.get_application(__MODULE__)
-         |> Application.get_env(main)
-         |> Keyword.get(second) do
-      nil -> raise "No config found for: #{main}, #{second}"
-      res -> res
-    end
-  end
+  # # for a non nested simple case, you can do:
+  # def config([main, second]) do
+  #   case Application.get_application(__MODULE__)
+  #        |> Application.get_env(main)
+  #        |> Keyword.get(second) do
+  #     nil -> raise "No config found for: #{main}, #{second}"
+  #     res -> res
+  #   end
+  # end
 
   def img_path(name) do
     UpImgWeb.Endpoint.url() <>
@@ -75,9 +75,9 @@ defmodule UpImg do
   def google_id, do: fetch_key(:google, :google_client_id)
   def google_secret, do: fetch_key(:google, :google_client_secret)
 
-  def vault_key, do: Application.get_env(:up_img, :vault_key)
+  def vault_key, do: Application.fetch_env!(:up_img, :vault_key)
 
-  def bucket, do: Application.get_env(:ex_aws, :bucket)
+  def bucket, do: Application.fetch_env!(:ex_aws, :bucket)
 
   @doc """
   Defines the callback endpoints. It must correspond to the settings in the Google Dev console and Github credentials.

@@ -41,6 +41,7 @@ defmodule UpImgWeb.NoClientLive do
       page: 0,
       offset: 3,
       uploaded_files_locally: [],
+      uploaded_files_to_S3: [],
       errors: [],
       cleaner_pid: cleaner_pid
     }
@@ -67,16 +68,12 @@ defmodule UpImgWeb.NoClientLive do
 
   def paginate(socket, page) do
     %{limit: limit, offset: offset, current_user: current_user} = socket.assigns
-    case Gallery.get_limited_urls_by_user(current_user, limit, page * offset) do
-      [] ->
-       socket
-      files ->
-        stream(socket, :uploaded_files_to_S3, files, at: -1)
-    end
+    files = Gallery.get_limited_urls_by_user(current_user, limit, page * offset)
+    stream(socket, :uploaded_files_to_S3, files, at: -1)
   end
 
   # With `auto_upload: true`, we can consume files here
-  # loop while receiving chunks
+  # loop while receiving chunks and start the spinner
   def handle_progress(:image_list, entry, socket) when entry.done? == false do
     {:noreply, push_event(socket, "js-exec", %{to: "#spinner", attr: "data-plz-wait"})}
   end
@@ -125,10 +122,7 @@ defmodule UpImgWeb.NoClientLive do
           transform_image(pid, entry, socket.assigns.screen)
         end)
 
-        {:noreply,
-         socket
-         #  |> push_event("js-exec", %{to: "#spinner", attr: "data-plz-wait"})
-         |> update(:uploaded_files_locally, &(&1 ++ [uploaded_file]))}
+        {:noreply, update(socket, :uploaded_files_locally, &(&1 ++ [uploaded_file]))}
     end
   end
 
@@ -139,7 +133,6 @@ defmodule UpImgWeb.NoClientLive do
   """
   def transform_image(pid, entry, screen) do
     %{client_name: client_name, image_path: image_path} = entry
-    # Logger.info(screen)
 
     # image_path
     # "/Users/.../image_uploads/Screenshot2023-08-04at210431.png"
@@ -175,7 +168,7 @@ defmodule UpImgWeb.NoClientLive do
          {:ok, img_thumb} <- Operation.thumbnail(image_path, @thumb_size),
          :ok <- Operation.webpsave(img_thumb, thumb_path) do
       send(pid, {:transform_success, entry})
-      # let it fail...
+      # else let it fail...
     end
   end
 
@@ -346,8 +339,6 @@ defmodule UpImgWeb.NoClientLive do
 
   # remove temp files from server if user inactive.
   def handle_event("inactivity", _p, socket) do
-    Logger.warning("inactive---------")
-
     pid = self()
 
     Task.start(fn ->
