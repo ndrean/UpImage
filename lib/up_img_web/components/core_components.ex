@@ -18,7 +18,7 @@ defmodule UpImgWeb.CoreComponents do
 
   alias Phoenix.LiveView.JS
   import UpImgWeb.Gettext
-  import Phoenix.VerifiedRoutes
+  # import Phoenix.VerifiedRoutes
 
   @doc """
   Renders a spinner
@@ -28,7 +28,7 @@ defmodule UpImgWeb.CoreComponents do
   def loader(assigns) do
     ~H"""
     <div
-      class=" h-full bg-slate-100"
+      class="bg-slate-100"
       id={@id}
       data-plz-wait={show_loader(@id)}
       data-ok-done={hide_loader(@id)}
@@ -54,8 +54,8 @@ defmodule UpImgWeb.CoreComponents do
 
   def hide_loader(js \\ %JS{}, id) do
     JS.hide(js,
-      to: "##{id}",
-      transition: {"ease-in duration-300", "opacity-100", "opacity-0"}
+      to: "##{id}"
+      # transition: {"ease-in duration-50", "opacity-100", "opacity-0"}
     )
   end
 

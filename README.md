@@ -256,7 +256,9 @@ Files are named by their SHA256 hash (with `:crypto_hash`) so file names are (al
 
 You can't temporarilly upload several times the same file. You can however upload it several times but you will get a warning that you attempt to save the same file. It has to be unique (to save on space).
 
-## Fly Postgres
+## Fly.io
+
+### Postgres database
 
 Example of credentials:
 
@@ -269,4 +271,16 @@ Flycast: fdaa:0:57e6:0:1::4
 Proxy port: 5432
 Postgres port: 5433
 Database_URL: <FLY_STRING>
+```
+
+### IEx into the app
+
+<https://fly.io/docs/elixir/the-basics/iex-into-running-app/>
+
+```bash
+> fly ssh issue --agent
+> fly ssh console --pty -C "/app/bin/up_image remote"
+
+iex(up_img@683d47dcd65948)4>
+Application.app_dir(:up_img, ["priv", "static", "image_uploads"]) |> File.ls!()
 ```
