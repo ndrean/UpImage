@@ -12,8 +12,7 @@ defmodule UpImg.Application do
       {Finch, name: UpImg.Finch},
       UpImgWeb.Endpoint,
       UpImg.MyVault,
-      {Task.Supervisor, name: UpImg.TaskSup},
-      {Task, fn -> shutdown_when_inactive(:timer.minutes(10)) end}
+      {Task.Supervisor, name: UpImg.TaskSup}
       # {Gallery.FileCleaner, [:user_id, 1]}
     ]
 
@@ -26,15 +25,5 @@ defmodule UpImg.Application do
   def config_change(changed, _new, removed) do
     UpImgWeb.Endpoint.config_change(changed, removed)
     :ok
-  end
-
-  defp shutdown_when_inactive(every_ms) do
-    Process.sleep(every_ms)
-
-    if :ranch.procs(AppWeb.Endpoint.HTTP, :connections) == [] do
-      System.stop(0)
-    else
-      shutdown_when_inactive(every_ms)
-    end
   end
 end
