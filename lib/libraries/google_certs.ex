@@ -5,6 +5,8 @@ defmodule ElixirGoogleCerts do
   It depends on the JOSE library.
   """
 
+  require Logger
+
   @g_certs1_url "https://www.googleapis.com/oauth2/v1/certs"
   @iss "https://accounts.google.com"
 
