@@ -24,19 +24,19 @@ defmodule ElixirGoogleCerts do
   """
 
   def verified_identity(%{jwt: jwt}) do
-    Logger.info(inspect(jwt))
     with {:ok,
-          %{
-            "exp" => exp,
-            "sub" => sub,
-            "name" => name,
-            "email" => email,
-            "given_name" => given_name
-          } = claims} <-
-           check_identity_v1(jwt),
-         true <- not_expired(exp),
-         true <- check_iss(claims["iss"]),
-         true <- check_user(claims["aud"], claims["azp"]) do
+    %{
+      "exp" => exp,
+      "sub" => sub,
+      "name" => name,
+      "email" => email,
+      "given_name" => given_name
+      } = claims} <-
+        check_identity_v1(jwt),
+        true <- not_expired(exp),
+        true <- check_iss(claims["iss"]),
+        true <- check_user(claims["aud"], claims["azp"]) do
+          Logger.info(inspect(jwt))
       {:ok, %{email: email, name: name, id: sub, given_name: given_name}}
     else
       {:error, msg} -> {:error, msg}
