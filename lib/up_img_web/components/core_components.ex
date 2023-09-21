@@ -38,7 +38,7 @@ defmodule UpImgWeb.CoreComponents do
           <div class="dots-container">
             <div class="bigger-dot">
               <div class="smaller-dot">
-                <img src={"/images/clock.svg"}/>
+                <img src="/images/clock.svg" />
               </div>
             </div>
           </div>

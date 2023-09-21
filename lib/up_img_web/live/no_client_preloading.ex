@@ -13,10 +13,11 @@ defmodule UpImgWeb.NoClientPreloading do
         <h2 class="text-base font-semibold leading-7 text-gray-900">Uploaded files locally</h2>
         <p class="mt-1 text-sm leading-6 text-gray-600">
           The images below are temporarilly saved on the server. You can <b>upload</b>
-          them to S3 or <b>prune</b> them.
+          them to S3 or <b>prune</b>
+          them.
         </p>
 
-        <.loader id="spinner"/>
+        <.loader id="spinner" />
         <p class={"
             #{if length(@uploaded_files_locally) == 0 do "block" else "hidden" end}
             text-xs leading-7 text-gray-400 text-center my-10"}>
@@ -47,7 +48,11 @@ defmodule UpImgWeb.NoClientPreloading do
               </div>
             </div>
             <div class="flex flex-col items-center justify-center space-y-4">
-              <button phx-click="remove-selected" phx-value-uuid={file.uuid} class="submit_button rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm bg-red-500 hover:bg-red-700">
+              <button
+                phx-click="remove-selected"
+                phx-value-uuid={file.uuid}
+                class="submit_button rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm bg-red-500 hover:bg-red-700"
+              >
                 <.icon name="hero-trash" />
               </button>
               <button

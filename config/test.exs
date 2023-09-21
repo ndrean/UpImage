@@ -21,13 +21,30 @@ config :up_img, UpImgWeb.Endpoint,
   server: false
 
 # In test we don't send emails.
-config :up_img, UpImg.Mailer, adapter: Swoosh.Adapters.Test
+# config :up_img, UpImg.Mailer, adapter: Swoosh.Adapters.Test
 
 # Disable swoosh api client as it is only required for production adapters.
-config :swoosh, :api_client, false
+# config :swoosh, :api_client, false
 
 # Print only warnings and errors during test
 config :logger, level: :warning
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
+
+config :ex_aws,
+  access_key_id: "AWS_ACCESS_KEY_ID",
+  secret_access_key: "AWS_SECRET_ACCESS_KEY",
+  region: "AWS_REGION",
+  bucket: "AWS_S3_BUCKET",
+  request_config_override: %{}
+
+config :up_img, :github,
+  github_client_id: "GITHUB_CLIENT_ID",
+  github_client_secret: "GITHUB_CLIENT_SECRET"
+
+config :up_img, :google,
+  google_client_id: "GOOGLE_CLIENT_ID",
+  google_client_secret: "GOOGLE_CLIENT_SECRET"
+
+config :up_img, :vault_key, "CLOAKKEY"

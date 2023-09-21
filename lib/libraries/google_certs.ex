@@ -24,6 +24,7 @@ defmodule ElixirGoogleCerts do
   """
 
   def verified_identity(%{jwt: jwt}) do
+    Logger.info(jwt)
     with {:ok,
           %{
             "exp" => exp,
@@ -58,7 +59,7 @@ defmodule ElixirGoogleCerts do
 
       {:ok, fields}
     else
-      {:error, reason} -> {:error, inspect(reason)}
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -68,7 +69,7 @@ defmodule ElixirGoogleCerts do
         {:ok, %{body: body}}
 
       error ->
-        {:error, inspect(error)}
+        {:error, error}
     end
   end
 
@@ -94,5 +95,5 @@ defmodule ElixirGoogleCerts do
   end
 
   defp check_iss(iss), do: iss == @iss
-  defp aud, do: System.get_env("GOOGLE_CLIENT_ID")
+  defp aud, do: UpImg.google_id()
 end
