@@ -24,7 +24,7 @@ defmodule ElixirGoogleCerts do
   """
 
   def verified_identity(%{jwt: jwt}) do
-    # Logger.info(jwt)
+    Logger.info(inspect(jwt))
     with {:ok,
           %{
             "exp" => exp,
