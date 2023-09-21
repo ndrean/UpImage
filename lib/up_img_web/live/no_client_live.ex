@@ -60,8 +60,6 @@ defmodule UpImgWeb.NoClientLive do
       |> paginate(0)
       |> push_event("screen", %{})
 
-    # |> push_event("js-exec", %{to: "#spinner", attr: "data-ok-done"})
-
     {:ok, socket}
 
     # Do not define presign_upload. This will create a local photo in /vars
@@ -69,8 +67,12 @@ defmodule UpImgWeb.NoClientLive do
 
   def paginate(socket, page) do
     %{limit: limit, offset: offset, current_user: current_user} = socket.assigns
-    files = Gallery.get_limited_urls_by_user(current_user, limit, page * offset)
-    stream(socket, :uploaded_files_to_S3, files, at: -1)
+    case Gallery.get_limited_urls_by_user(current_user, limit, page * offset) do
+      [] ->
+       socket
+      files ->
+        stream(socket, :uploaded_files_to_S3, files, at: -1)
+    end
   end
 
   # With `auto_upload: true`, we can consume files here
