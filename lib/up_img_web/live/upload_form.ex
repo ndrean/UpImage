@@ -11,13 +11,10 @@ defmodule UpImgWeb.UploadForm do
       <div class="space-y-12">
         <div class="border-gray-900/10 pb-12">
           <h2 class="text-base font-semibold leading-7 text-gray-900">
-            Image Upload <b>(files are uploaded from the client to the server)</b>
+            Image Upload
           </h2>
-          <p class="mt-1 text-sm leading-6 text-gray-400">
-            The files uploaded in this page are not routed from the client. Meaning all file uploads are made in the LiveView code.
-          </p>
           <p class="mt-1 text-sm leading-6 text-gray-600">
-            Drag your images and they'll be uploaded to the cloud! ☁️
+            Drag your images and preview them before uploading to the cloud! ☁️
           </p>
           <p class="mt-1 text-sm leading-6 text-gray-600">
             You may add up to <%= @uploads.image_list.max_entries %> exhibits at a time and get_limited to a
@@ -60,7 +57,7 @@ defmodule UpImgWeb.UploadForm do
                     </label>
                     <p class="pl-1">or drag and drop</p>
                   </div>
-                  <p class="text-xs leading-5 text-gray-600">PNG, JPG, GIF up to 10MB</p>
+                  <p class="text-xs leading-5 text-gray-600">PNG, JPG, WEBP up to 5MB</p>
                 </div>
                 <% are_files_uploadable?(@uploads.image_list) %>
               </div>

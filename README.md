@@ -279,7 +279,7 @@ Database_URL: <FLY_STRING>
 
 ```bash
 > fly ssh issue --agent
-> fly ssh console --pty -C "/app/bin/up_image remote"
+> fly ssh console --pty -C "/app/bin/up_img remote"
 
 iex(up_img@683d47dcd65948)4>
 Application.app_dir(:up_img, ["priv", "static", "image_uploads"]) |> File.ls!()
