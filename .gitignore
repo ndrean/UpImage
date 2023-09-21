@@ -35,5 +35,5 @@ up_img-*.tar
 npm-debug.log
 /assets/node_modules/
 
-.env-docker
+/docker/.env-docker
 .env

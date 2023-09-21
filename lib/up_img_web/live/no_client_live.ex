@@ -59,6 +59,7 @@ defmodule UpImgWeb.NoClientLive do
       |> stream_configure(:uploaded_files_to_S3, dom_id: &"uploaded-s3-#{&1.uuid}")
       |> paginate(0)
       |> push_event("screen", %{})
+      |> push_event("js-exec", %{to: "#spinner", attr: "data-ok-done"})
 
     {:ok, socket}
 
@@ -121,7 +122,10 @@ defmodule UpImgWeb.NoClientLive do
           transform_image(pid, entry, socket.assigns.screen)
         end)
 
-        {:noreply, update(socket, :uploaded_files_locally, &(&1 ++ [uploaded_file]))}
+        {:noreply,
+         socket
+         |> push_event("js-exec", %{to: "#spinner", attr: "data-plz-wait"})
+         |> update(:uploaded_files_locally, &(&1 ++ [uploaded_file]))}
     end
   end
 
@@ -216,6 +220,7 @@ defmodule UpImgWeb.NoClientLive do
 
     {:noreply,
      socket
+     |> push_event("js-exec", %{to: "#spinner", attr: "data-ok-done"})
      |> update(
        :uploaded_files_locally,
        &find_and_replace(&1, entry.uuid, img)

@@ -195,6 +195,12 @@ You can serve SVGs located in "/priv/static/images" (as `<img src={~p"/my-svg.sv
  ~w(assets fonts images favicon.ico robots.txt image_uploads)
 ```
 
+#### Example: spinner
+
+Just followed this [excellent post](https://fly.io/phoenix-files/server-triggered-js/) from Fly.io.
+
+A [repo](https://github.com/n3r4zzurr0/svg-spinners/tree/main) with simple SVG spinners; it is passed as `<img scr=path>` and the SVG is located in the "/priv/static/images" directory.
+
 ### Handle failed `Task.async_stream`
 
 To handle failed task in `Task.async_stream`, use `on_timeout: :kill_task` so that a failed task will send `{:exit, :timeout}`.

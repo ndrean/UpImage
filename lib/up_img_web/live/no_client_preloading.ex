@@ -1,4 +1,7 @@
 defmodule UpImgWeb.NoClientPreloading do
+  @moduledoc """
+  Previewing of the uploaded pictures in a list. You can prune or upload to S3.
+  """
   use Phoenix.Component
   import UpImgWeb.CoreComponents
   alias Phoenix.LiveView.JS
@@ -13,6 +16,7 @@ defmodule UpImgWeb.NoClientPreloading do
           them to S3 or <b>prune</b> them.
         </p>
 
+        <.loader id="spinner"/>
         <p class={"
             #{if length(@uploaded_files_locally) == 0 do "block" else "hidden" end}
             text-xs leading-7 text-gray-400 text-center my-10"}>
