@@ -124,7 +124,7 @@ defmodule UpImgWeb.NoClientLive do
 
         {:noreply,
          socket
-         |> push_event("js-exec", %{to: "#spinner", attr: "data-plz-wait"})
+         #  |> push_event("js-exec", %{to: "#spinner", attr: "data-plz-wait"})
          |> update(:uploaded_files_locally, &(&1 ++ [uploaded_file]))}
     end
   end
