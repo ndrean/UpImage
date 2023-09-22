@@ -330,6 +330,7 @@ defmodule UpImgWeb.NoClientLive do
   end
 
   def handle_event("tabclosed", _unsigned_params, socket) do
+    Logger.info("tab closed -----------------------------")
     pid = self()
 
     Task.start(fn ->
