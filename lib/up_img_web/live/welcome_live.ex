@@ -42,10 +42,4 @@ defmodule UpImgWeb.WelcomeLive do
     </div>
     """
   end
-
-  def mount(_, _, socket) do
-    require Logger
-    Logger.info(socket.assigns)
-    {:ok, socket}
-  end
 end

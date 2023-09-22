@@ -97,6 +97,10 @@ defmodule UpImg do
     )
   end
 
+  def build_path(name) do
+    Application.app_dir(:up_img, ["priv", "static", "image_uploads", name])
+  end
+
   def set_image_url(name) do
     UpImgWeb.Endpoint.url() <>
       UpImgWeb.Endpoint.static_path("/image_uploads/#{name}")

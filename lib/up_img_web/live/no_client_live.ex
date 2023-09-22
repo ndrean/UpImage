@@ -10,7 +10,7 @@ defmodule UpImgWeb.NoClientLive do
   require Logger
 
   @thumb_size 200
-  # @cleaning_timer 60 * 1_000
+  # @cleaning_timer Application.compile_env!(:up_impg, :cleaning_timer)
 
   @upload_dir Application.app_dir(:up_img, ["priv", "static", "image_uploads"])
 
@@ -328,7 +328,7 @@ defmodule UpImgWeb.NoClientLive do
   end
 
   def handle_event("tabclosed", _unsigned_params, socket) do
-    Logger.info("tab closed -----------------------------")
+    Logger.info("Tab closed -----------------------------")
     pid = self()
 
     Task.start(fn ->
@@ -340,6 +340,7 @@ defmodule UpImgWeb.NoClientLive do
 
   # remove temp files from server if user inactive.
   def handle_event("inactivity", _p, socket) do
+    Logger.info("Inactive -----------------------------")
     pid = self()
 
     Task.start(fn ->
