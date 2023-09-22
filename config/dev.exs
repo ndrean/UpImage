@@ -47,6 +47,8 @@ config :up_img, :google,
 
 config :up_img, :vault_key, System.fetch_env!("CLOAK_KEY")
 
+config :up_img, :cleaning_timer, 1 * 60 * 1_000
+
 # ## SSL Support
 #
 # In order to use HTTPS in development, a self-signed

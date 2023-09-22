@@ -11,7 +11,6 @@ defmodule UpImgWeb.NoClientLive do
 
   @thumb_size 200
 
-
   @upload_dir Application.app_dir(:up_img, ["priv", "static", "image_uploads"])
 
   @delete_bucket_and_db "Sucessfully deleted from bucket and database"
@@ -27,7 +26,7 @@ defmodule UpImgWeb.NoClientLive do
     {:ok, l} = Application.app_dir(:up_img, ["priv", "static", "image_uploads"]) |> File.ls()
     Logger.info("uploads folder: #{length(l)}")
 
-    cleaner_pid = nil
+    # cleaner_pid = nil
     # case Gallery.Clean.start(user_id: socket.assigns.current_user.id, timer: @cleaning_timer) do
     #   {:ok, pid} ->
     #     pid
@@ -36,6 +35,9 @@ defmodule UpImgWeb.NoClientLive do
     #     pid
     # end
 
+    cleaning_timer = Application.fetch_env!(:up_img, :cleaning_timer)
+    cleaner_ref = Process.send_after(self(), {:clean}, cleaning_timer)
+
     init_assigns = %{
       limit: 4,
       page: 0,
@@ -43,11 +45,8 @@ defmodule UpImgWeb.NoClientLive do
       uploaded_files_locally: [],
       uploaded_files_to_S3: [],
       errors: [],
-      cleaner_pid: cleaner_pid
+      cleaner_ref: cleaner_ref
     }
-
-    cleaning_timer  = Application.fetch_env!(:up_img, :cleaning_timer)
-    Process.send_after(self(), {:clean}, cleaning_timer)
 
     socket =
       socket
@@ -78,6 +77,8 @@ defmodule UpImgWeb.NoClientLive do
   # With `auto_upload: true`, we can consume files here
   # loop while receiving chunks and start the spinner
   def handle_progress(:image_list, entry, socket) when entry.done? == false do
+    Process.cancel_timer(socket.assigns.cleaner_ref)
+    IO.puts "timer cancelled------------ #{inspect(socket.assigns.cleaner_ref)}"
     {:noreply, push_event(socket, "js-exec", %{to: "#spinner", attr: "data-plz-wait"})}
   end
 
@@ -217,9 +218,14 @@ defmodule UpImgWeb.NoClientLive do
         image_path: entry.image_path
       })
 
+    cleaning_timer = Application.fetch_env!(:up_img, :cleaning_timer)
+    cleaner_ref = Process.send_after(self(), {:clean}, cleaning_timer)
+    IO.puts "new timer ----------#{inspect(cleaner_ref)}"
+
     {:noreply,
      socket
      |> push_event("js-exec", %{to: "#spinner", attr: "data-ok-done"})
+     |> assign(:cleaner_ref, cleaner_ref)
      |> update(
        :uploaded_files_locally,
        &find_and_replace(&1, entry.uuid, img)

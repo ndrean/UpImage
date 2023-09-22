@@ -80,7 +80,7 @@ if config_env() == :prod do
 
   config :up_img, :vault_key, System.get_env("CLOAK_KEY")
 
-  config :up_img, :cleaning_timer, 3 * 60 * 1_000
+  config :up_img, :cleaning_timer, 1 * 60 * 1_000
 
   # ## SSL Support
   #
