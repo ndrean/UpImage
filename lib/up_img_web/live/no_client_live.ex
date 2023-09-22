@@ -40,7 +40,7 @@ defmodule UpImgWeb.NoClientLive do
       limit: 4,
       page: 0,
       offset: 3,
-      uploaded_files_locally: Application.app_dir(:up_img, ["priv", "static", "image_uploads"]) |> File.ls!(),
+      uploaded_files_locally: [],
       uploaded_files_to_S3: [],
       errors: [],
       cleaner_pid: cleaner_pid
