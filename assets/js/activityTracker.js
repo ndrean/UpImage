@@ -1,6 +1,6 @@
 export default {
   mounted() {
-    let pushActivity = (() => {
+    const pushActivity = (() => {
       let active = true;
       //   delay 10 min
       const delay = 10 * 60 * 1000;
