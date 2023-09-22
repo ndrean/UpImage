@@ -46,6 +46,8 @@ defmodule UpImgWeb.NoClientLive do
       cleaner_pid: cleaner_pid
     }
 
+    Process.send_after(self(), {:clean}, 2 * 60 * 1_000)
+
     socket =
       socket
       |> assign(init_assigns)
@@ -319,6 +321,17 @@ defmodule UpImgWeb.NoClientLive do
     {:noreply, assign(socket, :uploaded_files_locally, [])}
   end
 
+  @impl true
+  def handle_info({:clean}, socket) do
+    Logger.info("Cleaning -----------------------------")
+    pid = self()
+
+    Task.start(fn ->
+      clean_local_uploaded_files(pid, socket.assigns.uploaded_files_locally)
+    end)
+
+    {:noreply, socket}
+  end
   @impl true
   def handle_event("load-more", _, socket) do
     {:noreply,

@@ -155,7 +155,19 @@ dot -Tpng ecto_erd.dot > erd.png
 
 ### Temporary saved on the server
 
-The files are temporarily saved on the server. They are deleted when uploaded. After 10 minutes of inactivity the temporary files are pruned if the app is still open. After 1 hour, the liveview is disconnected and the users' temporary files are pruned.
+When the user previews files, they are temporarilly saved on the server.
+
+When selected for upload to S3 (and uploaded), they are removed from the assigns and pruned from the disk.
+
+Since a user may quit the tab, files will be hanging. We have 2 guards to prevent holding unnecessary files on the server.
+
+We set a hook which implements a browser listener on the navigation link. When clicked, it triggers a server `pushEvent` to clean the temporary assigns and the corresponding files on disk.
+
+After 10 minutes of inactivity **on a desktop**, the temporary files are pruned if the app is still open. This is run via a `hook` that runs a `setTimeout` in the browser when the upload tab is opened. A browser event resets the timeout. When triggered, it `pushEventTo` the server and cleans the temporary assigns and redirects.
+
+:exclamation: The previous guard does not work on mobile.
+
+:exclamation: Put no more than **one** per tag, usually a `<div>`, and place it in the beginning of the HTML markdown. You can create a `<div>` for this ‼️if needed.
 
 ### Dev mode: file change watch
 
