@@ -10,7 +10,7 @@ defmodule UpImgWeb.NoClientLive do
   require Logger
 
   @thumb_size 200
-  # @cleaning_timer Application.compile_env!(:up_impg, :cleaning_timer)
+  @cleaning_timer Application.compile_env!(:up_impg, :cleaning_timer)
 
   @upload_dir Application.app_dir(:up_img, ["priv", "static", "image_uploads"])
 
@@ -46,7 +46,7 @@ defmodule UpImgWeb.NoClientLive do
       cleaner_pid: cleaner_pid
     }
 
-    Process.send_after(self(), {:clean}, 2 * 60 * 1_000)
+    Process.send_after(self(), {:clean}, @cleaning_timer)
 
     socket =
       socket
@@ -330,8 +330,9 @@ defmodule UpImgWeb.NoClientLive do
       clean_local_uploaded_files(pid, socket.assigns.uploaded_files_locally)
     end)
 
-    {:noreply, socket}
+    {:noreply, redirect(socket, to: ~p"/")}
   end
+
   @impl true
   def handle_event("load-more", _, socket) do
     {:noreply,
