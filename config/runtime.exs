@@ -80,7 +80,7 @@ if config_env() == :prod do
 
   config :up_img, :vault_key, System.fetch_env!("CLOAK_KEY")
 
-  config :up_img, :cleaning_timer, System.fetch_env!("CLEANER_TIMER")
+  config :up_img, :cleaning_timer, System.fetch_env!("CLEANER_TIMER") |> String.to_integer()
 
   # ## SSL Support
   #
