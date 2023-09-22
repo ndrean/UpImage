@@ -13,6 +13,7 @@ defmodule UpImgWeb.NoClientLive do
 
   @upload_dir Application.app_dir(:up_img, ["priv", "static", "image_uploads"])
 
+
   @delete_bucket_and_db "Sucessfully deleted from bucket and database"
   @error_delete_object_in_bucket "Failed to delete from bucket"
   @error_saving_in_bucket "Could not save in the bucket"
@@ -26,14 +27,6 @@ defmodule UpImgWeb.NoClientLive do
     {:ok, l} = Application.app_dir(:up_img, ["priv", "static", "image_uploads"]) |> File.ls()
     Logger.info("uploads folder: #{length(l)}")
 
-    # cleaner_pid = nil
-    # case Gallery.Clean.start(user_id: socket.assigns.current_user.id, timer: @cleaning_timer) do
-    #   {:ok, pid} ->
-    #     pid
-
-    #   {:error, {:already_started, pid}} ->
-    #     pid
-    # end
 
     cleaning_timer = Application.fetch_env!(:up_img, :cleaning_timer)
     cleaner_ref = Process.send_after(self(), {:clean}, cleaning_timer)
@@ -75,10 +68,9 @@ defmodule UpImgWeb.NoClientLive do
   end
 
   # With `auto_upload: true`, we can consume files here
-  # loop while receiving chunks and start the spinner
+  # loop while receiving chunks and start the spinner and resets the timer
   def handle_progress(:image_list, entry, socket) when entry.done? == false do
-    Process.cancel_timer(socket.assigns.cleaner_ref)
-    IO.puts "timer cancelled------------ #{inspect(socket.assigns.cleaner_ref)}"
+    if entry.progress < 5, do: Process.cancel_timer(socket.assigns.cleaner_ref)
     {:noreply, push_event(socket, "js-exec", %{to: "#spinner", attr: "data-plz-wait"})}
   end
 
@@ -220,7 +212,6 @@ defmodule UpImgWeb.NoClientLive do
 
     cleaning_timer = Application.fetch_env!(:up_img, :cleaning_timer)
     cleaner_ref = Process.send_after(self(), {:clean}, cleaning_timer)
-    IO.puts "new timer ----------#{inspect(cleaner_ref)}"
 
     {:noreply,
      socket
