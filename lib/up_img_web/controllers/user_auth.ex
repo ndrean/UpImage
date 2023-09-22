@@ -61,7 +61,6 @@ defmodule UpImgWeb.UserAuth do
     |> put_session(:user_id, user.id)
     |> put_session(:live_socket_id, "users_sessions:#{user.id}")
     |> assign(:current_user, user)
-    |> tap(fn -> Logger.info(conn.assigns.current_user) end)
     |> redirect(to: ~p"/#{user.name}")
   end
 
