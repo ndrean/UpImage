@@ -78,9 +78,9 @@ if config_env() == :prod do
     google_client_id: System.get_env("GOOGLE_CLIENT_ID"),
     google_client_secret: System.get_env("GOOGLE_CLIENT_SECRET")
 
-  config :up_img, :vault_key, System.get_env("CLOAK_KEY")
+  config :up_img, :vault_key, System.fetch_env!("CLOAK_KEY")
 
-  config :up_img, :cleaning_timer, 1 * 60 * 1_000
+  config :up_img, :cleaning_timer, System.fetch_env!("CLEANER_TIMER")
 
   # ## SSL Support
   #
