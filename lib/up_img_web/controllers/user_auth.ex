@@ -55,11 +55,13 @@ defmodule UpImgWeb.UserAuth do
   disconnected on log out. The line can be safely removed if you are not using LiveView.
   """
   def log_in_user(conn, user) do
+    require Logger
     conn
     |> renew_session()
     |> put_session(:user_id, user.id)
     |> put_session(:live_socket_id, "users_sessions:#{user.id}")
     |> assign(:current_user, user)
+    |> tap(fn -> Logger.info(conn.assigns.current_user) end)
     |> redirect(to: ~p"/#{user.name}")
   end
 
