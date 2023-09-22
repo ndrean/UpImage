@@ -15,8 +15,7 @@ config :up_img,
   github_callback: "/github/callback"
 
 config :up_img,
-  http_client: UpImg.Finch,
-  cleaning_time: 3 * 60 * 1_000
+  http_client: UpImg.Finch
 
 # Configures the endpoint
 config :up_img, UpImgWeb.Endpoint,
