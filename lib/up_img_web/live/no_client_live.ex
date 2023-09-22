@@ -162,7 +162,7 @@ defmodule UpImgWeb.NoClientLive do
       })
 
     with {:ok, img_origin} <- Image.new_from_file(image_path),
-         {:ok, scale} <- get_scale(img_origin, screen) |> dbg(),
+         {:ok, scale} <- get_scale(img_origin, screen),
          {:ok, img_resized} <- Operation.resize(img_origin, scale),
          :ok <- Operation.webpsave(img_resized, resized_path),
          {:ok, img_thumb} <- Operation.thumbnail(image_path, @thumb_size),
@@ -318,6 +318,8 @@ defmodule UpImgWeb.NoClientLive do
 
     {:noreply, assign(socket, :uploaded_files_locally, [])}
   end
+
+
 
   @impl true
   def handle_event("load-more", _, socket) do

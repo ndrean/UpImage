@@ -1,9 +1,10 @@
 defmodule UpImgWeb.RedirectController do
   use UpImgWeb, :controller
 
-  # uses thes Plug.fetch_user
+  # uses the Plug.fetch_user
   def redirect_authenticated(conn, _params) do
-    if conn.assigns.current_user do
+
+    if Map.get(conn.assigns, :current_user) do
       redirect(conn, to: ~p"/#{conn.assigns.current_user.name}")
       |> halt()
     else

@@ -1,4 +1,7 @@
 defmodule UpImgWeb.UserAuth do
+  @moduledoc """
+  Assigns a current_user to the socket
+  """
   use UpImgWeb, :verified_routes
   import Plug.Conn
   import Phoenix.Controller

@@ -14,7 +14,7 @@ defmodule UpImgWeb.GithubCallbackController do
       |> UserAuth.log_in_user(user)
     else
       {:error, %Ecto.Changeset{} = changeset} ->
-        Logger.debug("failed GitHub insert #{inspect(changeset.errors)}")
+        Logger.warning("failed GitHub insert #{inspect(changeset.errors)}")
 
         conn
         |> put_flash(

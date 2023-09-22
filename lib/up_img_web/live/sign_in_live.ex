@@ -6,7 +6,6 @@ defmodule UpImgWeb.SignInLive do
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <%!-- class="sm:mx-auto sm:w-full sm:max-w-md" --%>
       <div>
         <img src={~p"/images/camera.svg"} width={200} class="mx-auto h-24 w-auto" alt="workflow" />
 
@@ -68,11 +67,5 @@ defmodule UpImgWeb.SignInLive do
   @impl true
   def mount(_params, _session, socket) do
     {:ok, socket}
-  end
-
-  @impl true
-  def handle_event("tabclosed", _unsigned_params, socket) do
-    Logger.warning("closing------")
-    {:noreply, socket}
   end
 end
