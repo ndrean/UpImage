@@ -5,11 +5,11 @@ defmodule ElixirGoogleCerts do
   It depends on the JOSE library.
   """
 
-
   @g_certs1_url "https://www.googleapis.com/oauth2/v1/certs"
   @iss "https://accounts.google.com"
 
   @json_lib Phoenix.json_library()
+  @registered_http_client Application.compile_env!(:up_img, :http_client)
 
   @doc """
   This is run **after** the plug "check_csrf".
@@ -26,21 +26,20 @@ defmodule ElixirGoogleCerts do
 
   def verified_identity(%{jwt: jwt}) do
     with {:ok,
-    %{
-      "exp" => exp,
-      "sub" => sub,
-      "name" => name,
-      "email" => email,
-      "given_name" => given_name
-      } = claims} <-
-        check_identity_v1(jwt),
-        true <- not_expired(exp),
-        true <- check_iss(claims["iss"]),
-        true <- check_user(claims["aud"], claims["azp"]) do
+          %{
+            "sub" => sub,
+            "name" => name,
+            "email" => email,
+            "given_name" => given_name
+          } = claims} <-
+           check_identity_v1(jwt),
+         {:ok, true} <- run_checks(claims) do
+      #  {:ok, true} <- not_expired(exp),
+      #  {:ok, true} <- check_iss(claims["iss"]),
+      #  {:ok, true} <- check_user(claims["aud"], claims["azp"]) do
       {:ok, %{email: email, name: name, id: sub, given_name: given_name}}
     else
       {:error, msg} -> {:error, msg}
-      false -> {:error, :wrong_check}
     end
   end
 
@@ -64,7 +63,7 @@ defmodule ElixirGoogleCerts do
   end
 
   defp fetch(url) do
-    case Finch.build(:get, url) |> Finch.request(UpImg.Finch) do
+    case Finch.build(:get, url) |> Finch.request(@registered_http_client) do
       {:ok, %{body: body}} ->
         {:ok, %{body: body}}
 
@@ -86,14 +85,43 @@ defmodule ElixirGoogleCerts do
 
   # ---- Google checking recommendations
 
-  defp not_expired(exp) do
-    exp > DateTime.to_unix(DateTime.utc_now())
+  def run_checks(claims) do
+    %{
+      "exp" => exp,
+      "aud" => aud,
+      "azp" => azp,
+      "iss" => iss
+    } = claims
+
+    with {:ok, true} <- not_expired(exp),
+         {:ok, true} <- check_iss(iss),
+         {:ok, true} <- check_user(aud, azp) do
+      {:ok, true}
+    else
+      {:error, message} -> {:error, message}
+    end
   end
 
-  defp check_user(aud, azp) do
-    aud == aud() || azp == aud()
+  def not_expired(exp) do
+    case exp > DateTime.to_unix(DateTime.utc_now()) do
+      true -> {:ok, true}
+      false -> {:error, :expired}
+    end
   end
 
-  defp check_iss(iss), do: iss == @iss
+  def check_user(aud, azp) do
+    case aud == aud() || azp == aud() do
+      true -> {:ok, true}
+      false -> {:error, :wrong_id}
+    end
+  end
+
+  def check_iss(iss) do
+    case iss == @iss do
+      true -> {:ok, true}
+      false -> {:ok, :wrong_issuer}
+    end
+  end
+
   defp aud, do: UpImg.google_id()
 end

@@ -14,9 +14,8 @@ defmodule UpImgWeb.SignInLive do
           Create or Sign in to your account
         </h2>
         <p class="text-xs pt-4">
-          You are asked to register an account. You can use <b>only one email</b> per provider.
+          You are asked to register an account. Your email is safely encrypted.
           We don't use your data and only keep the minimum needed to retrieve your files from the service (your name and email).
-          Furthermore, your email is encrypted.
         </p>
       </div>
 

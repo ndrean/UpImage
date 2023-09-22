@@ -63,6 +63,8 @@ defmodule UpImgWeb do
       use Phoenix.LiveComponent
 
       unquote(html_helpers())
+      # can use is_connected? as a guard in the "mount" callback
+      defguard is_connected?(socket) when socket.transport_pid != nil
     end
   end
 

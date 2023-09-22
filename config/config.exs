@@ -14,6 +14,9 @@ config :up_img,
   google_callback: "/google/callback",
   github_callback: "/github/callback"
 
+config :up_img,
+  http_client: UpImg.Finch
+
 # Configures the endpoint
 config :up_img, UpImgWeb.Endpoint,
   url: [host: "localhost"],

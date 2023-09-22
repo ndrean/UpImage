@@ -2,9 +2,7 @@ defmodule UpImgPlugCheckCsrfTest do
   use ExUnit.Case
   use UpImgWeb.ConnCase
 
-
   test "it halts the process when CSRF cookie is missing", %{conn: conn} do
-
     assert redirected_to(conn) == "/"
     # assert get_flash(conn, :error) == "CSRF cookie missing"
   end

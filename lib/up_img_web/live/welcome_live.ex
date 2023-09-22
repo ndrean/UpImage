@@ -31,10 +31,8 @@ defmodule UpImgWeb.WelcomeLive do
             </div>
           <% end %>
           <p :if={!@current_user} class="text-xs pt-4">
-            You are asked to register an account to upload pictures. You can use <b>only one email</b>
-            per provider.
+            You are asked to register an account to upload pictures.  Your email is safely encrypted.
             We don't use your data and only keep the minimum needed to retrieve your files from the service (your name and email).
-            Furthermore, your email is encrypted.
           </p>
           <p class="mt-10 text-lg leading-8 text-gray-600">
             You can upload pictures. These pictures will be transformed into WEBP format. You are limited to sizes no more than <b>5Mb</b>.
