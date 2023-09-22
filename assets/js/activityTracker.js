@@ -1,3 +1,4 @@
+// detect if user is active, otherwise trigger temp file cleanup
 export default {
   mounted() {
     const pushActivity = (() => {
