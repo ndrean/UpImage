@@ -319,8 +319,6 @@ defmodule UpImgWeb.NoClientLive do
     {:noreply, assign(socket, :uploaded_files_locally, [])}
   end
 
-
-
   @impl true
   def handle_event("load-more", _, socket) do
     {:noreply,

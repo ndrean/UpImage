@@ -56,6 +56,7 @@ defmodule UpImgWeb.UserAuth do
   """
   def log_in_user(conn, user) do
     require Logger
+
     conn
     |> renew_session()
     |> put_session(:user_id, user.id)
