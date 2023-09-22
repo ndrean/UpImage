@@ -10,7 +10,7 @@ defmodule UpImgWeb.NoClientLive do
   require Logger
 
   @thumb_size 200
-  @cleaning_timer Application.compile_env!(:up_impg, :cleaning_timer)
+  @cleaning_timer Application.compile_env!(:up_img, :cleaning_timer)
 
   @upload_dir Application.app_dir(:up_img, ["priv", "static", "image_uploads"])
 
