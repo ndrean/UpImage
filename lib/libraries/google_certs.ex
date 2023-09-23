@@ -45,7 +45,7 @@ defmodule ElixirGoogleCerts do
   """
   def check_identity_v1(jwt) do
     with {:ok, %{"kid" => kid, "alg" => alg}} <- Joken.peek_header(jwt),
-         {:ok, %{body: body}} <- fetch(@g_certs1_url) do
+         {:ok, body} <- fetch(@g_certs1_url) do
       {true, %{fields: fields}, _} =
         body
         |> @json_lib.decode!()
@@ -62,7 +62,7 @@ defmodule ElixirGoogleCerts do
   defp fetch(url) do
     case Finch.build(:get, url) |> Finch.request(@registered_http_client) do
       {:ok, %{body: body}} ->
-        {:ok, %{body: body}}
+        {:ok, body}
 
       error ->
         {:error, error}
