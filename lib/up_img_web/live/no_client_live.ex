@@ -30,7 +30,7 @@ defmodule UpImgWeb.NoClientLive do
     # cleaning_timer = Application.fetch_env!(:up_img, :cleaning_timer)
     cleaning_timer = EnvReader.cleaning_timer()
 
-    Logger.info(%{dur: System.monotonic_time() - start})
+    Logger.info(%{ETSdur: System.monotonic_time() - start})
     cleaner_ref = Process.send_after(self(), {:clean}, cleaning_timer)
 
     init_assigns = %{
@@ -213,10 +213,8 @@ defmodule UpImgWeb.NoClientLive do
       })
 
     start = System.monotonic_time()
-    cleaning_timer = Application.fetch_env!(:up_img, :cleaning_timer)
-
-    Logger.info(%{dur: System.monotonic_time() - start})
-
+    cleaning_timer = EnvReader.read_cleaning_timer()
+    Logger.info(%{FromEnv: System.monotonic_time() - start})
     cleaner_ref = Process.send_after(self(), {:clean}, cleaning_timer)
 
     {:noreply,
