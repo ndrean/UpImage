@@ -26,11 +26,8 @@ defmodule UpImgWeb.NoClientLive do
 
     {:ok, l} = Application.app_dir(:up_img, ["priv", "static", "image_uploads"]) |> File.ls()
     Logger.info("uploads folder: #{length(l)}")
-    start = System.monotonic_time()
-    # cleaning_timer = Application.fetch_env!(:up_img, :cleaning_timer)
-    cleaning_timer = EnvReader.cleaning_timer()
 
-    Logger.info(%{ETSdur: System.monotonic_time() - start})
+    cleaning_timer = EnvReader.cleaning_timer()
     cleaner_ref = Process.send_after(self(), {:clean}, cleaning_timer)
 
     init_assigns = %{
@@ -212,9 +209,7 @@ defmodule UpImgWeb.NoClientLive do
         image_path: entry.image_path
       })
 
-    start = System.monotonic_time()
-    cleaning_timer = EnvReader.read_cleaning_timer()
-    Logger.info(%{FromEnv: System.monotonic_time() - start})
+    cleaning_timer = EnvReader.cleaning_timer()
     cleaner_ref = Process.send_after(self(), {:clean}, cleaning_timer)
 
     {:noreply,
