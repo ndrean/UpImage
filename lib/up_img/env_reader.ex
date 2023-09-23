@@ -10,15 +10,31 @@ defmodule UpImg.EnvReader do
   end
 
   def run(_arg) do
-    :ets.insert(:envs, {:google_id, UpImg.google_id()})
-    :ets.insert(:envs, {:gh_id, UpImg.gh_id()})
-    :ets.insert(:envs, {:gh_secret, UpImg.gh_secret()})
-    :ets.insert(:envs, {:google_secret, UpImg.google_secret()})
-    :ets.insert(:envs, {:bucket, UpImg.bucket()})
+    :ets.insert(:envs, {:google_id, read_google_id()})
+    :ets.insert(:envs, {:gh_id, read_gh_id()})
+    :ets.insert(:envs, {:gh_secret, read_gh_secret()})
+    :ets.insert(:envs, {:google_secret, read_google_secret()})
+    :ets.insert(:envs, {:bucket, read_bucket()})
 
     :ets.insert(:envs, {:cleaning_timer, Application.fetch_env!(:up_img, :cleaning_timer)})
   end
 
+  def fetch_key(main, key),
+    do:
+      Application.get_application(__MODULE__)
+      |> Application.fetch_env!(main)
+      |> Keyword.get(key)
+
+  # SHOULD I PUT THEM IN ETS FOR SPEED INSTEAD OF READING ENV VARS?????
+
+  def read_gh_id, do: fetch_key(:github, :github_client_id)
+  def read_gh_secret, do: fetch_key(:github, :github_client_secret)
+  def read_google_id, do: fetch_key(:google, :google_client_id)
+  def read_google_secret, do: fetch_key(:google, :google_client_secret)
+  def read_vault_key, do: Application.fetch_env!(:up_img, :vault_key)
+  def read_bucket, do: Application.fetch_env!(:ex_aws, :bucket)
+
+  # Lookups
   def bucket, do: :ets.lookup(:envs, :bucket) |> Keyword.get(:bucket)
 
   def google_id, do: :ets.lookup(:envs, :google_id) |> Keyword.get(:google_id)

@@ -52,23 +52,23 @@ defmodule UpImg do
       UpImgWeb.Endpoint.static_path("/images/#{name}")
   end
 
-  def fetch_key(main, key),
-    do:
-      Application.get_application(__MODULE__)
-      |> Application.fetch_env!(main)
-      |> Keyword.get(key)
+  # def fetch_key(main, key),
+  #   do:
+  #     Application.get_application(__MODULE__)
+  #     |> Application.fetch_env!(main)
+  #     |> Keyword.get(key)
 
   # SHOULD I PUT THEM IN ETS FOR SPEED INSTEAD OF READING ENV VARS?????
 
-  def gh_id, do: fetch_key(:github, :github_client_id)
-  def gh_secret, do: fetch_key(:github, :github_client_secret)
+  # def gh_id, do: fetch_key(:github, :github_client_id)
+  # def gh_secret, do: fetch_key(:github, :github_client_secret)
 
-  def google_id, do: fetch_key(:google, :google_client_id)
-  def google_secret, do: fetch_key(:google, :google_client_secret)
+  # def google_id, do: fetch_key(:google, :google_client_id)
+  # def google_secret, do: fetch_key(:google, :google_client_secret)
 
   def vault_key, do: Application.fetch_env!(:up_img, :vault_key)
 
-  def bucket, do: Application.fetch_env!(:ex_aws, :bucket)
+  # def bucket, do: Application.fetch_env!(:ex_aws, :bucket)
 
   @doc """
   Defines the callback endpoints. It must correspond to the settings in the Google Dev console and Github credentials.

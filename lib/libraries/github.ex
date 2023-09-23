@@ -1,6 +1,12 @@
 defmodule UpImg.Github do
-  def client_id, do: UpImg.gh_id()
-  def secret, do: UpImg.gh_secret()
+  @moduledoc """
+  Module to authenticate via Github.
+  Use Dwyls module later.
+  """
+
+  alias UpImg.EnvReader
+  def client_id, do: EnvReader.gh_id()
+  def secret, do: EnvReader.gh_secret()
 
   def authorize_url do
     state = UpImg.gen_secret()

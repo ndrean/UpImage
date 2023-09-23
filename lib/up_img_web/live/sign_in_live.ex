@@ -35,7 +35,7 @@ defmodule UpImgWeb.SignInLive do
               <div
                 phx-update="ignore"
                 id="g_id_onload"
-                data-client_id={UpImg.google_id()}
+                data-client_id={UpImg.EnvReader.google_id()}
                 data-auto_prompt="true"
                 data-context="signin"
                 data-ux_mode="popup"

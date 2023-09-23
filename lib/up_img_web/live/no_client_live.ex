@@ -521,7 +521,7 @@ defmodule UpImgWeb.NoClientLive do
     Logger.warning("Upload error: " <> inspect(msg))
 
     Task.start(fn ->
-      ExAws.S3.delete_object(UpImg.bucket(), Path.basename(url))
+      ExAws.S3.delete_object(EnvReader.bucket(), Path.basename(url))
       |> ExAws.request!()
     end)
 
