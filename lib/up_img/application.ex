@@ -16,7 +16,11 @@ defmodule UpImg.Application do
       UpImgWeb.Endpoint,
       UpImg.MyVault,
       {Task.Supervisor, name: UpImg.TaskSup},
-      {Task, fn -> FileUtils.clean(every_ms: hour_ms, older_than_seconds: hour_s) end}
+      {UpImg.EnvReader, {}},
+      {Task,
+       fn ->
+         FileUtils.clean(every_ms: hour_ms, older_than_seconds: hour_s)
+       end}
     ]
 
     opts = [strategy: :one_for_one, name: UpImg.Supervisor]
@@ -28,5 +32,10 @@ defmodule UpImg.Application do
   def config_change(changed, _new, removed) do
     UpImgWeb.Endpoint.config_change(changed, removed)
     :ok
+  end
+
+  def read_env do
+    IO.puts("done")
+    System.fetch_env!("GOOGLE_CLIENT_ID")
   end
 end

@@ -3,6 +3,7 @@ defmodule UpImgWeb.NoClientLive do
   alias UpImg.Gallery
   alias UpImg.Gallery.Url
   alias UpImg.Repo
+  alias UpImg.EnvReader
 
   alias Vix.Vips.Image
   alias Vix.Vips.Operation
@@ -26,7 +27,8 @@ defmodule UpImgWeb.NoClientLive do
     {:ok, l} = Application.app_dir(:up_img, ["priv", "static", "image_uploads"]) |> File.ls()
     Logger.info("uploads folder: #{length(l)}")
 
-    cleaning_timer = Application.fetch_env!(:up_img, :cleaning_timer)
+    # cleaning_timer = Application.fetch_env!(:up_img, :cleaning_timer)
+    cleaning_timer = EnvReader.cleaning_timer()
     cleaner_ref = Process.send_after(self(), {:clean}, cleaning_timer)
 
     init_assigns = %{
@@ -410,7 +412,7 @@ defmodule UpImgWeb.NoClientLive do
         socket
       ) do
     pid = self()
-    bucket = UpImg.bucket()
+    bucket = EnvReader.bucket()
     keys_to_delete = [Path.basename(resized), Path.basename(thumb)]
 
     keys_to_delete

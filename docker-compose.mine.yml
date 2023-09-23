@@ -1,13 +1,23 @@
+# this runs my Docker located in  /docker
 version: "3.9"
 
 volumes:
   pg-data:
 
 services:
+  proxy:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile.nginx
+    ports:
+      - 80:80
+    links:
+      - app
   app:
     ports:
-      - "4000:4000"
+      - 4000
     build:
+      context: ./docker
       dockerfile: Dockerfile.local
     env_file:
       - .env-docker
@@ -21,7 +31,7 @@ services:
     restart: always
     volumes:
       - pg-data:/var/lib/postgresql/data
-      - ./dbinit.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./docker/dbinit.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "5432:5432"
     healthcheck:

@@ -60,8 +60,9 @@ defmodule FileUtils do
   end
 
   def clean(every_ms: interval, older_than_seconds: time_s) do
-    IO.puts("force clean ---")
+    require Logger
     Process.sleep(interval)
+    Logger.info("force clean ---")
 
     Application.app_dir(:up_img, ["priv", "static", "image_uploads"])
     |> File.ls!()

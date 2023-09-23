@@ -9,55 +9,43 @@ defmodule UpImg do
   @hash_algorithm :sha256
 
   @doc """
-  Generates a random base64 encoded secret key.
+  Generates a random secret key of size @rand_size
   """
 
-  def gen_token do
-    :crypto.strong_rand_bytes(@rand_size)
+  def gen_token(length \\ @rand_size) do
+    :crypto.strong_rand_bytes(length)
   end
 
+  @doc """
+  Create a unique irreversible represention - or hash - of the token.
+  """
   def hash_token(token) do
     :crypto.hash(@hash_algorithm, token)
   end
 
+  @doc """
+  A random @rand_size string encode in base URL-64
+  """
   def gen_secret do
     Base.url_encode64(gen_token(), padding: false)
   end
 
   @doc """
-  Looks up `Application` config or raises if keyspace is not configured.
-
-  ## Examples
-
-      config :my_app, :files, [
-        uploads_dir: Path.expand("../priv/uploads", __DIR__),
-        host: [scheme: "http", host: "localhost", port: 4000],
-      ]
-
-      iex> MyApp.config([:files, :uploads_dir])
-      iex> MyApp.config([:files, :host, :port])
+  Generate a random 8-string
   """
+  def gen_salt(length \\ 8) do
+    length
+    |> :crypto.strong_rand_bytes()
+    |> Base.encode64()
+    |> String.slice(0, length)
+  end
 
-  # def config([main_key | rest] = keyspace) when is_list(keyspace) do
-  #   main = Application.get_env(Application.get_application(__MODULE__), main_key)
-
-  #   Enum.reduce(rest, main, fn next_key, current ->
-  #     case Keyword.fetch(current, next_key) do
-  #       {:ok, val} -> val
-  #       :error -> raise ArgumentError, "no config found under #{inspect(keyspace)}"
-  #     end
-  #   end)
-  # end
-
-  # # for a non nested simple case, you can do:
-  # def config([main, second]) do
-  #   case Application.get_application(__MODULE__)
-  #        |> Application.get_env(main)
-  #        |> Keyword.get(second) do
-  #     nil -> raise "No config found for: #{main}, #{second}"
-  #     res -> res
-  #   end
-  # end
+  def shorten(uri) do
+    {uri,
+     :crypto.mac(:hmac, :sha256, "short-link", uri)
+     |> Base.encode16()
+     |> String.slice(0, 6)}
+  end
 
   def img_path(name) do
     UpImgWeb.Endpoint.url() <>
@@ -69,6 +57,8 @@ defmodule UpImg do
       Application.get_application(__MODULE__)
       |> Application.fetch_env!(main)
       |> Keyword.get(key)
+
+  # SHOULD I PUT THEM IN ETS FOR SPEED INSTEAD OF READING ENV VARS?????
 
   def gh_id, do: fetch_key(:github, :github_client_id)
   def gh_secret, do: fetch_key(:github, :github_client_secret)

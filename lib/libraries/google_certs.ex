@@ -109,5 +109,5 @@ defmodule ElixirGoogleCerts do
     end
   end
 
-  defp aud, do: UpImg.google_id()
+  defp aud, do: UpImg.EnvReader.google_id()
 end

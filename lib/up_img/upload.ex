@@ -5,6 +5,7 @@ defmodule UpImg.Upload do
   import SweetXml
   require Logger
   alias ExAws.S3
+  alias UpImg.EnvReader
 
   @doc """
   `upload/1` receives an `image` with the format
@@ -18,7 +19,8 @@ defmodule UpImg.Upload do
   the an error is returned `{:error, reason}`.
   """
 
-  def bucket, do: UpImg.bucket()
+  # def bucket, do: UpImg.bucket()
+  def bucket, do: EnvReader.bucket()
 
   def upload(image) do
     with {:ok, file} <- hash_file(image),
