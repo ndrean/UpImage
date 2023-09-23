@@ -33,9 +33,4 @@ defmodule UpImg.Application do
     UpImgWeb.Endpoint.config_change(changed, removed)
     :ok
   end
-
-  def read_env do
-    IO.puts("done")
-    System.fetch_env!("GOOGLE_CLIENT_ID")
-  end
 end

@@ -15,17 +15,27 @@ defmodule FileUtils do
           :crypto.hash_update(prev, curr_chunk)
         end)
         |> :crypto.hash_final()
-        |> Base.encode16()
-        |> String.downcase()
+        |> terminate()
 
       is_binary(path) ->
         :crypto.hash(:sha256, path)
-        |> Base.encode16()
-        |> String.downcase()
+        |> terminate()
+
+      # |> Base.encode16()
+      # |> String.downcase()
 
       true ->
         nil
     end
+  end
+
+  @doc """
+  HMAC hash used to produce a short name
+  """
+  def terminate(string) do
+    :crypto.macN(:hmac, :sha256, "tiny URL", string, 16)
+    |> Base.encode16()
+    |> String.slice(0, 8)
   end
 
   def info(names) when is_list(names) do
@@ -69,7 +79,7 @@ defmodule FileUtils do
     |> Enum.map(&UpImg.build_path/1)
     |> Enum.filter(fn file ->
       %File.Stat{atime: t} = File.stat!(file, time: :posix)
-      t < System.os_time(:second) - time_s
+      t < System.monotonic_time(:second) - time_s
     end)
     |> Enum.each(&File.rm_rf!/1)
 
