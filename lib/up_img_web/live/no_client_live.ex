@@ -13,7 +13,6 @@ defmodule UpImgWeb.NoClientLive do
 
   @upload_dir Application.app_dir(:up_img, ["priv", "static", "image_uploads"])
 
-
   @delete_bucket_and_db "Sucessfully deleted from bucket and database"
   @error_delete_object_in_bucket "Failed to delete from bucket"
   @error_saving_in_bucket "Could not save in the bucket"
@@ -26,7 +25,6 @@ defmodule UpImgWeb.NoClientLive do
 
     {:ok, l} = Application.app_dir(:up_img, ["priv", "static", "image_uploads"]) |> File.ls()
     Logger.info("uploads folder: #{length(l)}")
-
 
     cleaning_timer = Application.fetch_env!(:up_img, :cleaning_timer)
     cleaner_ref = Process.send_after(self(), {:clean}, cleaning_timer)

@@ -1,0 +1,13 @@
+{
+  "coverage_options": {
+    "minimum_coverage": 100
+  },
+  "skip_files": [
+    "test/",
+    "lib/up_img/application.ex",
+    "lib/up_img_web.ex",
+    "lib/up_img_web/telemetry.ex",
+    "lib/up_img_web/components/core_components.ex",
+    "lib/up_img_web/channels/user_socket.ex"
+  ]
+}

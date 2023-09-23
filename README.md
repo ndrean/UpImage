@@ -169,7 +169,15 @@ After 10 minutes of inactivity **on a desktop**, the temporary files are pruned 
 
 We set a `Process.send_after` to clean the temporary files after 3 minutes (an Env Var). Every new preview cancels the timer and sets a new one. This works even when the app is set in the background.
 
-Some edge cases may still remain. Probably a daily job cleaning task to remove file with "old" timestamp may be needed.
+Some edge cases may still remain. We run a reccurent task to remove all files older than one hour ago (with `File.stat`).
+
+```elixir
+#Application
+children = [
+  {Task,
+  fn -> FileUtils.clean(every_ms: 1_000 * 60 * 60, older_than_seconds: 60 * 60 * 1) end}
+]
+```
 
 :exclamation: Put no more than **one** per tag, usually a `<div>`, and place it in the beginning of the HTML markdown. You can create a `<div>` for this ‼️if needed.
 

@@ -34,9 +34,6 @@ defmodule ElixirGoogleCerts do
           } = claims} <-
            check_identity_v1(jwt),
          {:ok, true} <- run_checks(claims) do
-      #  {:ok, true} <- not_expired(exp),
-      #  {:ok, true} <- check_iss(claims["iss"]),
-      #  {:ok, true} <- check_user(claims["aud"], claims["azp"]) do
       {:ok, %{email: email, name: name, id: sub, given_name: given_name}}
     else
       {:error, msg} -> {:error, msg}
@@ -71,17 +68,6 @@ defmodule ElixirGoogleCerts do
         {:error, error}
     end
   end
-
-  # no specific HTTP client: not valid with Fly.io
-  # defp fetch(url) do
-  #   case :httpc.request(:get, {~c"#{url}", []}, [], []) do
-  #     {:ok, {{_version, 200, _}, _headers, body}} ->
-  #       {:ok, %{body: body}}
-
-  #     error ->
-  #       {:error, inspect(error)}
-  #   end
-  # end
 
   # ---- Google checking recommendations
 
@@ -119,7 +105,7 @@ defmodule ElixirGoogleCerts do
   def check_iss(iss) do
     case iss == @iss do
       true -> {:ok, true}
-      false -> {:ok, :wrong_issuer}
+      false -> {:error, :wrong_issuer}
     end
   end
 
