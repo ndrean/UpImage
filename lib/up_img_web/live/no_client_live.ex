@@ -21,13 +21,16 @@ defmodule UpImgWeb.NoClientLive do
   @timeout_bucket "Upload to bucket, timeout"
 
   @impl true
+
   def mount(_, _, socket) do
     File.mkdir_p!(@upload_dir)
 
-    {:ok, l} = Application.app_dir(:up_img, ["priv", "static", "image_uploads"]) |> File.ls()
-    Logger.info("uploads folder: #{length(l)}")
+    Application.app_dir(:up_img, ["priv", "static", "image_uploads"])
+    |> File.ls!()
+    |> then(&Logger.info("uploads folder: #{&1}"))
 
     cleaning_timer = EnvReader.cleaning_timer()
+    Logger.info(%{cleaning_timer: cleaning_timer})
     cleaner_ref = Process.send_after(self(), {:clean}, cleaning_timer)
 
     init_assigns = %{
@@ -37,12 +40,15 @@ defmodule UpImgWeb.NoClientLive do
       uploaded_files_locally: [],
       uploaded_files_to_S3: [],
       errors: [],
-      cleaner_ref: cleaner_ref
+      cleaner_ref: cleaner_ref,
+      list_s3: Gallery.get_limited_urls_by_user(socket.assigns.current_user, 4, 0)
     }
 
     socket =
       socket
       |> assign(init_assigns)
+      |> assign_new(:cleaning_timer, fn _ -> cleaning_timer end)
+      |> assign_new(:bucket, fn _ -> EnvReader.bucket() end)
       |> allow_upload(:image_list,
         accept: ~w(.jpg .jpeg .png .webp),
         max_entries: 20,
@@ -54,6 +60,7 @@ defmodule UpImgWeb.NoClientLive do
       |> stream_configure(:uploaded_files_to_S3, dom_id: &"uploaded-s3-#{&1.uuid}")
       |> paginate(0)
       |> push_event("screen", %{})
+      |> assign_async(:list_s3, fn -> {:ok, %{list_s3: nil}} end)
 
     {:ok, socket}
 
@@ -113,11 +120,14 @@ defmodule UpImgWeb.NoClientLive do
         pid = self()
 
         # Task.Supervisor.start_child(UpImg.TaskSup, fn ->
-        Task.Supervisor.async_nolink(UpImg.TaskSup, fn ->
-          transform_image(pid, entry, socket.assigns.screen)
-        end)
+        %Task{} =
+          Task.Supervisor.async_nolink(UpImg.TaskSup, fn ->
+            transform_image(pid, entry, socket.assigns.screen)
+          end)
 
-        {:noreply, update(socket, :uploaded_files_locally, &(&1 ++ [uploaded_file]))}
+        {:noreply,
+         socket
+         |> update(:uploaded_files_locally, &(&1 ++ [uploaded_file]))}
     end
   end
 
@@ -163,7 +173,9 @@ defmodule UpImgWeb.NoClientLive do
          {:ok, img_thumb} <- Operation.thumbnail(image_path, @thumb_size),
          :ok <- Operation.webpsave(img_thumb, thumb_path) do
       send(pid, {:transform_success, entry})
-      # else let it fail...
+    else
+      {:error, message} ->
+        send(pid, {:transform_error, message})
     end
   end
 
@@ -184,18 +196,19 @@ defmodule UpImgWeb.NoClientLive do
 
   # callback from transformation operation.
   @impl true
-  def handle_info({:DOWN, _ref, :process, _, {%{message: message}, _}}, socket) do
+  def handle_info({:transform_error, message}, socket) do
+    Logger.warning(message)
     {:noreply, put_flash(socket, :error, message)}
   end
 
-  def handle_info({:transform_success, _entry}, socket) do
+  # no Process.demonitor when multiple references so....
+  def handle_info({:DOWN, _ref, :process, _pid, :normal}, socket) do
     {:noreply, socket}
   end
 
   # callback to update the socket once the transformation is done
   @impl true
-  def handle_info({ref, {:transform_success, entry}}, socket) do
-    Process.demonitor(ref, [:flush])
+  def handle_info({:transform_success, entry}, socket) do
     local_images = socket.assigns.uploaded_files_locally
 
     img = find_image(local_images, entry.uuid)
@@ -209,8 +222,7 @@ defmodule UpImgWeb.NoClientLive do
         image_path: entry.image_path
       })
 
-    cleaning_timer = EnvReader.cleaning_timer()
-    cleaner_ref = Process.send_after(self(), {:clean}, cleaning_timer)
+    cleaner_ref = Process.send_after(self(), {:clean}, socket.assigns.cleaning_timer)
 
     {:noreply,
      socket
@@ -220,6 +232,10 @@ defmodule UpImgWeb.NoClientLive do
        :uploaded_files_locally,
        &find_and_replace(&1, entry.uuid, img)
      )}
+  end
+
+  def handle_info({_ef, {:transform_success, _entry}}, socket) do
+    {:noreply, socket}
   end
 
   # update the stream and the db
@@ -396,11 +412,16 @@ defmodule UpImgWeb.NoClientLive do
 
     # concurrently upload the 2 files to the bucket
     pid = self()
-    Task.start(fn -> upload(pid, image_path, [file_resized, file_thumb], uuid) end)
+    # Task.start(fn -> upload(pid, image_path, [file_resized, file_thumb], uuid) end)
 
-    {:noreply,
-     socket
-     |> update(:uploaded_files_locally, fn list -> Enum.filter(list, &(&1.uuid != uuid)) end)}
+    {
+      :noreply,
+      socket
+      |> update(:uploaded_files_locally, fn list -> Enum.filter(list, &(&1.uuid != uuid)) end)
+      |> assign_async(:list_s3, fn ->
+        {:ok, %{list_s3: upload(pid, image_path, [file_resized, file_thumb], uuid)}}
+      end)
+    }
   end
 
   # remove objects from bucket, triggered by front-end button
@@ -411,7 +432,7 @@ defmodule UpImgWeb.NoClientLive do
         socket
       ) do
     pid = self()
-    bucket = EnvReader.bucket()
+    bucket = socket.assigns.bucket
     keys_to_delete = [Path.basename(resized), Path.basename(thumb)]
 
     keys_to_delete

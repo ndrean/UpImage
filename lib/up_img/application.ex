@@ -5,9 +5,6 @@ defmodule UpImg.Application do
 
   @impl true
   def start(_type, _args) do
-    hour_s = 60 * 60
-    hour_ms = hour_s * 1000
-
     children = [
       UpImgWeb.Telemetry,
       UpImg.Repo,
@@ -16,11 +13,8 @@ defmodule UpImg.Application do
       UpImgWeb.Endpoint,
       UpImg.MyVault,
       {Task.Supervisor, name: UpImg.TaskSup},
-      {UpImg.EnvReader, {}},
-      {Task,
-       fn ->
-         FileUtils.clean(every_ms: hour_ms, older_than_seconds: hour_s)
-       end}
+      UpImg.EnvReader,
+      UpImg.CleanFiles
     ]
 
     opts = [strategy: :one_for_one, name: UpImg.Supervisor]

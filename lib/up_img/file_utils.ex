@@ -68,21 +68,4 @@ defmodule FileUtils do
          }}
     end
   end
-
-  def clean(every_ms: interval, older_than_seconds: time_s) do
-    require Logger
-    Process.sleep(interval)
-    Logger.info("force clean ---")
-
-    Application.app_dir(:up_img, ["priv", "static", "image_uploads"])
-    |> File.ls!()
-    |> Enum.map(&UpImg.build_path/1)
-    |> Enum.filter(fn file ->
-      %File.Stat{atime: t} = File.stat!(file, time: :posix)
-      t < System.monotonic_time(:second) - time_s
-    end)
-    |> Enum.each(&File.rm_rf!/1)
-
-    clean(every_ms: interval, older_than_seconds: time_s)
-  end
 end
