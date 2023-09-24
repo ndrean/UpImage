@@ -40,8 +40,8 @@ defmodule UpImgWeb.NoClientLive do
       uploaded_files_locally: [],
       uploaded_files_to_S3: [],
       errors: [],
-      cleaner_ref: cleaner_ref,
-      list_s3: Gallery.get_limited_urls_by_user(socket.assigns.current_user, 4, 0)
+      cleaner_ref: cleaner_ref
+      # list_s3: Gallery.get_limited_urls_by_user(socket.assigns.current_user, 4, 0)
     }
 
     socket =
@@ -60,7 +60,8 @@ defmodule UpImgWeb.NoClientLive do
       |> stream_configure(:uploaded_files_to_S3, dom_id: &"uploaded-s3-#{&1.uuid}")
       |> paginate(0)
       |> push_event("screen", %{})
-      |> assign_async(:list_s3, fn -> {:ok, %{list_s3: nil}} end)
+
+    # |> assign_async(:list_s3, fn -> {:ok, %{list_s3: nil}} end)
 
     {:ok, socket}
 
@@ -119,7 +120,6 @@ defmodule UpImgWeb.NoClientLive do
       entry ->
         pid = self()
 
-        # Task.Supervisor.start_child(UpImg.TaskSup, fn ->
         %Task{} =
           Task.Supervisor.async_nolink(UpImg.TaskSup, fn ->
             transform_image(pid, entry, socket.assigns.screen)
@@ -157,21 +157,20 @@ defmodule UpImgWeb.NoClientLive do
     resized_path = build_path(resized_name)
     # "/Users/.../image_uploads/resized-Screenshot2023-08-04at210431.webp"
 
-    entry =
-      entry
-      |> Map.merge(%{
-        resized_path: resized_path,
-        resized_name: resized_name,
-        thumb_name: thumb_name,
-        thumb_path: thumb_path
-      })
-
     with {:ok, img_origin} <- Image.new_from_file(image_path),
          {:ok, scale} <- get_scale(img_origin, screen),
          {:ok, img_resized} <- Operation.resize(img_origin, scale),
          :ok <- Operation.webpsave(img_resized, resized_path),
          {:ok, img_thumb} <- Operation.thumbnail(image_path, @thumb_size),
          :ok <- Operation.webpsave(img_thumb, thumb_path) do
+      entry =
+        Map.merge(entry, %{
+          resized_path: resized_path,
+          resized_name: resized_name,
+          thumb_name: thumb_name,
+          thumb_path: thumb_path
+        })
+
       send(pid, {:transform_success, entry})
     else
       {:error, message} ->
@@ -211,10 +210,9 @@ defmodule UpImgWeb.NoClientLive do
   def handle_info({:transform_success, entry}, socket) do
     local_images = socket.assigns.uploaded_files_locally
 
-    img = find_image(local_images, entry.uuid)
-
     img =
-      Map.merge(img, %{
+      find_image(local_images, entry.uuid)
+      |> Map.merge(%{
         resized_path: entry.resized_path,
         resized_url: set_image_url(entry.resized_name),
         thumb_url: set_image_url(entry.thumb_name),
@@ -282,9 +280,7 @@ defmodule UpImgWeb.NoClientLive do
   @impl true
   def handle_info({:success_deletion_from_bucket, dom_id, uuid}, socket) do
     Repo.transaction(fn repo ->
-      data = repo.get_by(Url, %{uuid: uuid})
-
-      case data do
+      case repo.get_by(Url, %{uuid: uuid}) do
         nil ->
           {:error, :not_found_in_database}
 
@@ -412,15 +408,15 @@ defmodule UpImgWeb.NoClientLive do
 
     # concurrently upload the 2 files to the bucket
     pid = self()
-    # Task.start(fn -> upload(pid, image_path, [file_resized, file_thumb], uuid) end)
+    Task.start(fn -> upload(pid, image_path, [file_resized, file_thumb], uuid) end)
 
     {
       :noreply,
       socket
       |> update(:uploaded_files_locally, fn list -> Enum.filter(list, &(&1.uuid != uuid)) end)
-      |> assign_async(:list_s3, fn ->
-        {:ok, %{list_s3: upload(pid, image_path, [file_resized, file_thumb], uuid)}}
-      end)
+      # |> assign_async(:list_s3, fn ->
+      #   {:ok, %{list_s3: upload(pid, image_path, [file_resized, file_thumb], uuid)}}
+      # end)
     }
   end
 
@@ -571,14 +567,24 @@ defmodule UpImgWeb.NoClientLive do
   def handle_async_result({:error, _msg}), do: {:error, :upload_error}
   def handle_async_result({:exit, :timeout}), do: {:error, @timeout_bucket}
 
+  def find_and_replace([], _, img), do: [img]
+
   def find_and_replace(images, uuid, img) do
     Enum.map(images, fn image -> if image.uuid == uuid, do: img, else: image end)
   end
 
+  # def find_image(images, img_uuid) do
+  #   Enum.find(images, fn %{uuid: uuid} ->
+  #     uuid == img_uuid
+  #   end)
+  # end
   def find_image(images, img_uuid) do
-    Enum.find(images, fn %{uuid: uuid} ->
-      uuid == img_uuid
-    end)
+    case Enum.find(images, fn %{uuid: uuid} ->
+           uuid == img_uuid
+         end) do
+      nil -> Map.new()
+      res -> res
+    end
   end
 
   def set_image_url(name) do

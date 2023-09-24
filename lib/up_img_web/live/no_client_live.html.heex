@@ -21,8 +21,8 @@
             No files uploaded.
           </p> --%>
 
+          <%!-- :if={@list_s3} --%>
           <ul
-            :if={@list_s3}
             phx-update="stream"
             phx-viewport-bottom="load-more"
             id="uploaded_files_S3"
