@@ -117,11 +117,12 @@ defmodule UpImgWeb.NoClientLive do
         {:noreply, socket}
 
       entry ->
-        pid = self()
+        lv_pid = self()
 
         {:ok, _transform_pid} =
           Task.Supervisor.start_child(UpImg.TaskSup, fn ->
-            transform_image(pid, entry, socket.assigns.screen)
+            Process.link(lv_pid)
+            transform_image(lv_pid, entry, socket.assigns.screen)
           end)
 
         {:noreply,
@@ -136,7 +137,7 @@ defmodule UpImgWeb.NoClientLive do
 
   The data `%{"screenHeight" => h, "screenWidth" => w} = screen` is handled by a JS hook in the `mount` with a `push_event`.
   """
-  def transform_image(pid, entry, screen) do
+  def transform_image(lv_pid, entry, screen) do
     %{client_name: client_name, image_path: image_path} = entry
 
     # image_path
@@ -171,10 +172,10 @@ defmodule UpImgWeb.NoClientLive do
           thumb_path: thumb_path
         })
 
-      send(pid, {:transform_success, entry})
+      send(lv_pid, {:transform_success, entry})
     else
       {:error, message} ->
-        send(pid, {:transform_error, message})
+        send(lv_pid, {:transform_error, message})
     end
   end
 
@@ -201,8 +202,7 @@ defmodule UpImgWeb.NoClientLive do
   end
 
   # no Process.demonitor when multiple references so....
-  def handle_info({:DOWN, _ref, :process, pid, :normal}, socket) do
-    :ok = Logger.info(pid)
+  def handle_info({:DOWN, _ref, :process, _process_pid, :normal}, socket) do
     {:noreply, socket}
   end
 
@@ -384,10 +384,10 @@ defmodule UpImgWeb.NoClientLive do
 
   def handle_event("tabclosed", _unsigned_params, socket) do
     Logger.info("Tab closed -----------------------------")
-    pid = self()
+    lv_pid = self()
 
     Task.start(fn ->
-      clean_local_uploaded_files(pid, socket.assigns.uploaded_files_locally)
+      clean_local_uploaded_files(lv_pid, socket.assigns.uploaded_files_locally)
     end)
 
     {:noreply, socket}
@@ -396,10 +396,10 @@ defmodule UpImgWeb.NoClientLive do
   # remove temp files from server if user inactive.
   def handle_event("inactivity", _p, socket) do
     Logger.info("Inactive -----------------------------")
-    pid = self()
+    lv_pid = self()
 
     Task.start(fn ->
-      clean_local_uploaded_files(pid, socket.assigns.uploaded_files_locally)
+      clean_local_uploaded_files(lv_pid, socket.assigns.uploaded_files_locally)
     end)
 
     {:noreply, push_redirect(socket, to: ~p"/")}
@@ -439,10 +439,10 @@ defmodule UpImgWeb.NoClientLive do
       }
 
     # concurrently upload the 2 files to the bucket
-    pid = self()
+    lv_pid = self()
 
     Task.Supervisor.start_child(UpImg.TaskSup, fn ->
-      upload(pid, image_path, [file_resized, file_thumb], uuid)
+      upload(lv_pid, image_path, [file_resized, file_thumb], uuid)
     end)
 
     {
@@ -462,9 +462,9 @@ defmodule UpImgWeb.NoClientLive do
         %{"key" => dom_id, "resized" => resized, "thumb" => thumb, "uuid" => uuid},
         socket
       ) do
-    pid = self()
+    lv_pid = self()
     bucket = socket.assigns.bucket
-    keys_to_delete = [Path.basename(resized), Path.basename(thumb)] |> dbg()
+    keys_to_delete = [Path.basename(resized), Path.basename(thumb)]
 
     # this process must not be killed even if the LV dies.
     %Task{ref: ref} =
@@ -486,7 +486,7 @@ defmodule UpImgWeb.NoClientLive do
       keys_to_delete: keys_to_delete,
       dom_id: dom_id,
       uuid: uuid,
-      parent: pid
+      parent: lv_pid
     }
 
     {:noreply, assign(socket, :file_to_delete, file_to_delete)}
@@ -510,19 +510,19 @@ defmodule UpImgWeb.NoClientLive do
      |> update(:uploaded_files_locally, &Enum.filter(&1, fn img -> img.uuid != uuid end))}
   end
 
-  def clean_local_uploaded_files(pid, files) do
+  def clean_local_uploaded_files(lv_pid, files) do
     Enum.each(files, fn %{
                           thumb_path: thumb_path,
                           resized_path: resized_path,
                           client_name: client_name
                         } ->
       [thumb_path, resized_path, build_path(client_name)]
-      |> Enum.each(&remove_safely(pid, &1))
+      |> Enum.each(&remove_safely(lv_pid, &1))
     end)
   end
 
   # In Task.async_stream, use "on_timeout: :kill_task" to intercept the timeout error
-  def upload(pid, image_path, files, uuid) do
+  def upload(lv_pid, image_path, files, uuid) do
     IO.puts("uploading-----------")
 
     files
@@ -537,26 +537,26 @@ defmodule UpImgWeb.NoClientLive do
           [{:error, msg} | acc]
       end
     end)
-    |> handle_result(pid, uuid)
+    |> handle_result(lv_pid, uuid)
 
     # cleanup the files on the server
     [%{path: p1}, %{path: p2}] = files
     handle_remove(self(), [image_path, p1, p2])
   end
 
-  def handle_remove(pid, list) do
+  def handle_remove(lv_pid, list) do
     list
-    |> Task.async_stream(&remove_safely(pid, &1))
+    |> Task.async_stream(&remove_safely(lv_pid, &1))
     |> Stream.run()
   end
 
-  def remove_safely(pid, file) do
+  def remove_safely(lv_pid, file) do
     case File.rm(file) do
       :ok ->
         :ok
 
       {:error, msg} ->
-        send(pid, {:rm_error, msg})
+        send(lv_pid, {:rm_error, msg})
     end
   end
 

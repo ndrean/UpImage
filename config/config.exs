@@ -7,6 +7,8 @@
 # General application configuration
 import Config
 
+config :up_img, env: config_env()
+
 config :up_img,
   ecto_repos: [UpImg.Repo]
 

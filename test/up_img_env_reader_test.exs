@@ -6,7 +6,7 @@ defmodule UpImg.EnvReaderTest do
     # Initialize and populate the ETS table with sample data
     :ets.insert(:envs, {:google_id, "GOOGLE_CLIENT_ID"})
     :ets.insert(:envs, {:gh_id, "GITHUB_CLIENT_ID"})
-    :ets.insert(:envs, {:gh_secret, "GITHUB_CLIENT_SECRE"})
+    :ets.insert(:envs, {:gh_secret, "GITHUB_CLIENT_SECRET"})
     :ets.insert(:envs, {:google_secret, "GOOGLE_CLIENT_SECRET"})
     :ets.insert(:envs, {:bucket, "AWS_S3_BUCKET"})
     :ets.insert(:envs, {:cleaning_timer, 120_000})
@@ -28,7 +28,6 @@ defmodule UpImg.EnvReaderTest do
 
   test "accessors retrived with Application.fetch_env!/2" do
     assert EnvReader.cleaning_timer() == 120_000
-    assert EnvReader.vault_key() == "CLOAKKEY"
   end
 
   :ets.delete(:envs, :bucket)

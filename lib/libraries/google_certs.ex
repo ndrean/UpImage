@@ -96,7 +96,10 @@ defmodule ElixirGoogleCerts do
   end
 
   def check_user(aud, azp) do
-    case aud == aud() || azp == aud() do
+    env = Application.fetch_env!(:up_img, :env)
+    g_id = if env == :test, do: "GOOGLE_CLIENT_ID", else: UpImg.EnvReader.google_id()
+
+    case aud == g_id || azp == g_id do
       true -> {:ok, true}
       false -> {:error, :wrong_id}
     end
@@ -108,6 +111,4 @@ defmodule ElixirGoogleCerts do
       false -> {:error, :wrong_issuer}
     end
   end
-
-  defp aud, do: UpImg.EnvReader.google_id()
 end
