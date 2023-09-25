@@ -15,10 +15,9 @@
             Here is the list of uploaded files in S3. 🪣
           </p>
 
-          <%!-- <p class={"
-          #{if length(@streams.uploaded_files_to_S3.inserts) == 0 do "block" else "hidden" end}
-          text-xs leading-7 text-gray-400 text-center my-10"}>
-            No files uploaded.
+          <%!-- :if={length(@streams.uploaded_files_to_S3.inserts) == 0} --%>
+          <%!-- <p class="block last:hidden text-xs leading-7 text-gray-400 text-center my-10">
+            Nada
           </p> --%>
 
           <%!-- :if={@list_s3} --%>
@@ -29,6 +28,12 @@
             role="list"
             class="divide-y divide-gray-100"
           >
+            <li
+              id="start-text"
+              class="text-xs leading-7 text-gray-400 text-center my-10 hidden last:block"
+            >
+              No uploads in S3 yet
+            </li>
             <li
               :for={{dom_id, file} <- @streams.uploaded_files_to_S3}
               id={dom_id}

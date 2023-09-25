@@ -1,5 +1,6 @@
 defmodule UpImgWeb.Router do
   use UpImgWeb, :router
+  # alias UpImgWeb.RedirectController
   alias GoogleCallbackController
   alias UpImg.Plug.CheckCsrf
   alias UpImgWeb.Plug.FetchUser
@@ -48,7 +49,6 @@ defmodule UpImgWeb.Router do
     live_session :authenticated,
       on_mount: [{UpImgWeb.UserAuth, :ensure_authenticated}] do
       live "/liveview_clientless", NoClientLive
-      live "/:profile_username", ProfileLive
     end
   end
 

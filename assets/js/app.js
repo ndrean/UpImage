@@ -48,6 +48,7 @@ liveSocket.connect();
 window.liveSocket = liveSocket;
 
 window.addEventListener("phx:js-exec", ({ detail }) => {
+  console.log({ detail });
   document.querySelectorAll(detail.to).forEach((el) => {
     liveSocket.execJS(el, el.getAttribute(detail.attr));
   });

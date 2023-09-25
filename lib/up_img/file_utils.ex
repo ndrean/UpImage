@@ -21,9 +21,6 @@ defmodule FileUtils do
         :crypto.hash(:sha256, path)
         |> terminate()
 
-      # |> Base.encode16()
-      # |> String.downcase()
-
       true ->
         nil
     end

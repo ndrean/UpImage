@@ -18,12 +18,15 @@ defmodule UpImgWeb.NoClientPreloading do
         </p>
 
         <.loader id="spinner" />
-        <p class={"
+        <%!-- <p class={"
             #{if length(@uploaded_files_locally) == 0 do "block" else "hidden" end}
             text-xs leading-7 text-gray-400 text-center my-10"}>
           No files uploaded.
-        </p>
+        </p> --%>
         <ul id="uploaded_files_locally" role="list" class="divide-y divide-gray-100">
+          <li class="hidden last:block text-xs leading-7 text-gray-400 text-center my-1">
+            No files to preview
+          </li>
           <li
             :for={file <- @uploaded_files_locally}
             class="uploaded-local-item relative flex justify-between gap-x-6 py-5"

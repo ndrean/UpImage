@@ -1,25 +1,14 @@
 <header class="px-4 sm:px-6 lg:px-8">
   <div class="flex items-center justify-between border-b border-zinc-100 py-3 text-sm">
     <div class="flex items-center gap-4">
-      <%= if @current_user  do %>
-        <.link
-          navigate={"/#{@current_user.name}"}
-          alt="user page"
-          aria-label="current user page"
-          class="bg-[midnightblue] text-[bisque] p-2 rounded hover:scale-125"
-        >
-          <.icon name="hero-home" />
-        </.link>
-      <% else %>
-        <.link
-          navigate={~p"/"}
-          alt="home page"
-          aria-label="home page"
-          class="bg-[midnightblue] text-[bisque] p-2 rounded hover:scale-125"
-        >
-          <.icon name="hero-home" />
-        </.link>
-      <% end %>
+      <.link
+        navigate={~p"/"}
+        alt="home page"
+        aria-label="home page"
+        class="bg-[midnightblue] text-[bisque] p-2 rounded hover:scale-125"
+      >
+        <.icon name="hero-home" />
+      </.link>
 
       <.link
         :if={@current_user}
@@ -31,10 +20,7 @@
       >
         Log out
       </.link>
-
-      <p class="bg-brand/5 text-brand rounded-full px-2 font-bold leading-6">
-        v<%= Application.spec(:phoenix, :vsn) %>, Vix: <%= Vix.Vips.version() %>
-      </p>
+      <span :if={@current_user}><%= @current_user.name %></span>
     </div>
   </div>
 </header>

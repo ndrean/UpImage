@@ -62,7 +62,7 @@ defmodule UpImgWeb.UserAuth do
     |> put_session(:user_id, user.id)
     |> put_session(:live_socket_id, "users_sessions:#{user.id}")
     |> assign(:current_user, user)
-    |> redirect(to: ~p"/#{user.name}")
+    |> redirect(to: ~p"/")
   end
 
   defp renew_session(conn) do

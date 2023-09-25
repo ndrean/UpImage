@@ -48,3 +48,4 @@ config :up_img, :google,
   google_client_secret: "GOOGLE_CLIENT_SECRET"
 
 config :up_img, :vault_key, "CLOAKKEY"
+config :up_img, :cleaning_timer, 2 * 60 * 1_000

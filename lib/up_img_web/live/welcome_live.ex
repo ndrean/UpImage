@@ -32,13 +32,21 @@ defmodule UpImgWeb.WelcomeLive do
           <% end %>
           <p :if={!@current_user} class="text-xs pt-4">
             You are asked to register an account to upload pictures.  Your email is safely encrypted.
-            We don't use your data and only keep the minimum needed to retrieve your files from the service (your name and email).
+            We only use your data to retrieve your files from the service.
           </p>
           <p class="mt-10 text-lg leading-8 text-gray-600">
             You can upload pictures. These pictures will be transformed into WEBP format. You are limited to sizes no more than <b>5Mb</b>.
           </p>
         </div>
       </div>
+      <footer>
+        <p class="bg-brand/5 text-brand rounded-full px-2 font-bold leading-6 text-center">
+          Phx: <%= Application.spec(:phoenix, :vsn) %>, LV: <%= Application.spec(
+            :phoenix_live_view,
+            :vsn
+          ) %>, Vix: <%= Vix.Vips.version() %>
+        </p>
+      </footer>
     </div>
     """
   end

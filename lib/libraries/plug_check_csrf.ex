@@ -4,12 +4,14 @@ defmodule UpImg.Plug.CheckCsrf do
 
   Denies to treat the HTTP request if fails.
   """
+  import Plug.Conn
   use UpImgWeb, :verified_routes
+
   def init(opts), do: opts
 
   def call(conn, _opts) do
     g_csrf_from_cookies =
-      Plug.Conn.fetch_cookies(conn)
+      fetch_cookies(conn)
       |> Map.get(:cookies, %{})
       |> Map.get("g_csrf_token")
 
@@ -38,10 +40,10 @@ defmodule UpImg.Plug.CheckCsrf do
   defp halt_process(conn, msg) do
     # test ok
     conn
-    |> Plug.Conn.fetch_session()
+    |> fetch_session()
     |> Phoenix.Controller.fetch_flash()
     |> Phoenix.Controller.put_flash(:error, msg)
     |> Phoenix.Controller.redirect(to: ~p"/")
-    |> Plug.Conn.halt()
+    |> halt()
   end
 end

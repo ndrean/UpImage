@@ -30,7 +30,6 @@ defmodule UpImgWeb.NoClientLive do
     |> then(&Logger.info("uploads folder: #{&1}"))
 
     cleaning_timer = EnvReader.cleaning_timer()
-    Logger.info(%{cleaning_timer: cleaning_timer})
     cleaner_ref = Process.send_after(self(), {:clean}, cleaning_timer)
 
     init_assigns = %{
@@ -120,13 +119,14 @@ defmodule UpImgWeb.NoClientLive do
       entry ->
         pid = self()
 
-        %Task{} =
-          Task.Supervisor.async_nolink(UpImg.TaskSup, fn ->
+        {:ok, _transform_pid} =
+          Task.Supervisor.start_child(UpImg.TaskSup, fn ->
             transform_image(pid, entry, socket.assigns.screen)
           end)
 
         {:noreply,
          socket
+         #  |> assign(transform_pid: transform_pid)
          |> update(:uploaded_files_locally, &(&1 ++ [uploaded_file]))}
     end
   end
@@ -201,7 +201,8 @@ defmodule UpImgWeb.NoClientLive do
   end
 
   # no Process.demonitor when multiple references so....
-  def handle_info({:DOWN, _ref, :process, _pid, :normal}, socket) do
+  def handle_info({:DOWN, _ref, :process, pid, :normal}, socket) do
+    :ok = Logger.info(pid)
     {:noreply, socket}
   end
 
@@ -232,7 +233,7 @@ defmodule UpImgWeb.NoClientLive do
      )}
   end
 
-  def handle_info({_ef, {:transform_success, _entry}}, socket) do
+  def handle_info({_ref, {:transform_success, _entry}}, socket) do
     {:noreply, socket}
   end
 
@@ -342,6 +343,37 @@ defmodule UpImgWeb.NoClientLive do
     {:noreply, redirect(socket, to: ~p"/")}
   end
 
+  # checks that file removed from bucket
+  def handle_info({ref, :ok}, socket)
+      when ref == socket.assigns.file_to_delete.task_ref do
+    Process.demonitor(ref, [:flush])
+
+    %{parent: pid, keys_to_delete: keys_to_delete, dom_id: dom_id, uuid: uuid} =
+      socket.assigns.file_to_delete
+
+    # linked process as whe don't want it to be hanging if LV is down but restarted if it fails.
+    Task.Supervisor.start_child(
+      UpImg.TaskSup,
+      fn ->
+        check_list =
+          ExAws.S3.list_objects(socket.assigns.bucket)
+          |> ExAws.request!()
+          |> Enum.filter(&Enum.member?(keys_to_delete, &1))
+
+        case length(check_list) do
+          0 ->
+            send(pid, {:success_deletion_from_bucket, dom_id, uuid})
+
+          _ ->
+            send(pid, {:failed_deletion_from_bucket})
+        end
+      end,
+      restart: :transient
+    )
+
+    {:noreply, socket}
+  end
+
   @impl true
   def handle_event("load-more", _, socket) do
     {:noreply,
@@ -408,7 +440,10 @@ defmodule UpImgWeb.NoClientLive do
 
     # concurrently upload the 2 files to the bucket
     pid = self()
-    Task.start(fn -> upload(pid, image_path, [file_resized, file_thumb], uuid) end)
+
+    Task.Supervisor.start_child(UpImg.TaskSup, fn ->
+      upload(pid, image_path, [file_resized, file_thumb], uuid)
+    end)
 
     {
       :noreply,
@@ -429,32 +464,32 @@ defmodule UpImgWeb.NoClientLive do
       ) do
     pid = self()
     bucket = socket.assigns.bucket
-    keys_to_delete = [Path.basename(resized), Path.basename(thumb)]
+    keys_to_delete = [Path.basename(resized), Path.basename(thumb)] |> dbg()
 
-    keys_to_delete
-    |> Task.async_stream(fn key ->
-      ExAws.S3.delete_object(bucket, key)
-      |> ExAws.request!()
-    end)
-    |> Stream.run()
+    # this process must not be killed even if the LV dies.
+    %Task{ref: ref} =
+      Task.Supervisor.async_nolink(
+        UpImg.TaskSup,
+        fn ->
+          keys_to_delete
+          |> Task.async_stream(fn key ->
+            ExAws.S3.delete_object(bucket, key)
+            |> ExAws.request!()
+          end)
+          |> Stream.run()
+        end,
+        restart: :transient
+      )
 
-    # verify that objects are removed
-    Task.start(fn ->
-      check_list =
-        ExAws.S3.list_objects(bucket)
-        |> ExAws.request!()
-        |> Enum.filter(&Enum.member?(keys_to_delete, &1))
+    file_to_delete = %{
+      task_ref: ref,
+      keys_to_delete: keys_to_delete,
+      dom_id: dom_id,
+      uuid: uuid,
+      parent: pid
+    }
 
-      case length(check_list) do
-        0 ->
-          send(pid, {:success_deletion_from_bucket, dom_id, uuid})
-
-        _ ->
-          send(pid, {:failed_deletion_from_bucket})
-      end
-    end)
-
-    {:noreply, socket}
+    {:noreply, assign(socket, :file_to_delete, file_to_delete)}
   end
 
   # rm files from server when unselected
@@ -488,6 +523,8 @@ defmodule UpImgWeb.NoClientLive do
 
   # In Task.async_stream, use "on_timeout: :kill_task" to intercept the timeout error
   def upload(pid, image_path, files, uuid) do
+    IO.puts("uploading-----------")
+
     files
     |> Task.async_stream(&UpImg.Upload.upload/1, on_timeout: :kill_task)
     |> Enum.map(&handle_async_result/1)
@@ -573,11 +610,6 @@ defmodule UpImgWeb.NoClientLive do
     Enum.map(images, fn image -> if image.uuid == uuid, do: img, else: image end)
   end
 
-  # def find_image(images, img_uuid) do
-  #   Enum.find(images, fn %{uuid: uuid} ->
-  #     uuid == img_uuid
-  #   end)
-  # end
   def find_image(images, img_uuid) do
     case Enum.find(images, fn %{uuid: uuid} ->
            uuid == img_uuid
@@ -593,10 +625,6 @@ defmodule UpImgWeb.NoClientLive do
       UpImgWeb.Endpoint.static_path("/image_uploads"),
       name
     ])
-  end
-
-  def url_path(name) do
-    UpImgWeb.Endpoint.static_path("/image_uploads/#{name}")
   end
 
   def clean_name(name) do

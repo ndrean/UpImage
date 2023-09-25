@@ -18,26 +18,23 @@ defmodule UpImg.EnvReader do
     :ets.insert(:envs, {:cleaning_timer, read_cleaning_timer()})
   end
 
-  def fetch_key(main, key),
+  defp fetch_key(main, key),
     do:
       Application.get_application(__MODULE__)
       |> Application.fetch_env!(main)
       |> Keyword.get(key)
 
-  def lookup(key), do: :ets.lookup(:envs, key) |> Keyword.get(key)
+  defp lookup(key), do: :ets.lookup(:envs, key) |> Keyword.get(key)
 
-  # SHOULD I PUT THEM IN ETS FOR SPEED INSTEAD OF READING ENV VARS?????
+  defp read_gh_id, do: fetch_key(:github, :github_client_id)
+  defp read_gh_secret, do: fetch_key(:github, :github_client_secret)
+  defp read_google_id, do: fetch_key(:google, :google_client_id)
+  defp read_google_secret, do: fetch_key(:google, :google_client_secret)
+  defp read_bucket, do: Application.fetch_env!(:ex_aws, :bucket)
 
-  def read_gh_id, do: fetch_key(:github, :github_client_id)
-  def read_gh_secret, do: fetch_key(:github, :github_client_secret)
-  def read_google_id, do: fetch_key(:google, :google_client_id)
-  def read_google_secret, do: fetch_key(:google, :google_client_secret)
-  def read_vault_key, do: Application.fetch_env!(:up_img, :vault_key)
-  def read_bucket, do: Application.fetch_env!(:ex_aws, :bucket)
+  defp read_cleaning_timer, do: Application.fetch_env!(:up_img, :cleaning_timer)
 
-  def read_cleaning_timer, do: Application.fetch_env!(:up_img, :cleaning_timer)
-
-  # Lookups
+  # Lookups from ETS
   def bucket, do: lookup(:bucket)
 
   def google_id, do: lookup(:google_id)

@@ -17,8 +17,8 @@ defmodule UpImg.CleanFiles do
   end
 
   def clean(every_ms: interval, older_than_seconds: time_s) do
-    Process.sleep(interval)
-    Logger.info("force clean ---")
+    :ok = Process.sleep(interval)
+    :ok = Logger.info("force clean ---")
 
     Application.app_dir(:up_img, ["priv", "static", "image_uploads"])
     |> File.ls!()
