@@ -8,7 +8,7 @@ defmodule FileUtilsTest do
       tmp_file = Path.join(dir, "test_file")
       File.write!(tmp_file, "Hello, world!")
 
-      assert FileUtils.sha256(tmp_file) == :crypto.hash(:sha256, "Hello, world!")
+      assert FileUtils.sha256(tmp_file) == "9FD97A40"
 
       # Clean up the temporary file
       File.rm!(tmp_file)

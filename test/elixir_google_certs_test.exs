@@ -9,10 +9,10 @@ defmodule ElixirGoogleCertsTest do
 
   setup do
     claim = %{
-      "exp" => "exp",
-      "aud" => "aud",
-      "azp" => "azp",
-      "iss" => "iss"
+      "exp" => DateTime.to_unix(DateTime.utc_now()),
+      "aud" => "458400071137-gvjpbma9909fc9r4kr131vlm6sd4tp9g.apps.googleusercontent.com",
+      "azp" => "458400071137-gvjpbma9909fc9r4kr131vlm6sd4tp9g.apps.googleusercontent.com",
+      "iss" => "https://accounts.google.com"
     }
 
     g_jwt =
@@ -21,80 +21,75 @@ defmodule ElixirGoogleCertsTest do
     {:ok, %{claim: claim, g_jwt: g_jwt}}
   end
 
-  test "run_checks/1 :expired", %{claim: claim} do
-    claim = %{claim | "exp" => DateTime.to_unix(DateTime.utc_now()) - 1000 * 60 * 60 * 2}
-    assert run_checks(claim) == {:error, :expired}
-  end
+  describe "module Google certs & plug check csrf" do
+    test "run_checks/1 :expired", %{claim: claim} do
+      claim = %{claim | "exp" => DateTime.to_unix(DateTime.utc_now()) - 1000 * 60 * 60 * 365}
+      assert run_checks(claim) == {:error, :expired}
+    end
 
-  test "run_checks/1 :wrong_issuer", %{claim: claim} do
-    claim = %{claim | "iss" => "http://account.google.com"}
+    test "run_checks/1 :wrong_issuer", %{claim: claim} do
+      claim = %{claim | "iss" => "http://account.google.com"}
 
-    assert run_checks(claim) == {:error, :wrong_issuer}
-  end
+      assert run_checks(claim) == {:error, :wrong_issuer}
+    end
 
-  test "run_checks/1 :wrong_id#1", %{claim: claim} do
-    claim = %{
-      claim
-      | "aud" => "GOOGLE_CLIENT",
-        "azp" => "GOOGLE_SECRET",
-        "iss" => "https://accounts.google.com"
-    }
+    test "run_checks/1 :wrong_id#1", %{claim: claim} do
+      claim = %{
+        claim
+        | "aud" => "GOOGLE_CLIENT",
+          "azp" => "GOOGLE_SECRET"
+      }
 
-    assert run_checks(claim) == {:error, :wrong_id}
-  end
+      assert run_checks(claim) == {:error, :wrong_id}
+    end
 
-  test "run_checks/1 :wrong_id#2", %{claim: claim} do
-    claim = %{
-      claim
-      | "aud" => "GOOGLE_CLIENT_ID",
-        "azp" => "GOOGLE_CLIENT",
-        "iss" => "https://accounts.google.com"
-    }
+    test "run_checks/1 :wrong_id#2", %{claim: claim} do
+      claim = %{
+        claim
+        | "aud" => "GOOGLE_CLIENT_ID",
+          "azp" => "GOOGLE_CLIENT"
+      }
 
-    assert run_checks(claim) == {:ok, true}
-  end
+      assert run_checks(claim) == {:error, :wrong_id}
+    end
 
-  test "run_checks/1 :wrong_id#3", %{claim: claim} do
-    claim = %{
-      claim
-      | "aud" => "GOOGLE_CLIENT",
-        "azp" => "GOOGLE_CLIENT_ID",
-        "iss" => "https://accounts.google.com"
-    }
-
-    assert run_checks(claim) == {:ok, true}
-  end
-
-  test "run_checks/1 :ok iss, user", %{claim: claim} do
-    claim = %{
-      claim
-      | "aud" => "GOOGLE_CLIENT_ID",
-        "azp" => "GOOGLE_CLIENT_ID",
-        "iss" => "https://accounts.google.com",
-        "exp" => DateTime.to_unix(DateTime.utc_now()) + 60 * 1000 * 60 * 12
-    }
-
-    assert run_checks(claim) == {:ok, true}
-  end
-
-  test "check_identity/1", %{g_jwt: g_jwt} do
-    {:ok, profile} = check_identity_v1(g_jwt)
-    assert profile["name"] == "Neven DREAN"
-
-    assert run_checks(profile) == {:error, :expired}
-
-    profile =
-      %{
-        profile
-        | "exp" => DateTime.to_unix(DateTime.utc_now()) + 60 * 1000 * 60 * 30 * 12 * 30,
-          "aud" => "GOOGLE_CLIENT_ID",
+    test "run_checks/1 :wrong_id#3", %{claim: claim} do
+      claim = %{
+        claim
+        | "aud" => "GOOGLE_CLIENT",
           "azp" => "GOOGLE_CLIENT_ID"
       }
 
-    assert run_checks(profile) == {:ok, true}
-  end
+      assert run_checks(claim) == {:error, :wrong_id}
+    end
 
-  test "verified_identity/1", %{g_jwt: jwt} do
-    assert verified_identity(%{jwt: jwt}) == {:error, :expired}
+    test "run_checks/1 :ok iss, user", %{claim: claim} do
+      claim = %{
+        claim
+        | "exp" => DateTime.to_unix(DateTime.utc_now()) + 60 * 1000 * 365
+      }
+
+      assert run_checks(claim) == {:ok, true}
+    end
+
+    test "check_identity/1", %{g_jwt: g_jwt} do
+      {:ok, profile} = check_identity_v1(g_jwt)
+      assert profile["name"] == "Neven DREAN"
+
+      assert run_checks(profile) == {:ok, true}
+
+      profile =
+        %{
+          profile
+          | "exp" => DateTime.to_unix(DateTime.utc_now()) + 60 * 1000 * 60 * 365
+        }
+
+      assert run_checks(profile) == {:ok, true}
+    end
+
+    ##
+    test "verified_identity/1", %{g_jwt: jwt} do
+      assert verified_identity(%{jwt: jwt}) |> elem(0) == :ok
+    end
   end
 end

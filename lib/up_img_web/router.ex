@@ -49,6 +49,7 @@ defmodule UpImgWeb.Router do
     live_session :authenticated,
       on_mount: [{UpImgWeb.UserAuth, :ensure_authenticated}] do
       live "/liveview_clientless", NoClientLive
+      # live "/:profile_username", ProfileLive
     end
   end
 

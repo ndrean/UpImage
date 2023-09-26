@@ -17,4 +17,8 @@ defmodule UpImgTest do
     result = (:code.priv_dir(:up_img) |> to_string) <> "/static/image_uploads/toto"
     assert UpImg.build_path("toto") == result
   end
+
+  describe "vault_key/0" do
+    assert UpImg.vault_key() == "CLOAKKEY"
+  end
 end

@@ -11,8 +11,8 @@ Application.put_env(:sample, Example.Endpoint,
 Mix.install([
   {:plug_cowboy, "~> 2.5"},
   {:jason, "~> 1.0"},
-  {:phoenix, "~> 1.7.2"},
-  {:phoenix_live_view, "~> 0.18.18"}
+  {:phoenix, "~> 1.7.7"},
+  {:phoenix_live_view, "~> 0.20.0"}
 ])
 
 defmodule Example.ErrorView do
@@ -30,7 +30,7 @@ defmodule Example.HomeLive do
      |> allow_upload(
        :image,
        accept: ~w(.jpg .jpeg .png),
-       max_entries: 1
+       max_entries: 2
      )}
   end
 

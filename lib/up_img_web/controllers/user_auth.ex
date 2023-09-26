@@ -14,7 +14,9 @@ defmodule UpImgWeb.UserAuth do
     case session do
       %{"user_id" => user_id} ->
         {:cont,
-         Phoenix.Component.assign_new(socket, :current_user, fn -> Accounts.get_user(user_id) end)}
+         Phoenix.Component.assign_new(socket, :current_user, fn ->
+           Accounts.get_user!(user_id)
+         end)}
 
       %{} ->
         {:cont, Phoenix.Component.assign(socket, :current_user, nil)}

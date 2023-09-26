@@ -3,10 +3,10 @@ export default {
   mounted() {
     const uploader = document.querySelector("#upload-observer");
     if (!uploader) return;
-    document
-      .querySelectorAll("a")
-      .forEach((link) =>
-        link.addEventListener("click", () => this.pushEvent("tabclosed", {}))
-      );
+    document.querySelectorAll("a").forEach((link) =>
+      link.addEventListener("click", () => {
+        return this.pushEvent("tabclosed", {});
+      })
+    );
   },
 };

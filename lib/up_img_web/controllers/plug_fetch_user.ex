@@ -6,7 +6,7 @@ defmodule UpImgWeb.Plug.FetchUser do
 
   def call(conn, _opts) do
     user_id = Plug.Conn.get_session(conn, :user_id)
-    user = user_id && UpImg.Accounts.get_user(user_id)
+    user = user_id && UpImg.Accounts.get_user!(user_id)
 
     Plug.Conn.assign(conn, :current_user, user)
   end

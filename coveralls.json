@@ -8,6 +8,7 @@
     "lib/up_img_web.ex",
     "lib/up_img_web/telemetry.ex",
     "lib/up_img_web/components/core_components.ex",
-    "lib/up_img_web/channels/user_socket.ex"
+    "lib/up_img_web/channels/user_socket.ex",
+    "lib/up_img/release.ex"
   ]
 }

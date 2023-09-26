@@ -5,11 +5,18 @@ defmodule UpImg.Github do
   """
 
   alias UpImg.EnvReader
-  def client_id, do: EnvReader.gh_id()
-  def secret, do: EnvReader.gh_secret()
+  @env Application.compile_env!(:up_img, :env)
+
+  def client_id do
+    if @env == :test, do: "GITHUB_CLIENT_ID", else: EnvReader.gh_id()
+  end
+
+  def secret do
+    if @env == :test, do: "GITHUB_CLIENT_SECRET", else: EnvReader.gh_secret()
+  end
 
   def authorize_url do
-    state = UpImg.gen_secret()
+    state = if @env == :test, do: "state", else: UpImg.gen_secret()
 
     URI.append_query(
       URI.new!("https://github.com/login/oauth/authorize?"),

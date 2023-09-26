@@ -4,6 +4,7 @@ defmodule UpImgWeb.NoClientLive do
   alias UpImg.Gallery.Url
   alias UpImg.Repo
   alias UpImg.EnvReader
+  alias UpImg.ChunkWriter
 
   alias Vix.Vips.Image
   alias Vix.Vips.Operation
@@ -29,8 +30,13 @@ defmodule UpImgWeb.NoClientLive do
     |> File.ls!()
     |> then(&Logger.info("uploads folder: #{&1}"))
 
-    cleaning_timer = EnvReader.cleaning_timer()
-    cleaner_ref = Process.send_after(self(), {:clean}, cleaning_timer)
+    cleaning_timer =
+      if Application.fetch_env!(:up_img, :env) == :test,
+        do: 120_000,
+        else: EnvReader.cleaning_timer()
+
+    cleaner_ref =
+      if connected?(socket), do: Process.send_after(self(), {:clean}, cleaning_timer)
 
     init_assigns = %{
       limit: 4,
@@ -50,11 +56,12 @@ defmodule UpImgWeb.NoClientLive do
       |> assign_new(:bucket, fn _ -> EnvReader.bucket() end)
       |> allow_upload(:image_list,
         accept: ~w(.jpg .jpeg .png .webp),
-        max_entries: 20,
+        max_entries: 2,
         chunk_size: 64_000,
         auto_upload: true,
         max_file_size: 5_000_000,
-        progress: &handle_progress/3
+        progress: &handle_progress/3,
+        writer: fn _name, _entry, _socket -> {ChunkWriter, level: :debug} end
       )
       |> stream_configure(:uploaded_files_to_S3, dom_id: &"uploaded-s3-#{&1.uuid}")
       |> paginate(0)
@@ -75,60 +82,69 @@ defmodule UpImgWeb.NoClientLive do
 
   # With `auto_upload: true`, we can consume files here
   # loop while receiving chunks and start the spinner and resets the timer
+
   def handle_progress(:image_list, entry, socket) when entry.done? == false do
-    if entry.progress < 5, do: Process.cancel_timer(socket.assigns.cleaner_ref)
-    {:noreply, push_event(socket, "js-exec", %{to: "#spinner", attr: "data-plz-wait"})}
+    if entry.progress < 5 do
+      Process.cancel_timer(socket.assigns.cleaner_ref)
+      {:noreply, push_event(socket, "js-exec", %{to: "#spinner", attr: "data-plz-wait"})}
+    else
+      {:noreply, socket}
+    end
   end
 
-  def handle_progress(:image_list, entry, socket) when entry.done? do
+  def handle_progress(:image_list, entry, socket) do
+    client_name = clean_name(entry.client_name)
+
+    check_if_exists =
+      Enum.find(socket.assigns.uploaded_files_locally, &(&1.client_name == client_name))
+
     uploaded_file =
-      consume_uploaded_entry(socket, entry, fn %{path: path} ->
-        # %{uuid: uuid, client_name: client_name, client_type: client_type} = entry
+      case check_if_exists do
+        nil ->
+          consume_uploaded_entry(socket, entry, fn %{file: binary} ->
+            entry
+            |> Map.put(:client_name, client_name)
+            |> Map.put(:image_path, build_path(client_name))
+            |> Map.put(:image_url, set_image_url(client_name))
+            |> Map.merge(%{resized_url: nil, thumb_url: nil, thumb_path: nil, errors: []})
+            |> save_to_file(binary)
+          end)
 
-        client_name = clean_name(entry.client_name)
-
-        check_if_exists =
-          Enum.find(socket.assigns.uploaded_files_locally, &(&1.client_name == client_name))
-
-        case check_if_exists do
-          nil ->
-            entry =
-              entry
-              |> Map.put(:client_name, client_name)
-              |> Map.put(:image_path, build_path(client_name))
-              |> Map.put(:image_url, set_image_url(client_name))
-              |> Map.merge(%{resized_url: nil, thumb_url: nil, thumb_path: nil, errors: []})
-
-            # Copying the file from temporary system folder to static folder
-            :ok =
-              File.stream!(path, [], 64_000)
-              |> Stream.into(File.stream!(entry.image_path))
-              |> Stream.run()
-
-            {:ok, entry}
-
-          _ ->
-            {:ok, :not_unique}
-        end
-      end)
+        _ ->
+          consume_uploaded_entry(socket, entry, fn %{file: _file} -> {:ok, :not_unique} end)
+      end
 
     case uploaded_file do
+      {:error, reason} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, inspect(reason))
+         |> push_event("js-exec", %{to: "#spinner", attr: "data-ok-done"})}
+
       :not_unique ->
-        {:noreply, socket}
+        {:noreply, push_event(socket, "js-exec", %{to: "#spinner", attr: "data-ok-done"})}
 
       entry ->
         lv_pid = self()
 
         {:ok, _transform_pid} =
           Task.Supervisor.start_child(UpImg.TaskSup, fn ->
-            Process.link(lv_pid)
             transform_image(lv_pid, entry, socket.assigns.screen)
           end)
 
-        {:noreply,
-         socket
-         #  |> assign(transform_pid: transform_pid)
-         |> update(:uploaded_files_locally, &(&1 ++ [uploaded_file]))}
+        {:noreply, update(socket, :uploaded_files_locally, &(&1 ++ [uploaded_file]))}
+    end
+  end
+
+  def save_to_file(entry, binary) do
+    case File.open(entry.image_path, [:binary, :write]) do
+      {:ok, file} ->
+        IO.binwrite(file, binary)
+        File.close(file)
+        {:ok, entry}
+
+      {:error, reason} ->
+        {:ok, {:error, reason}}
     end
   end
 
@@ -139,7 +155,6 @@ defmodule UpImgWeb.NoClientLive do
   """
   def transform_image(lv_pid, entry, screen) do
     %{client_name: client_name, image_path: image_path} = entry
-
     # image_path
     # "/Users/.../image_uploads/Screenshot2023-08-04at210431.png"
 

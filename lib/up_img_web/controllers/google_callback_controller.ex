@@ -3,7 +3,7 @@ defmodule UpImgWeb.GoogleCallbackController do
   alias UpImg.Accounts
   require Logger
 
-  def handle(conn, %{"credential" => credential}) do
+  def handle(conn, %{"credential" => credential, "g_csrf_token" => _g_csrf_token}) do
     with {:ok, profil} <-
            ElixirGoogleCerts.verified_identity(%{jwt: credential}),
          {:ok, user} <- Accounts.register_google_user(profil) do
@@ -27,7 +27,7 @@ defmodule UpImgWeb.GoogleCallbackController do
         Logger.debug("failed Google exchange #{inspect(reason)}")
 
         conn
-        |> put_flash(:error, "We were unable to contact Google. Please try again later")
+        |> put_flash(:error, "Please try again later")
         |> redirect(to: "/")
     end
   end

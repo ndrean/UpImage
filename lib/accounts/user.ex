@@ -19,10 +19,10 @@ defmodule UpImg.Accounts.User do
 
   def google_registration_changeset(profil) do
     params = %{
-      "email" => profil.email,
+      "email" => Map.get(profil, :email),
       "provider" => "google",
-      "name" => profil.name,
-      "username" => profil.given_name
+      "name" => Map.get(profil, :name),
+      "username" => Map.get(profil, :given_name)
     }
 
     changeset =

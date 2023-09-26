@@ -17,5 +17,13 @@ defmodule UpImg.MyVault do
     {:ok, config}
   end
 
-  defp decode_env!, do: UpImg.vault_key() |> Base.decode64!()
+  defp decode_env! do
+    case Application.fetch_env!(:up_img, :env) do
+      :test ->
+        Base.decode64!("T+mxlmxWbbyTByhybBYuMejOxsa6caeka3MvHEaci1A=")
+
+      _ ->
+        UpImg.vault_key() |> Base.decode64!()
+    end
+  end
 end

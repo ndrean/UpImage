@@ -15,12 +15,6 @@
             Here is the list of uploaded files in S3. 🪣
           </p>
 
-          <%!-- :if={length(@streams.uploaded_files_to_S3.inserts) == 0} --%>
-          <%!-- <p class="block last:hidden text-xs leading-7 text-gray-400 text-center my-10">
-            Nada
-          </p> --%>
-
-          <%!-- :if={@list_s3} --%>
           <ul
             phx-update="stream"
             phx-viewport-bottom="load-more"
