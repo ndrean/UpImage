@@ -25,7 +25,7 @@ defmodule UpImgWeb.NoClientPreloading do
         </p> --%>
         <ul id="uploaded_files_locally" role="list" class="divide-y divide-gray-100">
           <li class="hidden last:block text-xs leading-7 text-gray-400 text-center my-1">
-            No files to preview
+            No files to preview <.icon name="hero-magnifying-glass-plus" />
           </li>
           <li
             :for={file <- @uploaded_files_locally}
