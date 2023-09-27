@@ -4,11 +4,14 @@ This webapp uploads iagaes to S3 and transforms them into WEBP format to save on
 
 [CanIUse-WEBP?](https://caniuse.com/webp)
 
-Once you load images from your device, 2 transformation are made: a thumbnail (of max dimension 200px) and a resized image to **1440x726** and displayed.
+Once you load images from your device, 2 transformations are made: a thumbnail (of max dimension 200px) and a resize into max **1440x726** (if needed).
 The transformation is based on the image processing library [libvips](https://www.libvips.org/) via the Elixir extension [Vix.Vips](https://github.com/akash-akya/vix).
 
-Since we want ot display/serve the image, the previews are saved on disk into temporary files; they are waiting for your decision to upload the image to S3 or not. 
-These files are pruned after a few minutes of inactivity and if you navigate away. A scrubber also cleans all "old" files (at most one hour old).
+Since we want ot display/serve the image, the previews are saved on disk into temporary files. 
+They are waiting for your decision to upload the image to S3 or not. 
+
+These files are pruned after a few minutes of inactivity and if you navigate away. 
+A scrubber also cleans all "old" files (at most one hour old).
 
 
 ## Authentication/Authorization
