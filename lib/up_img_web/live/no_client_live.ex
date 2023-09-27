@@ -13,6 +13,7 @@ defmodule UpImgWeb.NoClientLive do
 
   @thumb_size 200
 
+  @env Application.compile_env!(:up_img, :env)
   @upload_dir Application.app_dir(:up_img, ["priv", "static", "image_uploads"])
 
   @delete_bucket_and_db "Sucessfully deleted from bucket and database"
@@ -26,14 +27,16 @@ defmodule UpImgWeb.NoClientLive do
   def mount(_, _, socket) do
     File.mkdir_p!(@upload_dir)
 
-    Application.app_dir(:up_img, ["priv", "static", "image_uploads"])
+    @upload_dir
     |> File.ls!()
     |> then(&Logger.info("uploads folder: #{&1}"))
 
     cleaning_timer =
-      if Application.fetch_env!(:up_img, :env) == :test,
-        do: 120_000,
-        else: EnvReader.cleaning_timer()
+      if @env == :test,
+        do: 100_000,
+        else:
+          EnvReader.cleaning_timer()
+          |> dbg()
 
     cleaner_ref =
       if connected?(socket), do: Process.send_after(self(), {:clean}, cleaning_timer)
@@ -105,7 +108,6 @@ defmodule UpImgWeb.NoClientLive do
             {:ok,
              entry
              |> Map.put(:client_name, client_name)
-             |> Map.put(:image_path, build_path(client_name))
              |> Map.put(:image_url, set_image_url(client_name))
              |> Map.merge(%{
                resized_url: nil,
@@ -114,8 +116,6 @@ defmodule UpImgWeb.NoClientLive do
                errors: [],
                binary: binary
              })}
-
-            # |> save_to_file(binary)
           end)
 
         _ ->
@@ -248,8 +248,7 @@ defmodule UpImgWeb.NoClientLive do
         resized_path: entry.resized_path,
         resized_url: set_image_url(entry.resized_name),
         thumb_url: set_image_url(entry.thumb_name),
-        thumb_path: entry.thumb_path,
-        image_path: entry.image_path
+        thumb_path: entry.thumb_path
       })
 
     cleaner_ref = Process.send_after(self(), {:clean}, socket.assigns.cleaning_timer)
@@ -449,7 +448,6 @@ defmodule UpImgWeb.NoClientLive do
   def handle_event("upload_to_s3", %{"uuid" => uuid}, socket) do
     # Get file element from the local files array
     %{
-      image_path: image_path,
       resized_path: resized_path,
       thumb_path: thumb_path,
       uuid: uuid
@@ -473,7 +471,7 @@ defmodule UpImgWeb.NoClientLive do
     lv_pid = self()
 
     Task.Supervisor.start_child(UpImg.TaskSup, fn ->
-      upload(lv_pid, image_path, [file_resized, file_thumb], uuid)
+      upload(lv_pid, [file_resized, file_thumb], uuid)
     end)
 
     {
@@ -493,9 +491,8 @@ defmodule UpImgWeb.NoClientLive do
         %{"key" => dom_id, "resized" => resized, "thumb" => thumb, "uuid" => uuid},
         socket
       ) do
-    lv_pid = self()
     bucket = socket.assigns.bucket
-    keys_to_delete = [Path.basename(resized), Path.basename(thumb)]
+    keys_to_delete = [resized, thumb] |> Enum.map(&Path.basename/1)
 
     # this process must not be killed even if the LV dies.
     %Task{ref: ref} =
@@ -517,7 +514,7 @@ defmodule UpImgWeb.NoClientLive do
       keys_to_delete: keys_to_delete,
       dom_id: dom_id,
       uuid: uuid,
-      parent: lv_pid
+      parent: self()
     }
 
     {:noreply, assign(socket, :file_to_delete, file_to_delete)}
@@ -526,15 +523,11 @@ defmodule UpImgWeb.NoClientLive do
   # rm files from server when unselected
   @impl true
   def handle_event("remove-selected", %{"uuid" => uuid}, socket) do
-    %{
-      thumb_path: thumb_path,
-      client_name: client_name,
-      resized_path: resized_path
-    } =
+    %{thumb_path: thumb_path, resized_path: resized_path} =
       socket.assigns.uploaded_files_locally
       |> Enum.find(&(&1.uuid == uuid))
 
-    handle_remove(self(), [thumb_path, resized_path, build_path(client_name)])
+    handle_remove(self(), [thumb_path, resized_path])
 
     {:noreply,
      socket
@@ -542,20 +535,20 @@ defmodule UpImgWeb.NoClientLive do
   end
 
   def clean_local_uploaded_files(lv_pid, files) do
-    Enum.each(files, fn %{
-                          thumb_path: thumb_path,
-                          resized_path: resized_path,
-                          client_name: client_name
-                        } ->
-      [thumb_path, resized_path, build_path(client_name)]
-      |> Enum.each(&remove_safely(lv_pid, &1))
-    end)
+    Enum.each(
+      files,
+      fn %{
+           thumb_path: thumb_path,
+           resized_path: resized_path
+         } ->
+        [thumb_path, resized_path]
+        |> Enum.each(&remove_safely(lv_pid, &1))
+      end
+    )
   end
 
   # In Task.async_stream, use "on_timeout: :kill_task" to intercept the timeout error
-  def upload(lv_pid, image_path, files, uuid) do
-    IO.puts("uploading-----------")
-
+  def upload(lv_pid, files, uuid) when is_list(files) do
     files
     |> Task.async_stream(&UpImg.Upload.upload/1, on_timeout: :kill_task)
     |> Enum.map(&handle_async_result/1)
@@ -571,11 +564,11 @@ defmodule UpImgWeb.NoClientLive do
     |> handle_result(lv_pid, uuid)
 
     # cleanup the files on the server
-    [%{path: p1}, %{path: p2}] = files
-    handle_remove(self(), [image_path, p1, p2])
+    [%{path: p1}, %{path: p2}] = files |> dbg()
+    handle_remove(self(), [p1, p2])
   end
 
-  def handle_remove(lv_pid, list) do
+  def handle_remove(lv_pid, list) when is_list(list) do
     list
     |> Task.async_stream(&remove_safely(lv_pid, &1))
     |> Stream.run()

@@ -42,8 +42,9 @@ defmodule UpImgWeb.WelcomeLive do
         </div>
       </div>
       <footer>
-        <p class="bg-brand/5 text-brand rounded-full px-2 font-bold leading-6 text-center">
-          Phx: <%= Application.spec(:phoenix, :vsn) %>, LV: <%= Application.spec(
+        <p class="bg-brand/5 text-brand rounded-full px-2 font-bold leading-6 text-center text-xs">
+          Elixir: <%= System.build_info().build %>,
+          Phoenix: <%= Application.spec(:phoenix, :vsn) %>, LV: <%= Application.spec(
             :phoenix_live_view,
             :vsn
           ) %>, Vix: <%= Vix.Vips.version() %>
