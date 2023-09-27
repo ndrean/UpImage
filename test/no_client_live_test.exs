@@ -13,7 +13,7 @@ defmodule UpImg.NoClientLiveTest do
     email: "toto@mail.com",
     provider: "elysee",
     name: "toto",
-    given_name: "toto Upload"
+    given_name: "toto Uploader"
   }
 
   setup do

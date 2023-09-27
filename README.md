@@ -1,8 +1,44 @@
 # UpImg
 
+This webapp uploads iagaes to S3 and transforms them into WEBP format to save on bandwidth and storage. 
+
+[CanIUse-WEBP?](https://caniuse.com/webp)
+
+Once you load images from your device, 2 transformation are made: a thumbnail (of max dimension 200px) and a resized image to **1440x726** and displayed.
+The transformation is based on the image processing library [libvips](https://www.libvips.org/) via the Elixir extension [Vix.Vips](https://github.com/akash-akya/vix).
+
+Since we want ot display/serve the image, the previews are saved on disk into temporary files; they are waiting for your decision to upload the image to S3 or not. 
+These files are pruned after a few minutes of inactivity and if you navigate away. A scrubber also cleans all "old" files (at most one hour old).
+
+
 ## Authentication/Authorization
 
-Minimum friction: full authorization for authenticated users. We used `Github` or `Google One-Tap` authentication, no password required: "find_or_create".
+Minimum friction: full authorization for authenticated users. You can use `Github` or `Google One-Tap` authentication; no password is required as it is a  "find_or_create" process.
+
+## Image transformation: Vix Vips
+
+It uses [Vix Vips](https://github.com/akash-akya/vix) (NIF based binding for `libvips`) to transform inputs into WEBP format, resize and produce thumbnails on the server from a binary.
+
+All tasks are run concurently.
+
+- The uploader writer has been changed to `ChunkWirter` to deliver an in-memory binary to avoid writting to disk.
+- the binary is loaded by **Vix** with `Vix.Vips.Image.new_from_buffer`
+- we then produce a thumbnail with `Vix.Vips.Operation.thumbnail_image`
+- we also resize it with `Vix.Vips.resize` once we get the max full-screen size of the device via a Javascript hook.
+- we finish the job by temporarily saving both files on disk into WEBP format with `Vix.Vipx.Operation.webpsave`.
+
+## Database migration schema
+
+Postgres database to persist users' data and uploaded URLs.
+
+```bash
+mix ecto.gen.erd
+dot -Tpng ecto_erd.dot > erd.png
+```
+
+![ERD](erd.png)
+
+## Notes
 
 ### Encrypt email and query it
 
@@ -121,25 +157,6 @@ def get_user_by_provider(provider, email) when provider in ["github"] do
   Repo.one(query)
 end
 ```
-
-## Image transformation: Vix Vips
-
-Uses [Vix Vips](https://github.com/akash-akya/vix) (NIF based binding for `libvips`) to transform inputs into WEBP format, resize and produce thumbnails on the server.
-
-All tasks and HTTP calls are concurent.
-
-## Generate the Database migration schema
-
-Postgres database to persist users' data and uploaded URLs.
-
-```bash
-mix ecto.gen.erd
-dot -Tpng ecto_erd.dot > erd.png
-```
-
-![ERD](erd.png)
-
-## Notes
 
 ### Credentials for Github, Google and AWS S3
 

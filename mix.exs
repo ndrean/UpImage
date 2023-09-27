@@ -26,7 +26,7 @@ defmodule UpImg.MixProject do
   def application do
     [
       mod: {UpImg.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :wx, :observer]
     ]
   end
 
@@ -70,7 +70,8 @@ defmodule UpImg.MixProject do
       {:excoveralls, "~> 0.15.2", only: [:test, :dev]},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.11.1", only: [:dev]},
-      {:ecto_erd, "~> 0.5.1", only: [:dev]}
+      {:ecto_erd, "~> 0.5.1", only: [:dev]},
+      {:dialyxir, "~> 1.3", only: [:dev], runtime: false}
     ]
   end
 
