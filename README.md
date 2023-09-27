@@ -13,6 +13,9 @@ They are waiting for your decision to upload the image to S3 or not.
 These files are pruned after a few minutes of inactivity and if you navigate away.
 A scrubber also cleans all "old" files (at most one hour old).
 
+<img width="614" alt="Screenshot 2023-09-27 at 16 51 05" src="https://github.com/ndrean/UpImage/assets/6793008/0838f94e-c216-442e-8864-9ef04d0e9eab">
+
+
 ## Authentication/Authorization
 
 Minimum friction: full authorization for authenticated users. You can use `Github` or `Google One-Tap` authentication; no password is required as it is a "find_or_create" process.
