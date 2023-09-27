@@ -27,6 +27,7 @@ defmodule UpImg.MixProject do
     [
       mod: {UpImg.Application, []},
       extra_applications: [:logger, :runtime_tools]
+      # :wx, :observer NOT ON FLY.IO
     ]
   end
 

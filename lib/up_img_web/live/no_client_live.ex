@@ -35,9 +35,7 @@ defmodule UpImgWeb.NoClientLive do
     cleaning_timer =
       if @env == :test,
         do: 100_000,
-        else:
-          EnvReader.cleaning_timer()
-        
+        else: EnvReader.cleaning_timer()
 
     cleaner_ref =
       if connected?(socket), do: Process.send_after(self(), {:clean}, cleaning_timer)
@@ -171,13 +169,13 @@ defmodule UpImgWeb.NoClientLive do
       if Path.extname(entry.client_name) == ".webp",
         do: entry.client_name,
         else: (entry.client_name |> Path.rootname()) <> ".webp"
+
     # example: "Screenshot2023-08-04at210431.webp"
 
     resized_name = "resized-" <> rename_to_webp
     resized_path = build_path(resized_name)
     # example: "/Users/.../image_uploads/resized-Screenshot2023-08-04at210431.webp"
 
-    
     try do
       {:ok, img_b} = Image.new_from_buffer(entry.binary)
       {:ok, scale} = get_scale(img_b, screen)
