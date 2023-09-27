@@ -23,6 +23,8 @@ defmodule UpImg.Upload do
   def bucket, do: EnvReader.bucket()
 
   def upload(image) do
+    image |> dbg()
+
     with {:ok, file} <- hash_file(image),
          {:ok, upload_resp_body} <-
            upload_file_to_s3(file, image) do

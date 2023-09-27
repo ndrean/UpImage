@@ -54,9 +54,14 @@ defmodule UpImgWeb.Router do
   end
 
   # Other scopes may use custom stacks.
-  # scope "/api", UpImgWeb do
-  #   pipe_through :api
-  # end
+  pipeline :api do
+    plug :accepts, ["json"]
+  end
+
+  scope "/api", UpImgWeb do
+    pipe_through :api
+    get "/", ApiController, :create
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:up_img, :dev_routes) do

@@ -35,7 +35,8 @@ config :ex_aws,
   secret_access_key: System.get_env("AWS_SECRET_ACCESS_KEY"),
   region: System.get_env("AWS_REGION"),
   bucket: System.get_env("AWS_S3_BUCKET"),
-  request_config_override: %{}
+  request_config_override: %{},
+  debug_requests: true
 
 config :up_img, :github,
   github_client_id: System.get_env("GITHUB_CLIENT_ID"),

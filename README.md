@@ -1,6 +1,18 @@
 # UpImg
 
-This webapp uploads iagaes to S3 and transforms them into WEBP format to save on bandwidth and storage.
+This app uploads images to S3 and transforms them into WEBP format to save on bandwidth and storage.
+
+You can use it in two ways:
+
+As an API: you pass a GET request to the endpoint <https://up-image.fly.dev/api> with a query string and get back a link to a resized WEBP picture from S3.
+
+You can use it two other ways.
+
+- You pass a query string with the (physical) path and you can add a targeted size: `URI.encode_query(%{path: xx, name: xx, w: 900, h: 600})` to resize the file.
+- You can use an URL and a desired height and width in the query string, eg `?ulr=https://..../jpeg&h=600&w=600`
+  Both will deliver a `json` reply with the URL of the new file in S3.
+
+As a Webapp. You select files and the server will produce a thumbnail (for the display) and a resized file. All will be WEBP and displayed in the browser.
 
 [CanIUse-WEBP?](https://caniuse.com/webp)
 
