@@ -56,7 +56,7 @@ defmodule UpImgWeb.NoClientLive do
       |> assign_new(:bucket, fn _ -> EnvReader.bucket() end)
       |> allow_upload(:image_list,
         accept: ~w(.jpg .jpeg .png .webp),
-        max_entries: 2,
+        max_entries: 10,
         chunk_size: 64_000,
         auto_upload: true,
         max_file_size: 5_000_000,
@@ -102,12 +102,20 @@ defmodule UpImgWeb.NoClientLive do
       case check_if_exists do
         nil ->
           consume_uploaded_entry(socket, entry, fn %{file: binary} ->
-            entry
-            |> Map.put(:client_name, client_name)
-            |> Map.put(:image_path, build_path(client_name))
-            |> Map.put(:image_url, set_image_url(client_name))
-            |> Map.merge(%{resized_url: nil, thumb_url: nil, thumb_path: nil, errors: []})
-            |> save_to_file(binary)
+            {:ok,
+             entry
+             |> Map.put(:client_name, client_name)
+             |> Map.put(:image_path, build_path(client_name))
+             |> Map.put(:image_url, set_image_url(client_name))
+             |> Map.merge(%{
+               resized_url: nil,
+               thumb_url: nil,
+               thumb_path: nil,
+               errors: [],
+               binary: binary
+             })}
+
+            # |> save_to_file(binary)
           end)
 
         _ ->
@@ -136,17 +144,17 @@ defmodule UpImgWeb.NoClientLive do
     end
   end
 
-  def save_to_file(entry, binary) do
-    case File.open(entry.image_path, [:binary, :write]) do
-      {:ok, file} ->
-        IO.binwrite(file, binary)
-        File.close(file)
-        {:ok, entry}
+  # def save_to_file(entry, binary) do
+  #   case File.open(entry.image_path, [:binary, :write]) do
+  #     {:ok, file} ->
+  #       IO.binwrite(file, binary)
+  #       File.close(file)
+  #       {:ok, entry}
 
-      {:error, reason} ->
-        {:ok, {:error, reason}}
-    end
-  end
+  #     {:error, reason} ->
+  #       {:ok, {:error, reason}}
+  #   end
+  # end
 
   @doc """
   Transforms (thumbnail & resize to max screen) into WEBP and saves on server in "/image_uploads"
@@ -154,44 +162,52 @@ defmodule UpImgWeb.NoClientLive do
   The data `%{"screenHeight" => h, "screenWidth" => w} = screen` is handled by a JS hook in the `mount` with a `push_event`.
   """
   def transform_image(lv_pid, entry, screen) do
-    %{client_name: client_name, image_path: image_path} = entry
-    # image_path
-    # "/Users/.../image_uploads/Screenshot2023-08-04at210431.png"
-
-    thumb_name = thumb_name(client_name)
-    thumb_path = thumb_name(client_name) |> build_path()
-    # "/Users/.../image_uploads/Screenshot2023-08-04at210431-th.webp"
+    thumb_name = thumb_name(entry.client_name)
+    thumb_path = thumb_name(entry.client_name) |> build_path()
+    # example: "/Users/.../image_uploads/Screenshot2023-08-04at210431-th.webp"
 
     rename_to_webp =
-      if Path.extname(client_name) == ".webp",
-        do: client_name,
-        else: (client_name |> Path.rootname()) <> ".webp"
+      if Path.extname(entry.client_name) == ".webp",
+        do: entry.client_name,
+        else: (entry.client_name |> Path.rootname()) <> ".webp"
 
-    # "Screenshot2023-08-04at210431.webp"
+    # example: "Screenshot2023-08-04at210431.webp"
 
     resized_name = "resized-" <> rename_to_webp
     resized_path = build_path(resized_name)
-    # "/Users/.../image_uploads/resized-Screenshot2023-08-04at210431.webp"
+    # example: "/Users/.../image_uploads/resized-Screenshot2023-08-04at210431.webp"
 
-    with {:ok, img_origin} <- Image.new_from_file(image_path),
-         {:ok, scale} <- get_scale(img_origin, screen),
-         {:ok, img_resized} <- Operation.resize(img_origin, scale),
-         :ok <- Operation.webpsave(img_resized, resized_path),
-         {:ok, img_thumb} <- Operation.thumbnail(image_path, @thumb_size),
-         :ok <- Operation.webpsave(img_thumb, thumb_path) do
-      entry =
-        Map.merge(entry, %{
-          resized_path: resized_path,
-          resized_name: resized_name,
-          thumb_name: thumb_name,
-          thumb_path: thumb_path
-        })
+    try do
+      {:ok, img_b} = Vix.Vips.Image.new_from_buffer(entry.binary)
+      {:ok, scale} = get_scale(img_b, screen)
 
-      send(lv_pid, {:transform_success, entry})
-    else
-      {:error, message} ->
-        send(lv_pid, {:transform_error, message})
+      [:ok, :ok] =
+        [
+          Task.async(fn ->
+            {:ok, img_resized} = Operation.resize(img_b, scale)
+            :ok = Operation.webpsave(img_resized, resized_path)
+          end),
+          Task.async(fn ->
+            {:ok, img_thumb} = Operation.thumbnail_image(img_b, @thumb_size)
+            :ok = Operation.webpsave(img_thumb, thumb_path)
+          end)
+        ]
+        |> Task.await_many()
+    rescue
+      e ->
+        {:error, inspect(e)}
+        send(lv_pid, {:transform_error, inspect(e)})
     end
+
+    entry =
+      Map.merge(entry, %{
+        resized_path: resized_path,
+        resized_name: resized_name,
+        thumb_name: thumb_name,
+        thumb_path: thumb_path
+      })
+
+    send(lv_pid, {:transform_success, entry})
   end
 
   @doc """
