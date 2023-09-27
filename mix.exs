@@ -26,7 +26,7 @@ defmodule UpImg.MixProject do
   def application do
     [
       mod: {UpImg.Application, []},
-      extra_applications: [:logger, :runtime_tools, :wx, :observer]
+      extra_applications: [:logger, :runtime_tools]
     ]
   end
 
