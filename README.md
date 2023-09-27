@@ -288,7 +288,26 @@ config :up_img, UpImgWeb.Endpoint,
 
 ### Streams of Uploads from S3
 
-All the users' uploaded files are displayed as streams. To limit data usage, a thumbnail (5-10 kB) is displayed which links to the resized/webp format of the original image.
+All the users' uploaded files are displayed as `streams``. To limit data usage, a thumbnail (5-10 kB) is displayed which links to the resized/webp format of the original image.
+
+Notice that when we upload a file to S3, we save the URL returned by S3 into the database. We then display all the uploaded files from S3 for this user by inserting this file into the stream. We need to pass a `%Phoenix.LiveVew.UploadEntry{}` struct - populated by the up-to-date data received from S3 - for `stream.insert` to work.
+
+```elixir
+data =
+  Map.new()
+  |> Map.put(:resized_url, map.resized_url)
+  |> Map.put(:thumb_url, map.thumb_url)
+  |> Map.put(:uuid, map.uuid)
+  |> Map.put(:user_id, current_user.id)
+
+case Url.changeset(%Url{}, data) |> Repo.insert() do
+  {:ok, _} ->
+    new_file =
+      %Phoenix.LiveView.UploadEntry{}
+      |> Map.merge(data)
+
+    {:noreply, stream_insert(socket, :uploaded_files_to_S3, new_file)}
+```
 
 ### Serving SVG
 
