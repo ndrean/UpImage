@@ -61,6 +61,7 @@ defmodule UpImgWeb.Router do
   scope "/api", UpImgWeb do
     pipe_through :api
     get "/", ApiController, :create
+    post "/", ApiController, :create
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

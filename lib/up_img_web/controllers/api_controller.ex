@@ -7,17 +7,10 @@ defmodule UpImgWeb.ApiController do
   require Logger
 
   def parse_size(w, h, _width, _height) when is_nil(h) or is_nil(w) do
-    IO.puts("nil")
     {:ok, {1, 1}}
   end
 
-  # def parse_size(w, h, width, height) when is_integer(w) and is_integer(h) do
-  #   {:ok, {w, h}}
-  # end
-
   def parse_size(w, h, width, height) when is_integer(w) == false and is_integer(h) == false do
-    IO.puts("resize")
-
     case {Integer.parse(w), Integer.parse(h)} do
       {:error, _} ->
         {:error, :wrong_format}
@@ -28,7 +21,6 @@ defmodule UpImgWeb.ApiController do
       {{w_int, _}, {h_int, _}} ->
         {:ok, {w_int / width, h_int / height}}
     end
-    |> dbg()
   end
 
   def check_url(url) do
@@ -41,13 +33,7 @@ defmodule UpImgWeb.ApiController do
       query: _query
     } = URI.parse(url)
 
-    case Enum.any?([scheme, auth, host, port, path]) do
-      true ->
-        :ok
-
-      false ->
-        :error
-    end
+    Enum.any?([scheme, auth, host, port, path])
   end
 
   def get_sizes_from_image(img) do
@@ -62,10 +48,12 @@ defmodule UpImgWeb.ApiController do
     end
   end
 
+  # to continue the POST endpoint, and accept a multipart.
   def create(conn, %{"path" => path, "name" => name} = params) do
     w = Map.get(params, "w")
     h = Map.get(params, "h")
 
+    # TODO move this into UpImg.
     new_path = NoClientLive.build_path(name)
 
     response =
@@ -98,10 +86,10 @@ defmodule UpImgWeb.ApiController do
     h = Map.get(params, "h")
 
     case check_url(url) do
-      :error ->
+      false ->
         json(conn, %{error: :bad_url})
 
-      :ok ->
+      true ->
         response =
           case Finch.build(:get, url) |> Finch.request(UpImg.Finch) do
             {:error, reason} ->
