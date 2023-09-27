@@ -564,7 +564,7 @@ defmodule UpImgWeb.NoClientLive do
     |> handle_result(lv_pid, uuid)
 
     # cleanup the files on the server
-    [%{path: p1}, %{path: p2}] = files |> dbg()
+    [%{path: p1}, %{path: p2}] = files
     handle_remove(self(), [p1, p2])
   end
 
