@@ -118,12 +118,14 @@ defmodule UpImgWeb.ApiController do
 
       true ->
         response =
-          with {:ok, %{status: 200, body: body}} <-
-                 Finch.request(Finch.build(:get, url), UpImg.Finch),
-               {:ok, p} <-
-                 check_body(body),
+          with req <- Finch.build(:get, url),
+               {:ok, stream_path} <-
+                 Plug.Upload.random_file("streamed"),
+               {:ok, file} <-
+                 stream_request_into(req, stream_path),
+               :ok <- check_size(file),
                {:ok, img} <-
-                 Image.new_from_file(p),
+                 Image.new_from_file(file),
                %{width: width, height: height} <-
                  Image.headers(img),
                {:ok, {hor_scale, vert_scale}} <-
@@ -143,7 +145,7 @@ defmodule UpImgWeb.ApiController do
                  ),
                {:ok, %{body: body}} <-
                  ExAws.request(req) do
-            File.rm_rf!(p)
+            File.rm_rf!(file)
             %{url: body |> xpath(~x"//text()") |> List.to_string()}
           else
             {:no_tmp, msg} ->
@@ -169,33 +171,33 @@ defmodule UpImgWeb.ApiController do
     end
   end
 
-  def check_body(body) do
-    {:ok, p} = Plug.Upload.random_file("local")
+  @doc """
+  Download in streams and write the stream into a temp file
+  """
+  def stream_request_into(req, path) do
+    {:ok, file} = File.open(path, [:binary, :write])
 
-    case save_to_file(p, body) do
+    streaming =
+      Finch.stream(req, UpImg.Finch, nil, fn
+        {:status, status}, _acc ->
+          status
+
+        {:headers, headers}, _acc ->
+          headers
+
+        {:data, data}, _acc ->
+          :ok = IO.binwrite(file, data)
+      end)
+
+    case File.close(file) do
       :ok ->
-        {:ok, p}
+        case streaming do
+          {:ok, _} ->
+            {:ok, path}
 
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
-  def save_to_file(path, binary) do
-    saving =
-      case File.open(path, [:binary, :write]) do
-        {:ok, file} ->
-          IO.binwrite(file, binary)
-          File.close(file)
-          check_size(path) |> dbg()
-
-        {:error, reason} ->
-          {:error, reason}
-      end
-
-    case saving do
-      :ok ->
-        check_file_headers(path)
+          {:error, reason} ->
+            {:error, reason}
+        end
 
       {:error, reason} ->
         {:error, reason}
@@ -213,20 +215,24 @@ defmodule UpImgWeb.ApiController do
   end
 
   def check_file_headers(path) do
-    case ExImageInfo.info(File.read!(path)) |> dbg() do
+    case ExImageInfo.info(File.read!(path)) do
       nil ->
         {:error, :not_an_accepted_type}
 
       {type, w, h, _} ->
-        case String.split(type, "/") do
-          ["image", ext] ->
-            if Enum.member?(@accepted_files, ext) and :ok == check_dim(w, h),
-              do: :ok,
-              else: {:error, :not_an_accepted_type}
+        check_headers(type, w, h)
+    end
+  end
 
-          _ ->
-            {:error, :not_an_accepted_type}
-        end
+  def check_headers(type, w, h) do
+    case String.split(type, "/") do
+      ["image", ext] ->
+        if Enum.member?(@accepted_files, ext) and :ok == check_dim(w, h),
+          do: :ok,
+          else: {:error, :not_an_accepted_type}
+
+      _ ->
+        {:error, :not_an_accepted_type}
     end
   end
 
