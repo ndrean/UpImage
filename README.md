@@ -36,6 +36,44 @@ You are limited to 5Mb and images with dimension less than 4200x4000.
 
 To use the API, you need to register and get a token from the webapp. Then you pass this token
 
+### Stream downloads and save to file
+
+While streaming down the data from the source, we simply write the chunk into a file. This file is a temporary file `Plug.Upload.random_file`. Note that we can also directly read the whole data from memory with `Vix.Vips.Image.new_from_buffer`.
+
+```elixir
+{:ok, path} = Plug.Upload.random_file("stream")
+
+def stream_request_into(req, path) do
+  {:ok, file} = File.open(path, [:binary, :write])
+
+  streaming =
+    Finch.stream(req, UpImg.Finch, nil, fn
+      {:status, status}, _acc ->
+        status
+
+      {:headers, headers}, _acc ->
+        headers
+
+      {:data, data}, _acc ->
+        :ok = IO.binwrite(file, data)
+    end)
+
+  case File.close(file) do
+    :ok ->
+      case streaming do
+        {:ok, _} ->
+          {:ok, path}
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+
+    {:error, reason} ->
+      {:error, reason}
+  end
+end
+```
+
 ## Webapp
 
 You select files and the server will produce a thumbnail (for the display) and a resized file. All will be WEBP and displayed in the browser.
