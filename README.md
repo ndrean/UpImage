@@ -4,15 +4,20 @@ This app uploads images to S3 and transforms them into WEBP format to save on ba
 
 You can use it in two ways:
 
-As an API: you pass a GET request to the endpoint <https://up-image.fly.dev/api> with a query string and get back a link to a resized WEBP picture from S3.
+- API: you pass a GET request to the endpoint <https://up-image.fly.dev/api> with a query string and get back a link to a resized WEBP picture from S3.
+  We use [libmagic](https://packages.debian.org/sid/libmagic-dev) via [geb_magic](https://github.com/evadne/gen_magic) to recognize the type of data in a file using "magic" numbers and get assured that we receive a file of type "image".
 
-You can use it two other ways.
+Test: to upload the 4177x3832-4.8MB image <https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg> to S3, and convert it into a WEBP image of 1440x1321-230kB, you pass into the query string the "url", a "name" and possibly the new desired width "w".
 
-- You pass a query string with the (physical) path and you can add a targeted size: `URI.encode_query(%{path: xx, name: xx, w: 900, h: 600})` to resize the file.
-- You can use an URL and a desired height and width in the query string, eg `?ulr=https://..../jpeg&h=600&w=600`
-  Both will deliver a `json` reply with the URL of the new file in S3.
+```bash
+curl  -X GET -H "Accept: application/json"  https://up-image.fly.dev/api?name=test_file&url=https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg&w=600
+```
 
-As a Webapp. You select files and the server will produce a thumbnail (for the display) and a resized file. All will be WEBP and displayed in the browser.
+and you receive a json response: `{"url": "https://xxx.amazonaws.com/xxxx/new_file.webp}`. This link is valid 1 hour.
+
+You are limited to 5Mb and images with dimension less than 4200x4000.
+
+- Webapp: You select files and the server will produce a thumbnail (for the display) and a resized file. All will be WEBP and displayed in the browser.
 
 [CanIUse-WEBP?](https://caniuse.com/webp)
 
