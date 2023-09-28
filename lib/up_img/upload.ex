@@ -23,7 +23,7 @@ defmodule UpImg.Upload do
   def bucket, do: EnvReader.bucket()
 
   def upload(image) do
-    with {:ok, file} <- hash_file(image),
+    with {:ok, file} <- FileUtils.hash_file(image),
          {:ok, upload_resp_body} <-
            upload_file_to_s3(file, image) do
       {:ok,
@@ -34,6 +34,23 @@ defmodule UpImg.Upload do
     else
       {:error, reason} -> {:error, reason}
     end
+  end
+
+  # Fetching the URL of the returned file.
+
+  def upload_file_to_s3(file, image) do
+    image.path
+    |> S3.Upload.stream_file()
+    |> S3.upload(bucket(), file,
+      acl: :public_read,
+      content_type: image.content_type
+    )
+    |> ExAws.request()
+  rescue
+    e ->
+      Logger.error("There was a problem uploading the file to S3.")
+      Logger.error(Exception.format(:error, e, __STACKTRACE__))
+      {:error, :upload_fail}
   end
 
   # Sample AWS S3 XML response:
@@ -60,47 +77,6 @@ defmodule UpImg.Upload do
   # Fetch the contents of the returned XML string from `ex_aws`.
   # This XML is parsed with `sweet_xml`:
   # github.com/kbrw/sweet_xml#the-x-sigil
-  #
-  # Fetching the URL of the returned file.
-
-  def upload_file_to_s3(file, image) do
-    {:ok, upload_response_body} =
-      image.path
-      |> S3.Upload.stream_file()
-      |> S3.upload(bucket(), file,
-        acl: :public_read,
-        content_type: image.content_type
-      )
-      |> ExAws.request()
-
-    # {:ok, upload_response_body}
-  rescue
-    e ->
-      Logger.error("There was a problem uploading the file to S3.")
-      Logger.error(Exception.format(:error, e, __STACKTRACE__))
-      {:error, :upload_fail}
-  end
-
-  def hash_file(image) do
-    ext = image.content_type |> MIME.extensions() |> List.first()
-
-    try do
-      sha256 = FileUtils.sha256(image.path)
-
-      case {sha256, ext} do
-        {_, nil} ->
-          Logger.error("File extension is invalid: #{inspect(image)}")
-          {:error, :invalid_extension}
-
-        {sha, ext} ->
-          {:ok, sha <> "." <> ext}
-      end
-    rescue
-      e in File.Error ->
-        Logger.error(inspect(e.reason))
-        {:error, :file_error}
-    end
-  end
 
   def get_ex_aws_request_config_override,
     do: Application.get_env(:ex_aws, :request_config_override)

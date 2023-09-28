@@ -1,0 +1,225 @@
+# Introduction
+
+## Section
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.7.0"},
+  {:vix, "~> 0.5"}
+])
+```
+
+```elixir
+# print vips version
+IO.puts("Version: " <> Vix.Vips.version())
+```
+
+## Vips Image
+
+All image IO operations such as reading and writing files are available in `Vix.Vips.Image` module. Image module also contains functions get image attributes. Most Vips operations takes `%Vix.Vips.Image{}` instance
+
+```elixir
+alias Vix.Vips.Image
+```
+
+Reading image from a file. Note that image is not actually loaded to the memory at this point. img is `%Image{}` struct.
+
+```elixir
+{:ok, %Image{} = img} = Image.new_from_file("~/Downloads/kitty.png")
+```
+
+You can also load image from binary. This let us to work images without touching file system. It tires to guess image format from the binary and uses correct loader.
+
+```elixir
+bin = File.read!("kitty.png")
+{:ok, %Image{} = img} = Image.new_from_buffer(bin)
+```
+
+If you know image format beforehand then you can use appropriate function from `Vix.Vips.Operation`. For example to load png you can use `Vix.Vips.Operation.pngload_buffer/2`.
+
+```elixir
+bin = File.read!("kitty.png")
+{:ok, {img, _flags}} = Vix.Vips.Operation.pngload_buffer(bin)
+```
+
+Writing `Image` to a file. Image type selected based on the image path extension. See documentation for more options
+
+```elixir
+:ok = Image.write_to_file(img, "kitty.jpg[Q=90]")
+```
+
+```elixir
+# let's print image dimensions
+IO.puts("Width: #{Image.width(img)}")
+IO.puts("Height: #{Image.height(img)}")
+```
+
+Kino supports showing image inline. We can use this to display image in the livebook.
+This opens gate for exploratory image processing
+
+```elixir
+defmodule VixExt do
+  alias Vix.Vips.Operation
+
+  @max_height 500
+
+  def show(%Image{} = image) do
+    height = Image.height(image)
+
+    # scale down if image height is larger than 500px
+    image =
+      if height > @max_height do
+        Operation.resize!(image, @max_height / height)
+      else
+        image
+      end
+
+    # write vips-image as png image to memory
+    {:ok, image_bin} = Image.write_to_buffer(image, ".png")
+    Kino.render(Kino.Image.new(image_bin, "image/png"))
+
+    :ok
+  end
+end
+```
+
+```elixir
+import VixExt
+
+# Lets see show in action
+show(img)
+```
+
+## Vips Operations
+
+All image processing operations are available in `Vix.Vips.Operation`
+
+```elixir
+alias Vix.Vips.Operation
+```
+
+### Crop
+
+Getting a rectangular region from the image
+
+```elixir
+{:ok, extract_img} = Operation.extract_area(img, 100, 50, 200, 200)
+show(extract_img)
+```
+
+### Thumbnail
+
+This operation is significantly faster than normal resize due to
+several optimizations such as shrink-on-load.  You can read more about
+it in the libvips docs: https://github.com/libvips/libvips/wiki/HOWTO----Image-shrinking
+
+Check Vix docs for more details about several optional parameters
+
+```elixir
+{:ok, thumb} = Operation.thumbnail("kitty.png", 100)
+show(thumb)
+```
+
+### Resize
+
+Resize image to 400x600. `resize` function accepts scaling factor.
+Skip `vscale` if you want to preserve aspect ratio
+
+```elixir
+IO.puts("Width: #{Image.width(img)}")
+IO.puts("Height: #{Image.height(img)}")
+hscale = 400 / Image.width(img)
+vscale = 600 / Image.height(img)
+
+{:ok, resized_img} = Operation.resize(img, hscale, vscale: vscale)
+IO.puts("Width: #{Image.width(resized_img)}")
+IO.puts("Height: #{Image.height(resized_img)}")
+show(resized_img)
+```
+
+### Flip
+
+```elixir
+direction_input =
+  Kino.Input.select("Direction: ",
+    VIPS_DIRECTION_HORIZONTAL: "Horizontal",
+    VIPS_DIRECTION_VERTICAL: "Vertical"
+  )
+```
+
+```elixir
+direction = Kino.Input.read(direction_input)
+
+{:ok, flipped_img} = Operation.flip(img, direction)
+show(flipped_img)
+```
+
+### Text
+
+Text operation takes multiple optional parameters. See [libvips doc](https://libvips.github.io/libvips/API/current/libvips-create.html#vips-text ) for more details
+
+```elixir
+text_input = Kino.Input.text("Text: ")
+```
+
+```elixir
+str = String.trim(Kino.Input.read(text_input))
+{:ok, {text, _}} = Operation.text(str, dpi: 300, rgba: true)
+
+# add text to an image
+{:ok, inserted_text_img} = Operation.composite2(img, text, :VIPS_BLEND_MODE_OVER, x: 50, y: 20)
+
+show(inserted_text_img)
+```
+
+### Creating GIF
+
+```elixir
+black = Operation.black!(500, 500, bands: 3)
+
+# create images with different grayscale
+frames =
+  Enum.map(1..255//10, fn n ->
+    Operation.linear!(black, [1], [n / 255, n / 255, n / 255])
+  end)
+
+{:ok, joined_img} = Operation.arrayjoin(frames, across: 1)
+
+{:ok, joined_img} =
+  Image.mutate(joined_img, fn mut_img ->
+    frame_delay = List.duplicate(100, length(frames))
+    :ok = Vix.Vips.MutableImage.set(mut_img, "delay", :VipsArrayInt, frame_delay)
+  end)
+
+:ok = Operation.gifsave(joined_img, Path.expand("~/Downloads/bw.gif"), "page-height": 500)
+```
+
+### Few more operations
+
+```elixir
+# Gaussian blur
+{:ok, blurred_img} = Operation.gaussblur(img, 5)
+show(blurred_img)
+
+# convert image to a grayscale image
+{:ok, bw_img} = Operation.colourspace(img, :VIPS_INTERPRETATION_B_W)
+show(bw_img)
+
+# adding gray border
+{:ok, extended_img} =
+  Operation.embed(img, 10, 10, Image.width(img) + 20, Image.height(img) + 20,
+    extend: :VIPS_EXTEND_BACKGROUND,
+    background: [128]
+  )
+
+show(extended_img)
+
+# rotate image 90 degree clockwise
+{:ok, rotated_img} = Operation.rot(img, :VIPS_ANGLE_D90)
+show(rotated_img)
+
+# join two images horizontally
+{:ok, main_img} = Image.new_from_file("~/Downloads/kitten.svg")
+{:ok, joined_img} = Operation.join(img, main_img, :VIPS_DIRECTION_HORIZONTAL, expand: true)
+show(joined_img)
+```

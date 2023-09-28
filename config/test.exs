@@ -36,7 +36,7 @@ config :ex_aws,
   access_key_id: "AWS_ACCESS_KEY_ID",
   secret_access_key: "AWS_SECRET_ACCESS_KEY",
   region: "AWS_REGION",
-  bucket: "AWS_S3_BUCKET",
+  bucket: System.get_env("AWS_S3_BUCKET"),
   request_config_override: %{}
 
 config :up_img, :github,

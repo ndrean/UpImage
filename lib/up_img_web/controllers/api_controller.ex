@@ -6,34 +6,41 @@ defmodule UpImgWeb.ApiController do
   alias Vix.Vips.{Image, Operation}
   require Logger
 
-  def parse_size(w, h, _width, _height) when is_nil(h) or is_nil(w) do
-    {:ok, {1, 1}}
+  def values_from_map(map, keys \\ []) when is_map(map) and is_list(keys),
+    do: Enum.map(keys, &Map.get(map, &1))
+
+  def check_url(url),
+    do:
+      URI.parse(url)
+      |> values_from_map([:scheme, :authority, :host, :port])
+      |> Enum.all?()
+
+  def parse_size(w, _h, width, _height) when is_nil(w) do
+    {:ok, {1440 / width, nil}}
   end
 
-  def parse_size(w, h, width, height) when is_integer(w) == false and is_integer(h) == false do
+  def parse_size(w, h, width, height) when is_nil(h) do
+    parse_size(w, "", width, height)
+  end
+
+  def parse_size(_, _, width, height) when width > 4200 or height > 4000 do
+    {:error, :too_large}
+  end
+
+  def parse_size(w, h, width, height) do
     case {Integer.parse(w), Integer.parse(h)} do
-      {:error, _} ->
+      {:error, :error} ->
         {:error, :wrong_format}
 
-      {_, :error} ->
+      {:error, {_h_int, _}} ->
         {:error, :wrong_format}
+
+      {{w_int, _}, :error} ->
+        {:ok, {w_int / width, nil}}
 
       {{w_int, _}, {h_int, _}} ->
         {:ok, {w_int / width, h_int / height}}
     end
-  end
-
-  def check_url(url) do
-    %URI{
-      scheme: scheme,
-      authority: auth,
-      host: host,
-      port: port,
-      path: path,
-      query: _query
-    } = URI.parse(url)
-
-    Enum.any?([scheme, auth, host, port, path])
   end
 
   def get_sizes_from_image(img) do
@@ -44,7 +51,23 @@ defmodule UpImgWeb.ApiController do
     if is_integer(width) and width != 0 and is_integer(height) and height != 0 do
       {:ok, {width, height}}
     else
-      {:error, :image_not_reaable}
+      {:error, :image_not_readable}
+    end
+  rescue
+    _ ->
+      {:error, :image_not_readable}
+  end
+
+  def resize(img, horizontal_scale, vertical_scale \\ nil) do
+    cond do
+      horizontal_scale == nil ->
+        {:ok, img}
+
+      horizontal_scale != nil && vertical_scale == nil ->
+        Operation.resize(img, horizontal_scale)
+
+      true ->
+        Operation.resize(img, horizontal_scale, vscale: vertical_scale)
     end
   end
 
@@ -60,7 +83,7 @@ defmodule UpImgWeb.ApiController do
       with {:ok, img} <- Image.new_from_file(path),
            {:ok, {width, height}} <- get_sizes_from_image(img),
            {:ok, {w, h}} <- parse_size(w, h, width, height),
-           {:ok, img_resized} <- Operation.resize(img, h, vscale: w),
+           {:ok, img_resized} <- resize(img, h, w),
            :ok <-
              Operation.webpsave(img_resized, new_path) do
         {:ok, %{url: url}} =
@@ -98,9 +121,9 @@ defmodule UpImgWeb.ApiController do
             {:ok, %{status: 200, body: body}} ->
               with {:ok, img} <- Image.new_from_buffer(body),
                    %{width: width, height: height} <- Image.headers(img),
-                   {:ok, {ww, hh}} <- parse_size(w, h, width, height),
+                   {:ok, {hor_scale, vert_scale}} <- parse_size(w, h, width, height),
                    {:ok, img_resized} <-
-                     Operation.resize(img, hh, vscale: ww),
+                     resize(img, hor_scale, vert_scale),
                    {:ok, path} <- Plug.Upload.random_file("local_file"),
                    :ok <- Operation.webpsave(img_resized, path),
                    stream <- ExAws.S3.Upload.stream_file(path),

@@ -3,6 +3,28 @@ defmodule FileUtils do
   This module retrieves information about files using the unix command "file".
   It just gives you the files MIME-type in a string representation.
   """
+  require Logger
+
+  def hash_file(image) do
+    ext = image.content_type |> MIME.extensions() |> List.first()
+
+    try do
+      sha = FileUtils.sha256(image.path)
+
+      case {sha, ext} do
+        {_, nil} ->
+          Logger.error("File extension is invalid: #{inspect(image)}")
+          {:error, :invalid_extension}
+
+        {sha, ext} ->
+          {:ok, sha <> "." <> ext}
+      end
+    rescue
+      e in File.Error ->
+        Logger.error(inspect(e.reason))
+        {:error, :file_error}
+    end
+  end
 
   @doc """
   Hash a file
