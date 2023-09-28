@@ -92,4 +92,31 @@ defmodule ApiControllerTest do
     conn = Map.put(conn, :host, "http://localhost:4000/api")
     # Api.create(conn, %{"url" => @nasa, "name" => "real_test", "w" => "1440"}) |> dbg()
   end
+
+  test "check_dim/2" do
+    assert Api.check_dim(5000, 1000) == :error
+    assert Api.check_dim(1000, 5000) == :error
+    assert Api.check_dim(1000, 1000) == :ok
+  end
+
+  test "check_headers/3" do
+    type = "image/webp"
+    assert Api.check_headers("image/gif", 1400, 700) == {:error, :not_an_accepted_type}
+    assert Api.check_headers("image/webp", 1400, 700) == :ok
+    assert Api.check_headers("text/html", 100, 200) == {:error, :not_an_accepted_type}
+  end
+
+
+  test "check_file_headers/1" do
+    img = Path.join([File.cwd!(), "priv", "static", "image_uploads", "milky.jpeg"])
+    assert Api.check_file_headers(img) == :ok
+
+    ex = Path.join([File.cwd!(), "lib", "up_img", "accounts.ex"])
+    assert Api.check_file_headers(ex) ==  {:error, :not_an_accepted_type}
+  end
+
+  test "check_size/1" do
+    img = Path.join([File.cwd!(), "priv", "static", "image_uploads", "milky.jpeg"])
+    assert Api.check_size(img) == :ok
+  end
 end

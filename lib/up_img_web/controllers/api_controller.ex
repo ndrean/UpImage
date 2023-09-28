@@ -1,4 +1,9 @@
 defmodule UpImgWeb.ApiController do
+  @moduledoc """
+  API endpoint to transform a picture into a WEBP and upload to S3.
+
+  Returns a JSON response.
+  """
   use UpImgWeb, :controller
   import SweetXml
 
@@ -9,16 +14,19 @@ defmodule UpImgWeb.ApiController do
   @accepted_files ["jpeg", "jpg", "png", "webp"]
   @max_w 4200
   @max_h 4000
+  @max_size 5_100_000
 
   def values_from_map(map, keys \\ []) when is_map(map) and is_list(keys),
     do: Enum.map(keys, &Map.get(map, &1))
 
-  def check_url(url),
-    do:
-      URI.parse(url)
-      |> values_from_map([:scheme, :authority, :host, :port])
-      |> Enum.all?()
+  def check_url(url) do
+    URI.parse(url)
+    |> values_from_map([:scheme, :authority, :host, :port])
+    |> Enum.all?()
+  end
 
+  @spec parse_size(any, any, any, any) ::
+          {:error, :too_large | :wrong_format} | {:ok, {float, nil | float}}
   def parse_size(w, _h, width, _height) when is_nil(w) do
     {:ok, {1440 / width, nil}}
   end
@@ -46,6 +54,7 @@ defmodule UpImgWeb.ApiController do
         {:ok, {w_int / width, h_int / height}}
     end
   end
+
 
   def get_sizes_from_image(img) do
     width = Image.width(img)
@@ -76,11 +85,11 @@ defmodule UpImgWeb.ApiController do
   end
 
   # to continue the POST endpoint, and accept a multipart.
+  #  move NoClientLive.build_path  into UpImg.
   def create(conn, %{"path" => path, "name" => name} = params) do
     w = Map.get(params, "w")
     h = Map.get(params, "h")
 
-    # TODO move this into UpImg.
     new_path = NoClientLive.build_path(name)
 
     response =
@@ -135,16 +144,18 @@ defmodule UpImgWeb.ApiController do
                {:ok, path} <-
                  Plug.Upload.random_file("local_file"),
                :ok <-
-                 Operation.webpsave(img_resized, path),
-               stream <-
-                 ExAws.S3.Upload.stream_file(path),
-               req <-
-                 ExAws.S3.upload(stream, UpImg.EnvReader.bucket(), name <> ".webp",
-                   acl: :public_read,
-                   content_type: "image/webp"
-                 ),
-               {:ok, %{body: body}} <-
-                 ExAws.request(req) do
+                 Operation.webpsave(img_resized, path) do
+            stream =
+              ExAws.S3.Upload.stream_file(path)
+
+            req =
+              ExAws.S3.upload(stream, UpImg.EnvReader.bucket(), name <> ".webp",
+                acl: :public_read,
+                content_type: "image/webp"
+              )
+
+            {:ok, %{body: body}} = ExAws.request(req)
+
             File.rm_rf!(file)
             %{url: body |> xpath(~x"//text()") |> List.to_string()}
           else
@@ -159,9 +170,6 @@ defmodule UpImgWeb.ApiController do
             {:error, msg} ->
               Logger.warning(inspect(msg))
               {:error, inspect(msg)}
-
-            {:error, reason} ->
-              %{error: reason}
           end
 
         case response do
@@ -204,16 +212,22 @@ defmodule UpImgWeb.ApiController do
     end
   end
 
+  @doc """
+  Read with `File.stat` the size of the file.
+  """
   def check_size(path) do
     case File.stat(path) do
       {:ok, data} ->
-        if data.size > 5_000_000, do: {:error, :too_large}, else: :ok
+        if data.size > @max_size, do: {:error, :too_large}, else: :ok
 
       {:error, reason} ->
         {:error, reason}
     end
   end
 
+  @doc """
+  Evaluate with ExImageInfo the type of the image
+  """
   def check_file_headers(path) do
     case ExImageInfo.info(File.read!(path)) do
       nil ->
@@ -224,19 +238,29 @@ defmodule UpImgWeb.ApiController do
     end
   end
 
+  @doc """
+  Screen the results of `check_file_headers/1`
+  """
   def check_headers(type, w, h) do
     case String.split(type, "/") do
       ["image", ext] ->
-        if Enum.member?(@accepted_files, ext) and :ok == check_dim(w, h),
-          do: :ok,
-          else: {:error, :not_an_accepted_type}
+        cond do
+          Enum.member?(@accepted_files, ext) == false -> {:error, :not_an_accepted_type}
+          :error == check_dim(w, h) -> {:error, :not_an_accepted_type}
+          true -> :ok
+        end
 
       _ ->
         {:error, :not_an_accepted_type}
     end
   end
 
+
   def check_dim(w, h) do
-    if w > @max_w or h > @max_h, do: {:error, :too_large}, else: :ok
+    cond do
+      w > @max_w -> :error
+      h > @max_h -> :error
+      true -> :ok
+    end
   end
 end

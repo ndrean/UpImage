@@ -16,10 +16,18 @@ We use [ExIamgeInfo](https://github.com/Group4Layers/ex_image_info) to recognize
 
 ### Example
 
-To upload the 4177x3832-4.8MB image <https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg> to S3, and convert it into a WEBP image of 1440x1321-230kB, you pass into the query string the "url", a "name" and possibly the new desired width "w".
+To upload the 4177x3832-5MB image <https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg> to S3, and convert it into a WEBP image of 700x632-31kB, you pass into the query string the "url", a "name" and possibly the new desired width "w".
 
 ```bash
-curl  -X GET -H "Accept: application/json"  https://up-image.fly.dev/api?name=test_file&w=1400&url=https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg
+curl  -X GET -H "Accept: application/json"  https://up-image.fly.dev/api?name=test_file&w=700&url=https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg
+
+# {"error":":too_large"}
+```
+
+```bash
+curl  -X GET -H "Accept: application/json"  https://up-image.fly.dev/api\?name\=test_file\&w\=1400\&url\=https://apod.nasa.gov/apod/image/2309/STSCI-HST-abell370_1797x2000.jpg
+
+# {"url":"https://s3.eu-west-3.amazonaws.com/xxxx/test_file.webp"}
 ```
 
 If successful, you will receive a json response: `{"url": "https://xxx.amazonaws.com/xxxx/new_file.webp}` or `{"error: reason}`. This link is valid 1 hour.
