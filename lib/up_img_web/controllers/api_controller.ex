@@ -7,6 +7,7 @@ defmodule UpImgWeb.ApiController do
   use UpImgWeb, :controller
   import SweetXml
 
+  alias UpImgWeb.ApiController
   alias UpImgWeb.NoClientLive
   alias Vix.Vips.{Image, Operation}
   require Logger
@@ -55,22 +56,18 @@ defmodule UpImgWeb.ApiController do
     end
   end
 
-
+  @spec get_sizes_from_image(any) ::
+          {:error, :image_not_readable} | {:ok, {pos_integer, pos_integer}}
   def get_sizes_from_image(img) do
     width = Image.width(img)
     height = Image.height(img)
-    {width, height}
-
-    if is_integer(width) and width != 0 and is_integer(height) and height != 0 do
-      {:ok, {width, height}}
-    else
-      {:error, :image_not_readable}
-    end
+    {:ok, {width, height}}
   rescue
     _ ->
       {:error, :image_not_readable}
   end
 
+  @spec resize(any, any, any) :: {:error, any} | {:ok, any}
   def resize(img, horizontal_scale, vertical_scale \\ nil) do
     cond do
       horizontal_scale == nil ->
@@ -94,9 +91,9 @@ defmodule UpImgWeb.ApiController do
 
     response =
       with {:ok, img} <- Image.new_from_file(path),
-           {:ok, {width, height}} <- get_sizes_from_image(img),
+           {:ok, {width, height}} <- ApiController.get_sizes_from_image(img),
            {:ok, {w, h}} <- parse_size(w, h, width, height),
-           {:ok, img_resized} <- resize(img, h, w),
+           {:ok, img_resized} <- ApiController.resize(img, h, w),
            :ok <-
              Operation.webpsave(img_resized, new_path) do
         {:ok, %{url: url}} =
@@ -105,6 +102,7 @@ defmodule UpImgWeb.ApiController do
         File.rm_rf!(new_path)
         {:ok, url}
       else
+        {:error, :image_not_readable} -> {:error, :image_not_readable}
         {:error, reason} -> {:error, reason}
       end
 
@@ -140,7 +138,7 @@ defmodule UpImgWeb.ApiController do
                {:ok, {hor_scale, vert_scale}} <-
                  parse_size(w, h, width, height),
                {:ok, img_resized} <-
-                 resize(img, hor_scale, vert_scale),
+                 ApiController.resize(img, hor_scale, vert_scale),
                {:ok, path} <-
                  Plug.Upload.random_file("local_file"),
                :ok <-
@@ -254,7 +252,6 @@ defmodule UpImgWeb.ApiController do
         {:error, :not_an_accepted_type}
     end
   end
-
 
   def check_dim(w, h) do
     cond do
