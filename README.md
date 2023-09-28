@@ -4,22 +4,33 @@ This app uploads images to S3 and transforms them into WEBP format to save on ba
 
 You can use it in two ways:
 
-- API: you pass a GET request to the endpoint <https://up-image.fly.dev/api> with a query string and get back a link to a resized WEBP picture from S3.
-  We use [libmagic](https://packages.debian.org/sid/libmagic-dev) via [geb_magic](https://github.com/evadne/gen_magic) to recognize the type of data in a file using "magic" numbers and get assured that we receive a file of type "image".
+## API
 
-Test: to upload the 4177x3832-4.8MB image <https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg> to S3, and convert it into a WEBP image of 1440x1321-230kB, you pass into the query string the "url", a "name" and possibly the new desired width "w".
+It exposes an GET endpoint <https://up-image.fly.dev/api> to which you adjoin a query string with the parameters "name" (a `:string`, the name you wnat ot give to your file), a "url" (which serves the picture you want) and possibly a width "w" and optionnal a height "h" if you want to change the ratio.
+
+You receive a json response with a link to a resized WEBP picture from S3.
+
+~~We use **[libmagic](https://packages.debian.org/sid/libmagic-dev)** via [gen_magic](https://github.com/evadne/gen_magic). It works with magic numbers. It needs a depency in the Dockerfile~~
+
+We use [ExIamgeInfo](https://github.com/Group4Layers/ex_image_info) to recognize the type of data. It assures that we receive a file of type "image".
+
+### Example
+
+To upload the 4177x3832-4.8MB image <https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg> to S3, and convert it into a WEBP image of 1440x1321-230kB, you pass into the query string the "url", a "name" and possibly the new desired width "w".
 
 ```bash
-curl  -X GET -H "Accept: application/json"  https://up-image.fly.dev/api?name=test_file&url=https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg&w=600
+curl  -X GET -H "Accept: application/json"  https://up-image.fly.dev/api?name=test_file&w=1400&url=https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg
 ```
 
-and you receive a json response: `{"url": "https://xxx.amazonaws.com/xxxx/new_file.webp}`. This link is valid 1 hour.
+If successful, you will receive a json response: `{"url": "https://xxx.amazonaws.com/xxxx/new_file.webp}` or `{"error: reason}`. This link is valid 1 hour.
 
 You are limited to 5Mb and images with dimension less than 4200x4000.
 
 To use the API, you need to register and get a token from the webapp. Then you pass this token
 
-- Webapp: You select files and the server will produce a thumbnail (for the display) and a resized file. All will be WEBP and displayed in the browser.
+## Webapp
+
+You select files and the server will produce a thumbnail (for the display) and a resized file. All will be WEBP and displayed in the browser.
 
 [CanIUse-WEBP?](https://caniuse.com/webp)
 

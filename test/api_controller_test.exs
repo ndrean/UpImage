@@ -7,6 +7,9 @@ defmodule ApiControllerTest do
   alias UpImgWeb.ApiController, as: Api
   alias Vix.Vips.{Image, Operation}
   @nasa "https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg"
+  @nasa2 "https://apod.nasa.gov/apod/image/2309/SpriteTree_Villaeys_1333.jpg"
+  @too_big "https://apod.nasa.gov/apod/image/2309/M8-Mos-SL10-DCPrgb-st-154-cC-cr.jpg"
+  @not_accepted_type "https://apod.nasa.gov/apod/ap230914.html"
 
   test "values_from_map/2" do
     assert Api.values_from_map(%{a: 1}) == []

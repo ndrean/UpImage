@@ -6,6 +6,10 @@ defmodule UpImgWeb.ApiController do
   alias Vix.Vips.{Image, Operation}
   require Logger
 
+  @accepted_files ["jpeg", "jpg", "png", "webp"]
+  @max_w 4200
+  @max_h 4000
+
   def values_from_map(map, keys \\ []) when is_map(map) and is_list(keys),
     do: Enum.map(keys, &Map.get(map, &1))
 
@@ -183,6 +187,7 @@ defmodule UpImgWeb.ApiController do
         {:ok, file} ->
           IO.binwrite(file, binary)
           File.close(file)
+          check_size(path) |> dbg()
 
         {:error, reason} ->
           {:error, reason}
@@ -197,13 +202,35 @@ defmodule UpImgWeb.ApiController do
     end
   end
 
+  def check_size(path) do
+    case File.stat(path) do
+      {:ok, data} ->
+        if data.size > 5_000_000, do: {:error, :too_large}, else: :ok
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
   def check_file_headers(path) do
-    case GenMagic.Helpers.perform_once(path) do
-      {:ok, %{mime_type: type}} ->
-        case String.contains?(type, "image") do
-          true -> :ok
-          false -> {:error, :not_an_accepted_type}
+    case ExImageInfo.info(File.read!(path)) |> dbg() do
+      nil ->
+        {:error, :not_an_accepted_type}
+
+      {type, w, h, _} ->
+        case String.split(type, "/") do
+          ["image", ext] ->
+            if Enum.member?(@accepted_files, ext) and :ok == check_dim(w, h),
+              do: :ok,
+              else: {:error, :not_an_accepted_type}
+
+          _ ->
+            {:error, :not_an_accepted_type}
         end
     end
+  end
+
+  def check_dim(w, h) do
+    if w > @max_w or h > @max_h, do: {:error, :too_large}, else: :ok
   end
 end
