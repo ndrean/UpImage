@@ -23,8 +23,6 @@ defmodule UpImg.Upload do
   def bucket, do: EnvReader.bucket()
 
   def upload(image) do
-    image |> dbg()
-
     with {:ok, file} <- hash_file(image),
          {:ok, upload_resp_body} <-
            upload_file_to_s3(file, image) do
@@ -75,7 +73,7 @@ defmodule UpImg.Upload do
       )
       |> ExAws.request()
 
-    {:ok, upload_response_body}
+    # {:ok, upload_response_body}
   rescue
     e ->
       Logger.error("There was a problem uploading the file to S3.")
