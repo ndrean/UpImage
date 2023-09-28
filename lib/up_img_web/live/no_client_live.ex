@@ -404,6 +404,11 @@ defmodule UpImgWeb.NoClientLive do
   end
 
   @impl true
+  def handle_event("copy-clip", _, socket) do
+    {:noreply, put_flash(socket, :info, "Copied to clipboard")}
+  end
+
+  @impl true
   def handle_event("load-more", _, socket) do
     {:noreply,
      socket

@@ -24,13 +24,14 @@ import topbar from "../vendor/topbar";
 import ScreenSize from "./screenSize.js";
 import ActivityTracker from "./activityTracker.js";
 import TabClosed from "./tabClosed";
+import Url2Clip from "./url2Clip";
 
 let csrfToken = document
   .querySelector("meta[name='csrf-token']")
   .getAttribute("content");
 let liveSocket = new LiveSocket("/live", Socket, {
   params: { _csrf_token: csrfToken },
-  hooks: { ActivityTracker, ScreenSize, TabClosed },
+  hooks: { ActivityTracker, ScreenSize, TabClosed, Url2Clip },
 });
 
 // Show progress bar on live navigation and form submits

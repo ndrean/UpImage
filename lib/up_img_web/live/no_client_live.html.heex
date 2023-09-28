@@ -54,7 +54,17 @@
                   </p>
                 </div>
               </div>
-              <div class="flex items-center justify-end gap-x-6">
+              <%!-- <div class="flex items-center justify-end gap-x-6"> --%>
+              <div class="flex flex-col items-center justify-center space-y-4">
+                <button
+                  id="copy-url-btn"
+                  phx-hook="Url2Clip"
+                  data-copy-url={file.resized_url}
+                  class="focus:bg-green-700 p-4 rounded hover:bg-green-500 bg-green-200"
+                >
+                  <.icon name="hero-clipboard-document-list" />
+                </button>
+
                 <button
                   type="button"
                   phx-click="delete-uploaded"
