@@ -114,47 +114,93 @@ defmodule UpImgWeb.ApiController do
 
       true ->
         response =
-          case Finch.build(:get, url) |> Finch.request(UpImg.Finch) do
+          with {:ok, %{status: 200, body: body}} <-
+                 Finch.request(Finch.build(:get, url), UpImg.Finch),
+               {:ok, p} <-
+                 check_body(body),
+               {:ok, img} <-
+                 Image.new_from_file(p),
+               %{width: width, height: height} <-
+                 Image.headers(img),
+               {:ok, {hor_scale, vert_scale}} <-
+                 parse_size(w, h, width, height),
+               {:ok, img_resized} <-
+                 resize(img, hor_scale, vert_scale),
+               {:ok, path} <-
+                 Plug.Upload.random_file("local_file"),
+               :ok <-
+                 Operation.webpsave(img_resized, path),
+               stream <-
+                 ExAws.S3.Upload.stream_file(path),
+               req <-
+                 ExAws.S3.upload(stream, UpImg.EnvReader.bucket(), name <> ".webp",
+                   acl: :public_read,
+                   content_type: "image/webp"
+                 ),
+               {:ok, %{body: body}} <-
+                 ExAws.request(req) do
+            File.rm_rf!(p)
+            %{url: body |> xpath(~x"//text()") |> List.to_string()}
+          else
+            {:no_tmp, msg} ->
+              Logger.warning(inspect(msg))
+              {:error, inspect(msg)}
+
+            {:too_many_attemps, msg} ->
+              Logger.warning(inspect(msg))
+              {:error, inspect(msg)}
+
+            {:error, msg} ->
+              Logger.warning(inspect(msg))
+              {:error, inspect(msg)}
+
             {:error, reason} ->
-              {:error, reason}
-
-            {:ok, %{status: 200, body: body}} ->
-              with {:ok, img} <- Image.new_from_buffer(body),
-                   %{width: width, height: height} <- Image.headers(img),
-                   {:ok, {hor_scale, vert_scale}} <- parse_size(w, h, width, height),
-                   {:ok, img_resized} <-
-                     resize(img, hor_scale, vert_scale),
-                   {:ok, path} <- Plug.Upload.random_file("local_file"),
-                   :ok <- Operation.webpsave(img_resized, path),
-                   stream <- ExAws.S3.Upload.stream_file(path),
-                   req <-
-                     ExAws.S3.upload(stream, UpImg.EnvReader.bucket(), name <> ".webp",
-                       acl: :public_read,
-                       content_type: "image/webp"
-                     ),
-                   {:ok, %{body: body}} <- ExAws.request(req) do
-                File.rm_rf!(path)
-
-                %{url: body |> xpath(~x"//text()") |> List.to_string()}
-              else
-                {:no_tmp, msg} ->
-                  Logger.warning(inspect(msg))
-                  {:error, inspect(msg)}
-
-                {:too_many_attemps, msg} ->
-                  Logger.warning(inspect(msg))
-                  {:error, inspect(msg)}
-
-                {:error, msg} ->
-                  Logger.warning(inspect(msg))
-                  {:error, inspect(msg)}
-              end
+              %{error: reason}
           end
 
         case response do
           {:error, reason} -> json(conn, %{error: reason})
           response -> json(conn, response)
         end
+    end
+  end
+
+  def check_body(body) do
+    {:ok, p} = Plug.Upload.random_file("local")
+
+    case save_to_file(p, body) do
+      :ok ->
+        {:ok, p}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  def save_to_file(path, binary) do
+    case File.open(path, [:binary, :write]) do
+      {:ok, file} ->
+        IO.binwrite(file, binary)
+        File.close(file)
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+
+    accepted_extensions = ["jpeg", "png", "webp", "jpeg"]
+
+    case FileUtils.info(path) do
+      {:ok, %{type: type, mime_ext: ext}} ->
+        Logger.info("#{type}, #{ext}")
+
+        case String.contains?(type, "image") or Enum.member?(accepted_extensions, ext) do
+          true -> :ok
+          false -> {:error, :not_an_accepted_type}
+        end
+
+      {:error, reason} ->
+        Logger.warning("#{inspect(reason)}")
+        {:error, reason}
     end
   end
 end
