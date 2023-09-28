@@ -17,6 +17,8 @@ and you receive a json response: `{"url": "https://xxx.amazonaws.com/xxxx/new_fi
 
 You are limited to 5Mb and images with dimension less than 4200x4000.
 
+To use the API, you need to register and get a token from the webapp. Then you pass this token
+
 - Webapp: You select files and the server will produce a thumbnail (for the display) and a resized file. All will be WEBP and displayed in the browser.
 
 [CanIUse-WEBP?](https://caniuse.com/webp)

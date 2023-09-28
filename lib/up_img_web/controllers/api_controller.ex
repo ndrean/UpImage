@@ -190,16 +190,20 @@ defmodule UpImgWeb.ApiController do
 
     case saving do
       :ok ->
-        case GenMagic.Helpers.perform_once(path) do
-          {:ok, %{mime_type: type}} ->
-            case String.contains?(type, "image") do
-              true -> :ok
-              false -> {:error, :not_an_accepted_type}
-            end
-        end
+        check_file_headers(path)
 
       {:error, reason} ->
         {:error, reason}
+    end
+  end
+
+  def check_file_headers(path) do
+    case GenMagic.Helpers.perform_once(path) do
+      {:ok, %{mime_type: type}} ->
+        case String.contains?(type, "image") do
+          true -> :ok
+          false -> {:error, :not_an_accepted_type}
+        end
     end
   end
 end
