@@ -178,28 +178,27 @@ defmodule UpImgWeb.ApiController do
   end
 
   def save_to_file(path, binary) do
-    case File.open(path, [:binary, :write]) do
-      {:ok, file} ->
-        IO.binwrite(file, binary)
-        File.close(file)
+    saving =
+      case File.open(path, [:binary, :write]) do
+        {:ok, file} ->
+          IO.binwrite(file, binary)
+          File.close(file)
 
-      {:error, reason} ->
-        {:error, reason}
-    end
+        {:error, reason} ->
+          {:error, reason}
+      end
 
-    accepted_extensions = ["jpeg", "png", "webp", "jpeg"]
-
-    case FileUtils.info(path) do
-      {:ok, %{type: type, mime_ext: ext}} ->
-        Logger.info("#{type}, #{ext}")
-
-        case String.contains?(type, "image") or Enum.member?(accepted_extensions, ext) do
-          true -> :ok
-          false -> {:error, :not_an_accepted_type}
+    case saving do
+      :ok ->
+        case GenMagic.Helpers.perform_once(path) do
+          {:ok, %{mime_type: type}} ->
+            case String.contains?(type, "image") do
+              true -> :ok
+              false -> {:error, :not_an_accepted_type}
+            end
         end
 
       {:error, reason} ->
-        Logger.warning("#{inspect(reason)}")
         {:error, reason}
     end
   end

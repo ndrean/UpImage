@@ -64,6 +64,7 @@ defmodule UpImg.MixProject do
       {:argon2_elixir, "~> 3.2"},
       {:cloak, "~> 1.1"},
       {:cloak_ecto, "~> 1.2"},
+      {:gen_magic, "~> 1.1.1"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:esbuild, "~> 0.7", runtime: Mix.env() == :dev},
       {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
