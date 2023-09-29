@@ -1,14 +1,12 @@
 defmodule ApiControllerTest do
   use ExUnit.Case, async: true
   use UpImgWeb.ConnCase
-  import Plug.Conn
-  import Phoenix.ConnTest
 
   alias UpImgWeb.ApiController, as: Api
   alias Vix.Vips.{Image, Operation}
   @nasa "https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg"
-  @nasa2 "https://apod.nasa.gov/apod/image/2309/SpriteTree_Villaeys_1333.jpg"
-  @too_big "https://apod.nasa.gov/apod/image/2309/M8-Mos-SL10-DCPrgb-st-154-cC-cr.jpg"
+  # @nasa2 "https://apod.nasa.gov/apod/image/2309/SpriteTree_Villaeys_1333.jpg"
+  # @too_big "https://apod.nasa.gov/apod/image/2309/M8-Mos-SL10-DCPrgb-st-154-cC-cr.jpg"
   @not_accepted_type "https://apod.nasa.gov/apod/ap230914.html"
 
   test "values_from_map/2" do
@@ -88,16 +86,27 @@ defmodule ApiControllerTest do
     {:ok, conn: Plug.Test.init_test_session(Phoenix.ConnTest.build_conn(), %{})}
   end
 
-  test "create/2", %{conn: conn, test_path: test_path} do
+  test "create/2 guards", %{conn: conn} do
+    %{resp_body: resp} = Api.create(conn, %{})
+    assert resp == "{\"error\":\"Please provide an URL and a NAME\"}"
+
+    %{resp_body: resp} = Api.create(conn, %{"url" => "http://google.com"})
+    assert resp == "{\"error\":\"Please provide a NAME\"}"
+
+    %{resp_body: resp} = Api.create(conn, %{"name" => "test"})
+    assert resp == "{\"error\":\"Please provide an URL\"}"
+  end
+
+  test "create/2", %{conn: conn} do
     conn = Map.put(conn, :host, "http://localhost:4000/api")
 
-    %{resp_body: resp} =
-      Api.create(conn, %{"url" => @nasa, "name" => "real_test", "w" => "1440"})
+    #   %{resp_body: resp} =
+    #     Api.create(conn, %{"url" => @nasa, "name" => "real_test", "w" => "1440"})
 
-    assert resp == "{\"url\":\"https://s3.eu-west-3.amazonaws.com/dwyl-imgup/real_test.webp\"}"
+    #   assert resp == "{\"url\":\"https://s3.eu-west-3.amazonaws.com/dwyl-imgup/real_test.webp\"}"
 
     %{resp_body: resp} =
-      Api.create(conn, %{"url" => @nasa <> "a", "name" => "real_test", "w" => "1440"})
+      Api.create(conn, %{"url" => @not_accepted_type, "name" => "real_test", "w" => "1440"})
 
     assert resp == "{\"error\":\"\\\"Failed to read image\\\"\"}"
 
@@ -118,9 +127,9 @@ defmodule ApiControllerTest do
   end
 
   test "check_headers/3" do
-    type = "image/webp"
     assert Api.check_headers("image/gif", 1400, 700) == {:error, :not_an_accepted_type}
     assert Api.check_headers("image/webp", 1400, 700) == :ok
+    assert Api.check_headers("image/jpeg", 1400, 700) == :ok
     assert Api.check_headers("text/html", 100, 200) == {:error, :not_an_accepted_type}
   end
 

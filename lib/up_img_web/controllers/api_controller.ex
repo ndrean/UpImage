@@ -175,6 +175,22 @@ defmodule UpImgWeb.ApiController do
     end
   end
 
+  def create(conn, params) do
+    cond do
+      map_size(params) == 0 ->
+        json(conn, %{error: "Please provide an URL and a NAME"})
+
+      Map.get(params, "url") == nil ->
+        json(conn, %{error: "Please provide an URL"})
+
+      Map.get(params, "name") == nil ->
+        json(conn, %{error: "Please provide a NAME"})
+
+      true ->
+        json(conn, %{error: "Please provide an URL and a NAME"})
+    end
+  end
+
   @doc """
   Download in streams and write the stream into a temp file
   """
