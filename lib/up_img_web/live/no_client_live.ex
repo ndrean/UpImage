@@ -212,13 +212,20 @@ defmodule UpImgWeb.NoClientLive do
   @doc """
   Applies a resizing based on the current screen size.
   """
-  def get_scale(img, screen) do
-    %{"screenHeight" => h, "screenWidth" => w} = screen
+  def get_scale(img, screen, fit \\ false) do
+    %{"screenHeight" => h_screen, "screenWidth" => w_screen} = screen
     h_origin = Image.height(img)
     w_origin = Image.width(img)
-    hscale = if h < h_origin, do: h / h_origin, else: 1
-    wscale = if w < w_origin, do: w / w_origin, else: 1
-    {:ok, min(hscale, wscale)}
+    hor_scale = if w_origin > w_screen, do: w_screen / w_origin, else: 1
+    vert_scale = if h_origin > w_screen, do: h_screen / h_origin, else: 1
+
+    case fit do
+      true ->
+        {:ok, min(hor_scale, vert_scale)}
+
+      _ ->
+        {:ok, hor_scale}
+    end
   rescue
     _ ->
       {:error, "Can't read image"}
@@ -461,14 +468,14 @@ defmodule UpImgWeb.NoClientLive do
     # Create 1) original file object and 2) thumbnail/compressed file object to upload
     file_resized =
       %{
-        path: resized_path,
-        content_type: "image/webp"
+        path: resized_path
+        # content_type: "image/webp"
       }
 
     file_thumb =
       %{
-        path: thumb_path,
-        content_type: "image/webp"
+        path: thumb_path
+        # content_type: "image/webp"
       }
 
     # concurrently upload the 2 files to the bucket

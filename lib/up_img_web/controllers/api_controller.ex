@@ -14,6 +14,7 @@ defmodule UpImgWeb.ApiController do
   require Logger
 
   @env Application.compile_env(:up_img, :env)
+  @bucket Application.compile_env(:ex_aws, :bucket)
   @accepted_files ["jpeg", "jpg", "png", "webp"]
   @max_w 4200
   @max_h 4000
@@ -83,6 +84,34 @@ defmodule UpImgWeb.ApiController do
     end
   end
 
+  def handle(conn, %{"file" => %Plug.Upload{path: path, content_type: content_type}}) do
+    %{size: size} = File.stat!(path)
+
+    if size < @max_size do
+      response = response_post_file(%{path: path, size: size, content_type: content_type})
+      Logger.info(response)
+      json(conn, response)
+    else
+      json(conn, %{error: "File too large"})
+    end
+  end
+
+  def response_post_file(data) when is_map(data) do
+    %{path: path, size: size, content_type: content_type} = data
+
+    case ExImageInfo.info(File.read!(path)) do
+      nil ->
+        %{error: "Unable to read the file"}
+
+      {^content_type, w, h, _} ->
+        %{size: size, content_type: content_type, w: w, h: h}
+
+      {type, _, _, _} ->
+        Logger.info({content_type, type})
+        %{error: "suspicious file"}
+    end
+  end
+
   # to continue the POST endpoint, and accept a multipart.
   #  move NoClientLive.build_path  into UpImg.
   def create(conn, %{"path" => path, "name" => name} = params) do
@@ -117,11 +146,15 @@ defmodule UpImgWeb.ApiController do
     end
   end
 
-  def create(conn, %{"url" => url, "name" => name} = params) do
+  def create(conn, %{"url" => url} = params) do
     w = Map.get(params, "w")
     h = Map.get(params, "h")
 
-    bucket = if @env == :test, do: "dwyl-imgup", else: UpImg.EnvReader.bucket()
+    bucket =
+      case @env do
+        :test -> "dwyl-imgup"
+        _ -> UpImg.EnvReader.bucket()
+      end
 
     case check_url(url) do
       false ->
@@ -134,11 +167,11 @@ defmodule UpImgWeb.ApiController do
                  Plug.Upload.random_file("streamed"),
                {:ok, file} <-
                  stream_request_into(req, stream_path),
-               :ok <- check_size(file),
+               {:ok, size} <- check_size(file),
                {:ok, img} <-
                  Image.new_from_file(file),
-               %{width: width, height: height} <-
-                 Image.headers(img),
+               {:ok, %{width: width, height: height}} <-
+                 check_file_headers(img, file),
                {:ok, {hor_scale, vert_scale}} <-
                  parse_size(w, h, width, height),
                {:ok, img_resized} <-
@@ -147,13 +180,34 @@ defmodule UpImgWeb.ApiController do
                  Plug.Upload.random_file("local_file"),
                :ok <-
                  Operation.webpsave(img_resized, path),
+               {:ok, name} <- FileUtils.hash_file(%{path: path, content_type: "iamge/webp"}),
                {:ok, %{body: body}} <-
-                 path
-                 |> S3.Upload.stream_file()
-                 |> S3.upload(bucket, name <> ".webp")
-                 |> ExAws.request() do
+                 UpImg.Upload.upload_file_to_s3(path, name) do
+            %{size: new_size} = File.stat!(path)
             File.rm_rf!(file)
-            %{url: body |> xpath(~x"//text()") |> List.to_string()}
+
+            # ExAws.S3.list_objects(@bucket) |> ExAws.request() |> dbg()
+            attached = body |> xpath(~x"//text()") |> List.to_string() |> URI.parse()
+
+            url =
+              %URI{
+                attached
+                | authority: @bucket <> "." <> Map.get(attached, :authority),
+                  host: @bucket <> "." <> Map.get(attached, :host),
+                  path: "/" <> Path.basename(Map.get(attached, :path))
+              }
+              |> URI.to_string()
+
+            %{
+              url: url,
+              attachment: URI.to_string(attached),
+              w_origin: width,
+              h_origin: height,
+              w: Image.width(img_resized),
+              h: Image.height(img_resized),
+              init_size: size,
+              size: new_size
+            }
           else
             {:no_tmp, msg} ->
               Logger.warning(inspect(msg))
@@ -176,19 +230,7 @@ defmodule UpImgWeb.ApiController do
   end
 
   def create(conn, params) do
-    cond do
-      map_size(params) == 0 ->
-        json(conn, %{error: "Please provide an URL and a NAME"})
-
-      Map.get(params, "url") == nil ->
-        json(conn, %{error: "Please provide an URL"})
-
-      Map.get(params, "name") == nil ->
-        json(conn, %{error: "Please provide a NAME"})
-
-      true ->
-        json(conn, %{error: "Please provide an URL and a NAME"})
-    end
+    if Map.get(params, "url") == nil, do: json(conn, %{error: "Please provide an URL"})
   end
 
   @doc """
@@ -235,7 +277,7 @@ defmodule UpImgWeb.ApiController do
   def check_size(path) do
     case File.stat(path) do
       {:ok, data} ->
-        if data.size > @max_size, do: {:error, :too_large}, else: :ok
+        if data.size > @max_size, do: {:error, :too_large}, else: {:ok, data.size}
 
       {:error, reason} ->
         {:error, reason}
@@ -245,13 +287,23 @@ defmodule UpImgWeb.ApiController do
   @doc """
   Evaluate with ExImageInfo the type of the image
   """
-  def check_file_headers(path) do
+  def check_file_headers(img, path) do
+    %{width: width, height: height} = Image.headers(img)
+
     case ExImageInfo.info(File.read!(path)) do
       nil ->
         {:error, :not_an_accepted_type}
 
       {type, w, h, _} ->
-        check_headers(type, w, h)
+        case check_headers(type, w, h) do
+          {:ok, {w, h}} ->
+            if w == width and h == height,
+              do: {:ok, %{width: width, height: height}},
+              else: {:error, :wrong_check}
+
+          {:error, :not_an_accepted_type} ->
+            {:error, :not_an_accepted_type}
+        end
     end
   end
 
@@ -264,7 +316,7 @@ defmodule UpImgWeb.ApiController do
         cond do
           Enum.member?(@accepted_files, ext) == false -> {:error, :not_an_accepted_type}
           :error == check_dim(w, h) -> {:error, :not_an_accepted_type}
-          true -> :ok
+          true -> {:ok, {w, h}}
         end
 
       _ ->

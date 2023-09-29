@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <form
+      action="http://localhost:4000/api"
+      method="POST"
+      enctype="multipart/form-data"
+      id="uploadForm"
+    >
+      <input
+        type="file"
+        name="file"
+        id="fileToUpload"
+        multiple
+        accept="image/*"
+      />
+      <button type="submit">Upload</button>
+    </form>
+    <p style="display: block" id="preview"></p>
+    <p id="post_reponse"></p>
+
+    <script>
+      const form = document.querySelector("#uploadForm");
+      const { method, action } = form;
+      form.addEventListener("submit", handleSubmit);
+
+      const input = document.querySelector("#fileToUpload");
+      const preview = document.querySelector("#preview");
+
+      // preview --->
+      input.addEventListener("change", showPreview);
+
+      function showPreview({ target }) {
+        for (let file of target.files) {
+          const img = document.createElement("img");
+          const src = URL.createObjectURL(file);
+
+          img.src = src;
+          img.style.display = "inline-block";
+          img.width = "200";
+          img.height = "200";
+          preview.append(img);
+        }
+      }
+      // <---
+
+      async function handleSubmit(evt) {
+        evt.preventDefault();
+        return post({
+          url: new URL(action),
+          formData: new FormData(evt.currentTarget),
+        });
+      }
+
+      async function post({ url, formData }) {
+        try {
+          const request = await fetch(url, {
+            method,
+            body: formData,
+          });
+
+          if (request.ok) {
+            const response = await request.json();
+            return setResponse(response);
+          } else {
+            throw new Error("File upload failed");
+          }
+        } catch (error) {
+          console.error("Error uploading file:", error);
+        }
+      }
+
+      function setResponse(response) {
+        preview.innerHTML = "";
+        form.reset();
+        document.querySelector("#post_reponse").innerText =
+          JSON.stringify(response);
+      }
+    </script>
+  </body>
+</html>

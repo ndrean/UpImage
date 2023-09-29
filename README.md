@@ -6,9 +6,9 @@ You can use it in two ways:
 
 ## API
 
-It exposes a GET endpoint <https://up-image.fly.dev/api> and accepts a query string with the parameters "name" (the name you wnat ot give to your file), "url" (which serves the picture you want) and possibly and "w" (the desired width) and optionally "h" (the height if you want to change the ratio).
+It exposes a GET endpoint <https://up-image.fly.dev/api> and accepts a query string with the "url" (which serves the picture you want) and possibly and "w" (the desired width) and optionally "h" (the height if you want to change the ratio).
 
-You receive a json response with a link to a resized WEBP picture from S3.
+You receive a json response with a link to a resized WEBP picture from S3 along with informations on the original file and the new file.
 
 ~~We use **[libmagic](https://packages.debian.org/sid/libmagic-dev)** via [gen_magic](https://github.com/evadne/gen_magic). It works with magic numbers. It needs a depency in the Dockerfile~~
 
@@ -16,12 +16,13 @@ We use [ExIamgeInfo](https://github.com/Group4Layers/ex_image_info) to recognize
 
 ### Example
 
-To upload the 4177x3832-5MB image <https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg> to S3, and convert it into a WEBP image of 700x632-31kB, you pass into the query string the "url", a "name" and possibly the new desired width "w".
+To upload the 4177x3832-5MB image <https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg> to S3, and convert it into a WEBP image of 1440x1321-237kB, you pass into the query string the "url", and possibly the new desired width "w=1440".
 
 ```bash
-curl  -X GET -H "Accept: application/json"  https://up-image.fly.dev/api?name=test_file&w=700&url=https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg
+curl  -X GET -H "Accept: application/json"  http://localhost:4000/api\?url\=https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg\&w\=1440
 
-# {"url":"https://s3.eu-west-3.amazonaws.com/xxxx/test_file.webp"}
+{"size":236682,"h":1321,"w":1440,"url":"https://zzzz.amazonaws.com/xxxx/640E6133.webp","h_origin":3832,"w_origin":4177,"init_size":5006835}%
+
 ```
 
 If successful, you will receive a json response: `{"url": "https://xxx.amazonaws.com/xxxx/new_file.webp}` or `{"error: reason}`. This link is valid 1 hour.
@@ -92,6 +93,8 @@ Minimum friction: full authorization for authenticated users. You can use `Githu
 ## Image transformation: Vix Vips
 
 It uses [Vix Vips](https://github.com/akash-akya/vix) (NIF based binding for `libvips`) to transform inputs into WEBP format, resize and produce thumbnails on the server from a binary.
+
+We target the device dimensions to respond. We produce 3 files: a thumbnail of max dim 200px, a file resized to 1440x??? (ratio preserved), and a file adapted to the device.
 
 All tasks are run concurently.
 

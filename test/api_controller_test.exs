@@ -88,10 +88,10 @@ defmodule ApiControllerTest do
 
   test "create/2 guards", %{conn: conn} do
     %{resp_body: resp} = Api.create(conn, %{})
-    assert resp == "{\"error\":\"Please provide an URL and a NAME\"}"
+    assert resp == "{\"error\":\"Please provide an URL\"}"
 
     %{resp_body: resp} = Api.create(conn, %{"url" => "http://google.com"})
-    assert resp == "{\"error\":\"Please provide a NAME\"}"
+    assert resp == "{\"error\":\"\\\"Failed to read image\\\"\"}"
 
     %{resp_body: resp} = Api.create(conn, %{"name" => "test"})
     assert resp == "{\"error\":\"Please provide an URL\"}"
@@ -101,10 +101,11 @@ defmodule ApiControllerTest do
     conn = Map.put(conn, :host, "http://localhost:4000/api")
     assert {:ok, []} == Application.ensure_all_started(:up_img)
 
-    #   %{resp_body: resp} =
-    #     Api.create(conn, %{"url" => @nasa, "name" => "real_test", "w" => "1440"})
+    %{resp_body: resp} =
+      Api.create(conn, %{"url" => @nasa, "name" => "real_test", "w" => "1440"})
 
-    #   assert resp == "{\"url\":\"https://s3.eu-west-3.amazonaws.com/dwyl-imgup/real_test.webp\"}"
+    assert resp ==
+             "{\"size\":236682,\"h\":1321,\"w\":1440,\"url\":\"https://s3.eu-west-3.amazonaws.com/dwyl-imgup/640E6133.webp\",\"w_origin\":4177,\"h_origin\":3832,\"init_size\":5006835}"
 
     %{resp_body: resp} =
       Api.create(conn, %{"url" => @not_accepted_type, "name" => "real_test", "w" => "1440"})
@@ -124,22 +125,18 @@ defmodule ApiControllerTest do
   test "create/2 real", %{conn: conn} do
     conn = Map.put(conn, :host, "https://up-image.fly.dev/api")
 
-    %{resp_body: resp} =
-      Api.create(conn, %{"url" => @nasa, "name" => "real_test", "w" => "1440"})
+    # %{resp_body: resp} =
+    #   Api.create(conn, %{"url" => @nasa, "w" => "1440"})
 
-    assert resp == "{\"url\":\"https://s3.eu-west-3.amazonaws.com/dwyl-imgup/real_test.webp\"}"
+    # assert resp == "{\"url\":\"https://s3.eu-west-3.amazonaws.com/dwyl-imgup/real_test.webp\"}"
 
     %{resp_body: resp} =
-      Api.create(conn, %{"url" => @not_accepted_type, "name" => "real_test", "w" => "1440"})
+      Api.create(conn, %{"url" => @not_accepted_type, "w" => "1440"})
 
     assert resp == "{\"error\":\"\\\"Failed to read image\\\"\"}"
 
     %{resp_body: resp} =
-      Api.create(conn, %{
-        "url" => "http:/google.com/" <> "a",
-        "name" => "real_test",
-        "w" => "1440"
-      })
+      Api.create(conn, %{"url" => "http:/google.com/" <> "a", "w" => "1440"})
 
     assert resp == "{\"error\":\"bad_url\"}"
   end
@@ -152,22 +149,23 @@ defmodule ApiControllerTest do
 
   test "check_headers/3" do
     assert Api.check_headers("image/gif", 1400, 700) == {:error, :not_an_accepted_type}
-    assert Api.check_headers("image/webp", 1400, 700) == :ok
-    assert Api.check_headers("image/jpeg", 1400, 700) == :ok
+    assert Api.check_headers("image/webp", 1400, 700) == {:ok, {1400, 700}}
+    assert Api.check_headers("image/jpeg", 1400, 700) == {:ok, {1400, 700}}
     assert Api.check_headers("text/html", 100, 200) == {:error, :not_an_accepted_type}
   end
 
-  test "check_file_headers/1" do
+  test "check_file_headers/2" do
     img = Path.join([File.cwd!(), "priv", "static", "image_uploads", "milky.jpeg"])
-    assert Api.check_file_headers(img) == :ok
+    {:ok, test_img} = Image.new_from_file(img)
+    assert Api.check_file_headers(test_img, img) == {:ok, %{width: 4177, height: 3832}}
 
-    ex = Path.join([File.cwd!(), "lib", "up_img", "accounts.ex"])
-    assert Api.check_file_headers(ex) == {:error, :not_an_accepted_type}
+    {:ok, path} = Plug.Upload.random_file("test")
+    assert Api.check_file_headers(test_img, path) == {:error, :not_an_accepted_type}
   end
 
   test "check_size/1" do
     img = Path.join([File.cwd!(), "priv", "static", "image_uploads", "milky.jpeg"])
-    assert Api.check_size(img) == :ok
+    assert Api.check_size(img) == {:ok, 5_006_835}
   end
 
   test "stream_request/2" do

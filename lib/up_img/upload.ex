@@ -22,16 +22,14 @@ defmodule UpImg.Upload do
   # def bucket, do: UpImg.bucket()
   def bucket, do: EnvReader.bucket()
 
-  def upload(image) do
-    with {:ok, file} <- FileUtils.hash_file(image),
+  def upload(%{path: path} = image) do
+    with {:ok, filename} <- FileUtils.hash_file(image),
          {:ok, upload_resp_body} <-
-           upload_file_to_s3(file, image) do
-      {file, image} |> dbg()
-
+           upload_file_to_s3(filename, path) do
       {:ok,
        %{
          url: upload_resp_body.body |> xpath(~x"//text()") |> List.to_string(),
-         name: Path.basename(image.path)
+         name: Path.basename(path)
        }}
     else
       {:error, reason} -> {:error, reason}
@@ -40,12 +38,15 @@ defmodule UpImg.Upload do
 
   # Fetching the URL of the returned file.
 
-  def upload_file_to_s3(file, image) do
-    image.path
+  def upload_file_to_s3(filename, path) do
+    filename |> dbg()
+
+    path
     |> S3.Upload.stream_file()
-    |> S3.upload(bucket(), file,
+    |> S3.upload(bucket(), filename,
       acl: :public_read,
-      content_type: image.content_type
+      content_type: "image/webp",
+      content_disposition: "inline"
     )
     |> ExAws.request()
   rescue

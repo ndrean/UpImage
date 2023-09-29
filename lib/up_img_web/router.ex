@@ -56,12 +56,19 @@ defmodule UpImgWeb.Router do
   # Other scopes may use custom stacks.
   pipeline :api do
     plug :accepts, ["json"]
+
+    plug CORSPlug,
+      origin: ["http://localhost:3000", "http://localhost:4000", "https://dwyl-upimage.fly.dev"]
+
+    plug Plug.Parsers,
+      parsers: [:urlencoded, :multipart, :json],
+      json_decoder: Jason
   end
 
   scope "/api", UpImgWeb do
     pipe_through :api
     get "/", ApiController, :create
-    post "/", ApiController, :create
+    post "/", ApiController, :handle
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
