@@ -7,7 +7,6 @@ defmodule UpImgWeb.ApiController do
   use UpImgWeb, :controller
   import SweetXml
 
-  alias ExAws.S3
   alias UpImgWeb.ApiController
   alias UpImgWeb.NoClientLive
   alias Vix.Vips.{Image, Operation}
@@ -192,8 +191,8 @@ defmodule UpImgWeb.ApiController do
             url =
               %URI{
                 attached
-                | authority: @bucket <> "." <> Map.get(attached, :authority),
-                  host: @bucket <> "." <> Map.get(attached, :host),
+                | authority: bucket <> "." <> Map.get(attached, :authority),
+                  host: bucket <> "." <> Map.get(attached, :host),
                   path: "/" <> Path.basename(Map.get(attached, :path))
               }
               |> URI.to_string()
