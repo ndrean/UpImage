@@ -90,7 +90,25 @@ defmodule ApiControllerTest do
 
   test "create/2", %{conn: conn, test_path: test_path} do
     conn = Map.put(conn, :host, "http://localhost:4000/api")
-    # Api.create(conn, %{"url" => @nasa, "name" => "real_test", "w" => "1440"}) |> dbg()
+
+    %{resp_body: resp} =
+      Api.create(conn, %{"url" => @nasa, "name" => "real_test", "w" => "1440"})
+
+    assert resp == "{\"url\":\"https://s3.eu-west-3.amazonaws.com/dwyl-imgup/real_test.webp\"}"
+
+    %{resp_body: resp} =
+      Api.create(conn, %{"url" => @nasa <> "a", "name" => "real_test", "w" => "1440"})
+
+    assert resp == "{\"error\":\"\\\"Failed to read image\\\"\"}"
+
+    %{resp_body: resp} =
+      Api.create(conn, %{
+        "url" => "http:/google.com/" <> "a",
+        "name" => "real_test",
+        "w" => "1440"
+      })
+
+    assert resp == "{\"error\":\"bad_url\"}"
   end
 
   test "check_dim/2" do
@@ -106,17 +124,22 @@ defmodule ApiControllerTest do
     assert Api.check_headers("text/html", 100, 200) == {:error, :not_an_accepted_type}
   end
 
-
   test "check_file_headers/1" do
     img = Path.join([File.cwd!(), "priv", "static", "image_uploads", "milky.jpeg"])
     assert Api.check_file_headers(img) == :ok
 
     ex = Path.join([File.cwd!(), "lib", "up_img", "accounts.ex"])
-    assert Api.check_file_headers(ex) ==  {:error, :not_an_accepted_type}
+    assert Api.check_file_headers(ex) == {:error, :not_an_accepted_type}
   end
 
   test "check_size/1" do
     img = Path.join([File.cwd!(), "priv", "static", "image_uploads", "milky.jpeg"])
     assert Api.check_size(img) == :ok
+  end
+
+  test "stream_request/2" do
+    path = Plug.Upload.random_file!("test")
+    req = Finch.build(:get, @nasa)
+    assert Api.stream_request_into(req, path) |> elem(0) == :ok
   end
 end

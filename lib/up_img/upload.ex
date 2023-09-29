@@ -26,6 +26,8 @@ defmodule UpImg.Upload do
     with {:ok, file} <- FileUtils.hash_file(image),
          {:ok, upload_resp_body} <-
            upload_file_to_s3(file, image) do
+      {file, image} |> dbg()
+
       {:ok,
        %{
          url: upload_resp_body.body |> xpath(~x"//text()") |> List.to_string(),

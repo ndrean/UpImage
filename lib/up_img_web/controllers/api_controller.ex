@@ -7,11 +7,13 @@ defmodule UpImgWeb.ApiController do
   use UpImgWeb, :controller
   import SweetXml
 
+  alias ExAws.S3
   alias UpImgWeb.ApiController
   alias UpImgWeb.NoClientLive
   alias Vix.Vips.{Image, Operation}
   require Logger
 
+  @env Application.compile_env(:up_img, :env)
   @accepted_files ["jpeg", "jpg", "png", "webp"]
   @max_w 4200
   @max_h 4000
@@ -119,6 +121,8 @@ defmodule UpImgWeb.ApiController do
     w = Map.get(params, "w")
     h = Map.get(params, "h")
 
+    bucket = if @env == :test, do: "dwyl-imgup", else: UpImg.EnvReader.bucket()
+
     case check_url(url) do
       false ->
         json(conn, %{error: :bad_url})
@@ -142,18 +146,12 @@ defmodule UpImgWeb.ApiController do
                {:ok, path} <-
                  Plug.Upload.random_file("local_file"),
                :ok <-
-                 Operation.webpsave(img_resized, path) do
-            stream =
-              ExAws.S3.Upload.stream_file(path)
-
-            req =
-              ExAws.S3.upload(stream, UpImg.EnvReader.bucket(), name <> ".webp",
-                acl: :public_read,
-                content_type: "image/webp"
-              )
-
-            {:ok, %{body: body}} = ExAws.request(req)
-
+                 Operation.webpsave(img_resized, path),
+               {:ok, %{body: body}} <-
+                 path
+                 |> S3.Upload.stream_file()
+                 |> S3.upload(bucket, name <> ".webp")
+                 |> ExAws.request() do
             File.rm_rf!(file)
             %{url: body |> xpath(~x"//text()") |> List.to_string()}
           else
@@ -192,7 +190,12 @@ defmodule UpImgWeb.ApiController do
           headers
 
         {:data, data}, _acc ->
-          :ok = IO.binwrite(file, data)
+          case IO.binwrite(file, data) do
+            :ok -> :ok
+            {:error, reason} -> {:error, reason}
+          end
+
+          # we don't return the whole binary since we put it in a file
       end)
 
     case File.close(file) do

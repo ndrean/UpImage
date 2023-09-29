@@ -33,9 +33,9 @@ config :logger, level: :warning
 config :phoenix, :plug_init_mode, :runtime
 
 config :ex_aws,
-  access_key_id: "AWS_ACCESS_KEY_ID",
-  secret_access_key: "AWS_SECRET_ACCESS_KEY",
-  region: "AWS_REGION",
+  access_key_id: System.get_env("AWS_ACCESS_KEY_ID"),
+  secret_access_key: System.get_env("AWS_SECRET_ACCESS_KEY"),
+  region: System.get_env("AWS_REGION"),
   bucket: System.get_env("AWS_S3_BUCKET"),
   request_config_override: %{}
 

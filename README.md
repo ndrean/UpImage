@@ -6,7 +6,7 @@ You can use it in two ways:
 
 ## API
 
-It exposes an GET endpoint <https://up-image.fly.dev/api> to which you adjoin a query string with the parameters "name" (a `:string`, the name you wnat ot give to your file), a "url" (which serves the picture you want) and possibly a width "w" and optionnal a height "h" if you want to change the ratio.
+It exposes a GET endpoint <https://up-image.fly.dev/api> and accepts a query string with the parameters "name" (the name you wnat ot give to your file), "url" (which serves the picture you want) and possibly and "w" (the desired width) and optionally "h" (the height if you want to change the ratio).
 
 You receive a json response with a link to a resized WEBP picture from S3.
 
@@ -20,12 +20,6 @@ To upload the 4177x3832-5MB image <https://apod.nasa.gov/apod/image/2309/SteveMw
 
 ```bash
 curl  -X GET -H "Accept: application/json"  https://up-image.fly.dev/api?name=test_file&w=700&url=https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg
-
-# {"error":":too_large"}
-```
-
-```bash
-curl  -X GET -H "Accept: application/json"  https://up-image.fly.dev/api\?name\=test_file\&w\=1400\&url\=https://apod.nasa.gov/apod/image/2309/STSCI-HST-abell370_1797x2000.jpg
 
 # {"url":"https://s3.eu-west-3.amazonaws.com/xxxx/test_file.webp"}
 ```
