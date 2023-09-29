@@ -21,7 +21,8 @@ defmodule UpImgWeb.Endpoint do
   plug Plug.Static,
     at: "/",
     from: :up_img,
-    gzip: false,
+    gzip: true,
+    cache_control_for_etags: "public, max-age=31536000",
     only: UpImgWeb.static_paths()
 
   # Code reloading can be explicitly enabled under the

@@ -11,23 +11,27 @@ swap_size_mb = 512
 [build]
 
 [deploy]
-  release_command = "/app/bin/migrate"
+release_command = "/app/bin/migrate"
 
 [env]
-  ADMIN_EMAIL = "nevendrean@gmail.com"
-  DOMAIN = "up-image.fly.dev"
-  NOTIFY_EMAIL = "nevendrean@gmail.com"
-  PHX_HOST = "up-image.fly.dev"
-  PORT = "8080"
+ADMIN_EMAIL = "nevendrean@gmail.com"
+DOMAIN = "up-image.fly.dev"
+NOTIFY_EMAIL = "nevendrean@gmail.com"
+PHX_HOST = "up-image.fly.dev"
+PORT = "8080"
 
 [http_service]
-  internal_port = 8080
-  force_https = true
-  auto_stop_machines = true
-  auto_start_machines = true
-  min_machines_running = 0
-  processes = ["app"]
-  [http_service.concurrency]
-    type = "connections"
-    hard_limit = 1000
-    soft_limit = 1000
+internal_port = 8080
+force_https = true
+auto_stop_machines = true
+auto_start_machines = true
+min_machines_running = 0
+processes = ["app"]
+[http_service.concurrency]
+type = "connections"
+hard_limit = 1000
+soft_limit = 1000
+
+[[statics]]
+guest_path = "/app/priv/static/images"
+url_prefix = "/images"

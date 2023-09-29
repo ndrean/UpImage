@@ -100,7 +100,7 @@ defmodule UpImg.NoClientLiveTest do
         |> put_session(:live_socket_id, "users_sessions:#{user.id}")
         |> assign(:current_user, user)
 
-      {:ok, view, html} = live(conn, "/welcome")
+      {:ok, view, _html} = live(conn, "/welcome")
 
       assert view |> element("#signout") |> render_click() ==
                {:error, {:redirect, %{to: "/signout"}}}
@@ -120,7 +120,7 @@ defmodule UpImg.NoClientLiveTest do
     end
 
     test "signin page", %{conn: conn} do
-      {:ok, view, html} = live(conn, "/signin")
+      {:ok, _view, html} = live(conn, "/signin")
       assert html =~ "Create or Sign in to your account"
     end
   end

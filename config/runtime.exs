@@ -32,6 +32,13 @@ if config_env() == :prod do
 
   config :up_img, UpImg.Repo,
     # ssl: true,
+    # ssl_opts: [
+    #   cacertfile: "root_cert.pem",
+    # OR cacerts: <ENV_VAR_STRING> |> :public_key.pem_decode() |> Enum.map(fn {_, der, _} -> der end)
+
+    #   verify: :verify_peer,
+    #   server_name_indication: to_charlist("example.com")
+    # ]
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     socket_options: maybe_ipv6

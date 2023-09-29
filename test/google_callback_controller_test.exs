@@ -2,12 +2,12 @@ defmodule GoogleCallbackControllerTest do
   use ExUnit.Case, async: true
   # use Plug.Test
   use UpImgWeb.ConnCase
-  import Plug.Conn
+  # import Plug.Conn
   import Phoenix.ConnTest
-  import Phoenix.LiveViewTest
+  # import Phoenix.LiveViewTest
 
   @endpoint UpImgWeb.Endpoint
-  @one_year 1_314_000_000
+  # @one_year 1_314_000_000
 
   setup do
     {:ok, conn: Plug.Test.init_test_session(Phoenix.ConnTest.build_conn(), %{})}

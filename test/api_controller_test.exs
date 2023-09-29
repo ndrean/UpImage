@@ -97,13 +97,37 @@ defmodule ApiControllerTest do
     assert resp == "{\"error\":\"Please provide an URL\"}"
   end
 
-  test "create/2", %{conn: conn} do
+  test "create/2 local", %{conn: conn} do
     conn = Map.put(conn, :host, "http://localhost:4000/api")
+    assert {:ok, []} == Application.ensure_all_started(:up_img)
 
     #   %{resp_body: resp} =
     #     Api.create(conn, %{"url" => @nasa, "name" => "real_test", "w" => "1440"})
 
     #   assert resp == "{\"url\":\"https://s3.eu-west-3.amazonaws.com/dwyl-imgup/real_test.webp\"}"
+
+    %{resp_body: resp} =
+      Api.create(conn, %{"url" => @not_accepted_type, "name" => "real_test", "w" => "1440"})
+
+    assert resp == "{\"error\":\"\\\"Failed to read image\\\"\"}"
+
+    %{resp_body: resp} =
+      Api.create(conn, %{
+        "url" => "http:/google.com/" <> "a",
+        "name" => "real_test",
+        "w" => "1440"
+      })
+
+    assert resp == "{\"error\":\"bad_url\"}"
+  end
+
+  test "create/2 real", %{conn: conn} do
+    conn = Map.put(conn, :host, "https://up-image.fly.dev/api")
+
+    %{resp_body: resp} =
+      Api.create(conn, %{"url" => @nasa, "name" => "real_test", "w" => "1440"})
+
+    assert resp == "{\"url\":\"https://s3.eu-west-3.amazonaws.com/dwyl-imgup/real_test.webp\"}"
 
     %{resp_body: resp} =
       Api.create(conn, %{"url" => @not_accepted_type, "name" => "real_test", "w" => "1440"})
