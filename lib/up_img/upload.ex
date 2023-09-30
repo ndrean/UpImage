@@ -38,12 +38,15 @@ defmodule UpImg.Upload do
 
   # Fetching the URL of the returned file.
 
-  def upload_file_to_s3(filename, path) do
-    filename |> dbg()
+  def upload_file_to_s3(path, filename) do
+    bucket =
+      if Application.get_env(:up_img, :env) == :test,
+        do: System.get_env("AWS_S3_BUCKET"),
+        else: UpImg.EnvReader.bucket()
 
     path
     |> S3.Upload.stream_file()
-    |> S3.upload(bucket(), filename,
+    |> S3.upload(bucket, filename,
       acl: :public_read,
       content_type: "image/webp",
       content_disposition: "inline"

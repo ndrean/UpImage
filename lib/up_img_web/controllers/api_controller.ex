@@ -8,12 +8,9 @@ defmodule UpImgWeb.ApiController do
   import SweetXml
 
   alias UpImgWeb.ApiController
-  alias UpImgWeb.NoClientLive
   alias Vix.Vips.{Image, Operation}
   require Logger
 
-  @env Application.compile_env(:up_img, :env)
-  @bucket Application.compile_env(:ex_aws, :bucket)
   @accepted_files ["jpeg", "jpg", "png", "webp"]
   @max_w 4200
   @max_h 4000
@@ -83,6 +80,9 @@ defmodule UpImgWeb.ApiController do
     end
   end
 
+  @doc """
+  POST endpoint to receive images files from a client
+  """
   def handle(conn, %{"file" => %Plug.Upload{path: path, content_type: content_type}}) do
     %{size: size} = File.stat!(path)
 
@@ -111,49 +111,46 @@ defmodule UpImgWeb.ApiController do
     end
   end
 
-  # to continue the POST endpoint, and accept a multipart.
-  #  move NoClientLive.build_path  into UpImg.
-  def create(conn, %{"path" => path, "name" => name} = params) do
-    w = Map.get(params, "w")
-    h = Map.get(params, "h")
+  # def create(conn, %{"path" => path, "name" => name} = params) do
+  #   w = Map.get(params, "w")
+  #   h = Map.get(params, "h")
 
-    new_path = NoClientLive.build_path(name)
+  #   new_path = NoClientLive.build_path(name)
 
-    response =
-      with {:ok, img} <- Image.new_from_file(path),
-           {:ok, {width, height}} <- ApiController.get_sizes_from_image(img),
-           {:ok, {w, h}} <- parse_size(w, h, width, height),
-           {:ok, img_resized} <- ApiController.resize(img, h, w),
-           :ok <-
-             Operation.webpsave(img_resized, new_path) do
-        {:ok, %{url: url}} =
-          UpImg.Upload.upload(%{content_type: "image/webp", name: name, path: new_path})
+  #   response =
+  #     with {:ok, img} <- Image.new_from_file(path),
+  #          {:ok, {width, height}} <- ApiController.get_sizes_from_image(img),
+  #          {:ok, {w, h}} <- parse_size(w, h, width, height),
+  #          {:ok, img_resized} <- ApiController.resize(img, h, w),
+  #          :ok <-
+  #            Operation.webpsave(img_resized, new_path) do
+  #       {:ok, %{url: url}} =
+  #         UpImg.Upload.upload(%{content_type: "image/webp", name: name, path: new_path})
 
-        File.rm_rf!(new_path)
-        {:ok, url}
-      else
-        {:error, :image_not_readable} -> {:error, :image_not_readable}
-        {:error, reason} -> {:error, reason}
-      end
+  #       File.rm_rf!(new_path)
+  #       {:ok, url}
+  #     else
+  #       {:error, :image_not_readable} -> {:error, :image_not_readable}
+  #       {:error, reason} -> {:error, reason}
+  #     end
 
-    case response do
-      {:ok, url} ->
-        json(conn, %{url: url})
+  #   case response do
+  #     {:ok, url} ->
+  #       json(conn, %{url: url})
 
-      {:error, reason} ->
-        json(conn, %{error: inspect(reason)})
-    end
-  end
+  #     {:error, reason} ->
+  #       json(conn, %{error: inspect(reason)})
+  #   end
+  # end
 
   def create(conn, %{"url" => url} = params) do
     w = Map.get(params, "w")
     h = Map.get(params, "h")
 
     bucket =
-      case @env do
-        :test -> "dwyl-imgup"
-        _ -> UpImg.EnvReader.bucket()
-      end
+      if Application.get_env(:up_img, :env) == :test,
+        do: System.get_env("AWS_S3_BUCKET"),
+        else: UpImg.EnvReader.bucket()
 
     case check_url(url) do
       false ->
@@ -179,7 +176,7 @@ defmodule UpImgWeb.ApiController do
                  Plug.Upload.random_file("local_file"),
                :ok <-
                  Operation.webpsave(img_resized, path),
-               {:ok, name} <- FileUtils.hash_file(%{path: path, content_type: "iamge/webp"}),
+               {:ok, name} <- FileUtils.hash_file(%{path: path, content_type: "image/webp"}),
                {:ok, %{body: body}} <-
                  UpImg.Upload.upload_file_to_s3(path, name) do
             %{size: new_size} = File.stat!(path)

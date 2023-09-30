@@ -13,12 +13,21 @@ defmodule RouterTest do
     assert json_response(conn, 200) == %{"error" => "\"Failed to read image\""}
   end
 
-  test "POST api", %{conn: conn} do
-    img = Path.join([File.cwd!(), "priv", "static", "image_uploads", "milky.jpeg"])
-    conn = post(conn, "/api", %{file: img})
+  setup do
+    path = Path.join([File.cwd!(), "priv", "static", "image_uploads", "milky.jpeg"])
+    upload = %Plug.Upload{path: path, content_type: "image/jpeg"}
+    {:ok, %{upload: upload}}
+  end
 
-    assert json_response(conn, 200)["file"] ==
-             "/Users/nevendrean/code/elixir/up_img/priv/static/image_uploads/milky.jpeg"
+  test "POST api", %{conn: conn, upload: upload} do
+    conn = post(conn, "/api", %{"file" => upload})
+
+    assert json_response(conn, 200) == %{
+             "content_type" => "image/jpeg",
+             "h" => 3832,
+             "size" => 5_006_835,
+             "w" => 4177
+           }
   end
 end
 

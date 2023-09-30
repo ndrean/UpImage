@@ -97,38 +97,39 @@ defmodule ApiControllerTest do
     assert resp == "{\"error\":\"Please provide an URL\"}"
   end
 
-  test "create/2 local", %{conn: conn} do
-    conn = Map.put(conn, :host, "http://localhost:4000/api")
-    assert {:ok, []} == Application.ensure_all_started(:up_img)
+  # test "create/2 local", %{conn: conn} do
+  #   conn = Map.put(conn, :host, "http://localhost:4000/api")
+  #   assert {:ok, []} == Application.ensure_all_started(:up_img)
 
-    %{resp_body: resp} =
-      Api.create(conn, %{"url" => @nasa, "name" => "real_test", "w" => "1440"})
+  #   %{resp_body: resp} =
+  #     Api.create(conn, %{"url" => @nasa, "name" => "real_test", "w" => "1440"})
 
-    assert resp ==
-             "{\"size\":236682,\"h\":1321,\"w\":1440,\"url\":\"https://s3.eu-west-3.amazonaws.com/dwyl-imgup/640E6133.webp\",\"w_origin\":4177,\"h_origin\":3832,\"init_size\":5006835}"
+  #   assert resp ==
+  #            "{\"size\":236682,\"h\":1321,\"w\":1440,\"url\":\"https://s3.eu-west-3.amazonaws.com/dwyl-imgup/640E6133.webp\",\"w_origin\":4177,\"h_origin\":3832,\"init_size\":5006835}"
 
-    %{resp_body: resp} =
-      Api.create(conn, %{"url" => @not_accepted_type, "name" => "real_test", "w" => "1440"})
+  #   %{resp_body: resp} =
+  #     Api.create(conn, %{"url" => @not_accepted_type, "name" => "real_test", "w" => "1440"})
 
-    assert resp == "{\"error\":\"\\\"Failed to read image\\\"\"}"
+  #   assert resp == "{\"error\":\"\\\"Failed to read image\\\"\"}"
 
-    %{resp_body: resp} =
-      Api.create(conn, %{
-        "url" => "http:/google.com/" <> "a",
-        "name" => "real_test",
-        "w" => "1440"
-      })
+  #   %{resp_body: resp} =
+  #     Api.create(conn, %{
+  #       "url" => "http:/google.com/" <> "a",
+  #       "name" => "real_test",
+  #       "w" => "1440"
+  #     })
 
-    assert resp == "{\"error\":\"bad_url\"}"
-  end
+  #   assert resp == "{\"error\":\"bad_url\"}"
+  # end
 
   test "create/2 real", %{conn: conn} do
     conn = Map.put(conn, :host, "https://up-image.fly.dev/api")
 
-    # %{resp_body: resp} =
-    #   Api.create(conn, %{"url" => @nasa, "w" => "1440"})
+    %{resp_body: resp} =
+      Api.create(conn, %{"url" => @nasa, "w" => "1440"})
 
-    # assert resp == "{\"url\":\"https://s3.eu-west-3.amazonaws.com/dwyl-imgup/real_test.webp\"}"
+    assert resp =~
+             "{\"size\":236682,\"h\":1321,\"w\":1440,\"url\":\"https://dwyl-imgup.s3.eu-west-3.amazonaws.com/640E6133.webp\",\"attachment\":\"https://s3.eu-west-3.amazonaws.com/dwyl-imgup/640E6133.webp\",\"h_origin\":3832,\"init_size\":5006835,\"w_origin\":4177}"
 
     %{resp_body: resp} =
       Api.create(conn, %{"url" => @not_accepted_type, "w" => "1440"})

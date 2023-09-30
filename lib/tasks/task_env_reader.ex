@@ -16,6 +16,7 @@ defmodule UpImg.EnvReader do
     :ets.insert(:envs, {:google_secret, read_google_secret()})
     :ets.insert(:envs, {:bucket, read_bucket()})
     :ets.insert(:envs, {:cleaning_timer, read_cleaning_timer()})
+    :ets.insert(:envs, {:my_env, read_env()})
   end
 
   defp fetch_key(main, key),
@@ -31,6 +32,7 @@ defmodule UpImg.EnvReader do
   defp read_google_id, do: fetch_key(:google, :google_client_id)
   defp read_google_secret, do: fetch_key(:google, :google_client_secret)
   defp read_bucket, do: Application.fetch_env!(:ex_aws, :bucket)
+  defp read_env, do: Application.fetch_env!(:up_img, :env)
 
   defp read_cleaning_timer, do: Application.fetch_env!(:up_img, :cleaning_timer)
 
@@ -46,4 +48,6 @@ defmodule UpImg.EnvReader do
   def gh_secret, do: lookup(:gh_secret)
 
   def cleaning_timer, do: lookup(:cleaning_timer)
+
+  def get_env, do: lookup(:my_env)
 end

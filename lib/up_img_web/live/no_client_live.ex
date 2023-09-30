@@ -14,7 +14,6 @@ defmodule UpImgWeb.NoClientLive do
 
   @thumb_size 200
 
-  @env Application.compile_env!(:up_img, :env)
   @upload_dir Application.app_dir(:up_img, ["priv", "static", "image_uploads"])
 
   @error_in_db_but_deleted_from_bucket "Object deleted in bucket but not found in database"
@@ -33,7 +32,7 @@ defmodule UpImgWeb.NoClientLive do
     |> then(&Logger.info("uploads folder: #{&1}"))
 
     cleaning_timer =
-      if @env == :test,
+      if Application.get_env(:up_img, :env) == :test,
         do: 100_000,
         else: EnvReader.cleaning_timer()
 
