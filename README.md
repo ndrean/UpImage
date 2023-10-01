@@ -16,7 +16,7 @@ It exposes two endpoints at <https://up-image.fly.dev/api>:
 
 - a GET endpoint. It accepts a query string with the "url" (which serves the picture you want) and possibly and "w" (the desired width) and optionally "h" (the height if you want to change the ratio).
 
-- a POST endpoint. It accepts a payload with "multipart" - for a single file with hte key **"file"**- and a width with the key **"w"** to resize the file.
+- a POST endpoint. It accepts a payload with "multipart" - for a single file with the key **"file"**- and a width with the key **"w"** to resize the file.
 
 They return a json response with a link to a resized WEBP picture from S3 along with informations on the original file and the new file.
 
@@ -34,7 +34,9 @@ To upload the 4177x3832-5MB image <https://apod.nasa.gov/apod/image/2309/SteveMw
 
 ```bash
 curl  -X GET -H "Accept: application/json"  http://up-image.fly.dev/api\?url\=https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg\&w\=1440
+```
 
+```bash
 {"size":236682,"h":1321,"w":1440,"url":"https://zzzz.amazonaws.com/xxxx/640E6133.webp","h_origin":3832,"w_origin":4177,"init_size":5006835}%
 
 ```
