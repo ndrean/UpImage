@@ -1,6 +1,6 @@
 # UpImg
 
-This app uploads images to S3 and transforms them into WEBP format to save on bandwidth and storage. The transformation is based on `libvips` and the Elixir package `Vix.Vips`.
+This app uploads images to S3 and transforms them into WEBP format to save on bandwidth and storage. The transformation is based on [libvips](https://www.libvips.org/) and the Elixir package [Vix.Vips](https://github.com/akash-akya/vix).
 
 We will further implement **image tagging** via AI.
 
