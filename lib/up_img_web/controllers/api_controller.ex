@@ -23,6 +23,7 @@ defmodule UpImgWeb.ApiController do
 
   # single file
   def handle(conn, params) do
+    {:ok, body, conn} = Plug.Conn.read_body(conn, length: 1_000_000) |> dbg()
     file = Map.get(params, "file")
     w = Map.get(params, "w")
     thumb = Map.get(params, "thumb")
@@ -32,8 +33,10 @@ defmodule UpImgWeb.ApiController do
         json(conn, %{error: "input is empty"})
 
       %Plug.Upload{path: path} ->
-        with {:ok, data} <- filter(path, w, nil),
-             {:ok, response} <- Api.upload_to_s3(data) do
+        with {:ok, data} <-
+               filter(path, w, nil),
+             {:ok, response} <-
+               Api.upload_to_s3(data) do
           json(conn, response)
         else
           {:error, reason} ->
@@ -172,6 +175,8 @@ defmodule UpImgWeb.ApiController do
            Plug.Upload.random_file("local_file"),
          :ok <-
            Operation.webpsave(img_resized, resized_path),
+         {:file_exists, true} <-
+           {:file_exists, File.exists?(resized_path)},
          {:ok, name} =
            FileUtils.hash_file(%{path: resized_path, content_type: "image/webp"}) do
       {:ok,
@@ -199,6 +204,7 @@ defmodule UpImgWeb.ApiController do
     with {:ok, %{body: body}} <-
            UpImg.Upload.upload_file_to_s3(data.resized_path, data.name) do
       attached = body |> xpath(~x"//text()") |> List.to_string() |> URI.parse()
+      File.rm_rf!(data.resized_path)
 
       url =
         %URI{
@@ -243,6 +249,9 @@ defmodule UpImgWeb.ApiController do
       else
         false ->
           {:error, :bad_url}
+
+        {:file_exists, false} ->
+          {:error, "Please retry"}
 
         {:no_tmp, msg} ->
           Logger.warning(inspect(msg))
