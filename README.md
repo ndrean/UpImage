@@ -58,7 +58,8 @@ You can use the POST endpoint simply with a `fetch({method: 'POST'})` from the b
         e.preventDefault();
         return fetch(action, { method, body: new FormData(form) })
           .then((r) => r.json())
-          .then(console.log);
+          .then(console.log)
+          .catch(console.log)
       });
     </script>
   </body>
