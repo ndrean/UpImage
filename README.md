@@ -6,7 +6,7 @@ You can use it in two ways: API and WebApp.
 
 ## API
 
-It is limited to 5Mb images with dimension less than 4200x4000. See TODOS.
+It is limited to 5Mb images with dimension less than 4200x4000. See TODOS. The uploads are set with the `CONTENT-DISPOSITION="inline"`.
 
 It exposes two endpoints at <https://up-image.fly.dev/api>:
 
@@ -29,7 +29,7 @@ This should assure that we receive a file of type "image" with the desired forma
 To upload the 4177x3832-5MB image <https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg> to S3, and convert it into a WEBP image of 1440x1321-237kB, you pass into the query string the "url", and possibly the new desired width "w=1440".
 
 ```bash
-curl  -X GET -H "Accept: application/json"  http://localhost:4000/api\?url\=https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg\&w\=1440
+curl  -X GET -H "Accept: application/json"  http://up-image.fly.dev/api\?url\=https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg\&w\=1440
 
 {"size":236682,"h":1321,"w":1440,"url":"https://zzzz.amazonaws.com/xxxx/640E6133.webp","h_origin":3832,"w_origin":4177,"init_size":5006835}%
 
@@ -67,8 +67,9 @@ You can use the POST endpoint simply with a `fetch({method: 'POST'})` from the b
 
 ### Todos
 
-- secure the API with a token given by the app to a registered user.
+- secure the API with a token provided by the app to a registered user. You can register simply via Google or Github, no friction. You then will request a token (valid 1 day).
 - rate limit the API.
+- implement a total MB uploaded per user.
 
 ### Stream downloads and save to file
 
