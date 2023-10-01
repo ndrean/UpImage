@@ -89,6 +89,8 @@ if config_env() == :prod do
 
   config :up_img, :cleaning_timer, System.fetch_env!("CLEANER_TIMER") |> String.to_integer()
 
+  config :up_img, :upload_limit, System.fetch_env!("UPLOAD_LIMIT") |> String.to_integer()
+
   # ## SSL Support
   #
   # To get SSL working, you will need to add the `https` key

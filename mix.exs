@@ -65,7 +65,7 @@ defmodule UpImg.MixProject do
       {:cloak, "~> 1.1"},
       {:cloak_ecto, "~> 1.2"},
       {:cors_plug, "~> 3.0"},
-      # {:gen_magic, "~> 1.1.1"},
+      {:gen_magic, "~> 1.1.1"},
       {:ex_image_info, "~> 0.2.4"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:esbuild, "~> 0.7", runtime: Mix.env() == :dev},

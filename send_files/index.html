@@ -12,33 +12,23 @@
       enctype="multipart/form-data"
       id="uploadForm"
     >
-      <input
-        type="file"
-        name="file"
-        id="fileToUpload"
-        multiple
-        accept="image/*"
-      />
+      <input type="file" name="file" id="fileToUpload" multiple accept="*/*" />
+      <input type="number" name="w" />
+      <input type="checkbox" name="thumb" />
       <button type="submit">Upload</button>
     </form>
     <p style="display: block" id="preview"></p>
-    <p id="post_reponse"></p>
+    <p id="response"></p>
 
     <script>
-      const form = document.querySelector("#uploadForm");
-      const { method, action } = form;
-      form.addEventListener("submit", handleSubmit);
+      const input = document.querySelector("#fileToUpload"),
+        preview = document.querySelector("#preview");
 
-      const input = document.querySelector("#fileToUpload");
-      const preview = document.querySelector("#preview");
-
-      // preview --->
-      input.addEventListener("change", showPreview);
-
-      function showPreview({ target }) {
-        for (let file of target.files) {
-          const img = document.createElement("img");
-          const src = URL.createObjectURL(file);
+      input.addEventListener("change", previewer, false);
+      function previewer() {
+        for (let file of this.files) {
+          const img = document.createElement("img"),
+            src = URL.createObjectURL(file);
 
           img.src = src;
           img.style.display = "inline-block";
@@ -47,22 +37,32 @@
           preview.append(img);
         }
       }
-      // <---
 
-      async function handleSubmit(evt) {
-        evt.preventDefault();
-        return post({
-          url: new URL(action),
-          formData: new FormData(evt.currentTarget),
-        });
-      }
+      let form = ({ action, method } = document.forms[0]);
 
-      async function post({ url, formData }) {
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        let fd = new FormData(form);
+        // let i = 0,
+        //   fd = new FormData();
+
+        // for (let f of e.target[0].files) {
+        //   fd.append(`file-${i}`, f, f.name);
+        //   i++;
+        // }
+
+        // fd.append("w", JSON.stringify({ w: e.target[1].value }));
+        // fd.append("thumb", JSON.stringify({ thumb: e.target[2].value }));
+        return post({ url: action, fd });
+      };
+
+      async function post({ url, fd }) {
+        for (let entry of fd.entries()) {
+          console.log(entry);
+        }
+        console.log(fd.entries());
         try {
-          const request = await fetch(url, {
-            method,
-            body: formData,
-          });
+          const request = await fetch(url, { method, body: fd });
 
           if (request.ok) {
             const response = await request.json();
@@ -78,9 +78,22 @@
       function setResponse(response) {
         preview.innerHTML = "";
         form.reset();
-        document.querySelector("#post_reponse").innerText =
+        document.querySelector("#response").innerText =
           JSON.stringify(response);
       }
     </script>
+    <!-- <form id="f" action="http://localhost:4000/api" method="POST" enctype="multipart/form-data">
+        <input type="file" name="file" multiple />
+      </form>
+      <button form="f">Upload</button>
+      <script>
+        const form = ({ method, action } = document.forms[0]);
+        form.onsubmit=  async (e) => {
+          e.preventDefault();
+          return fetch(new URL(action), { method, body: new FormData(form) })
+            .then((r) => r.json())
+            .then(console.log);
+        }); 
+      </script>-->
   </body>
 </html>

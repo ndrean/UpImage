@@ -17,6 +17,7 @@ defmodule UpImg.EnvReader do
     :ets.insert(:envs, {:bucket, read_bucket()})
     :ets.insert(:envs, {:cleaning_timer, read_cleaning_timer()})
     :ets.insert(:envs, {:my_env, read_env()})
+    :ets.insert(:envs, {:upload_limit, read_upload_limit()})
   end
 
   defp fetch_key(main, key),
@@ -33,21 +34,17 @@ defmodule UpImg.EnvReader do
   defp read_google_secret, do: fetch_key(:google, :google_client_secret)
   defp read_bucket, do: Application.fetch_env!(:ex_aws, :bucket)
   defp read_env, do: Application.fetch_env!(:up_img, :env)
+  defp read_upload_limit, do: Application.fetch_env!(:up_img, :upload_limit)
 
   defp read_cleaning_timer, do: Application.fetch_env!(:up_img, :cleaning_timer)
 
   # Lookups from ETS
   def bucket, do: lookup(:bucket)
-
   def google_id, do: lookup(:google_id)
-
   def google_secret, do: lookup(:google_secret)
-
   def gh_id, do: lookup(:gh_id)
-
   def gh_secret, do: lookup(:gh_secret)
-
   def cleaning_timer, do: lookup(:cleaning_timer)
-
   def get_env, do: lookup(:my_env)
+  def upload_limit, do: lookup(:upload_limit)
 end

@@ -21,6 +21,7 @@ defmodule UpImg do
   end
 
   def vault_key, do: Application.fetch_env!(:up_img, :vault_key)
+  def env, do: Application.fetch_env!(:up_img, :env)
 
   @doc """
   Defines the callback endpoints. It must correspond to the settings in the Google Dev console and Github credentials.

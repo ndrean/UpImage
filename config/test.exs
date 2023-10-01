@@ -49,3 +49,5 @@ config :up_img, :google,
 
 config :up_img, :vault_key, "CLOAKKEY"
 config :up_img, :cleaning_timer, 2 * 60 * 1_000
+
+config :up_img, :upload_limit, 5_000_000

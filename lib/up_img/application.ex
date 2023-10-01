@@ -14,7 +14,9 @@ defmodule UpImg.Application do
       UpImg.MyVault,
       {Task.Supervisor, name: UpImg.TaskSup},
       UpImg.EnvReader,
-      UpImg.CleanFiles
+      UpImg.CleanFiles,
+      {GenMagic.Server, name: :gen_magic}
+      # {GenMagic.Pool.NimblePool, pool_name: MagicPool, pool_size: 2}
     ]
 
     opts = [strategy: :one_for_one, name: UpImg.Supervisor]

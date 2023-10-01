@@ -43,7 +43,7 @@ defmodule UpImgWeb.Endpoint do
 
   plug Plug.Parsers,
     parsers: [:urlencoded, :multipart, :json],
-    pass: ["*/*"],
+    pass: ["image/*"],
     json_decoder: Phoenix.json_library()
 
   plug CORSPlug

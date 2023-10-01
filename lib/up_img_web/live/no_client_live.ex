@@ -94,7 +94,7 @@ defmodule UpImgWeb.NoClientLive do
   end
 
   def handle_progress(:image_list, entry, socket) do
-    client_name = clean_name(entry.client_name)
+    client_name = Utils.clean_name(entry.client_name)
 
     check_if_exists =
       Enum.find(socket.assigns.uploaded_files_locally, &(&1.client_name == client_name))
@@ -659,11 +659,6 @@ defmodule UpImgWeb.NoClientLive do
       UpImgWeb.Endpoint.static_path("/image_uploads"),
       name
     ])
-  end
-
-  def clean_name(name) do
-    rootname = name |> Path.rootname() |> String.replace(" ", "") |> String.replace(".", "")
-    rootname <> Path.extname(name)
   end
 
   def build_path(name) do
