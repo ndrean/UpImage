@@ -46,6 +46,8 @@ defmodule UpImgWeb.Endpoint do
     pass: ["image/*"],
     json_decoder: Phoenix.json_library()
 
+  # body_reader: {MyParse, :read_body, []}
+
   plug CORSPlug
   plug Plug.MethodOverride
   plug Plug.Head

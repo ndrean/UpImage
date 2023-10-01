@@ -23,7 +23,7 @@ defmodule UpImgWeb.ApiController do
 
   # single file
   def handle(conn, params) do
-    {:ok, body, conn} = Plug.Conn.read_body(conn, length: 1_000_000) |> dbg()
+    # {:ok, body, conn} = Plug.Conn.read_part_body(conn, length: 1_000_000)
     file = Map.get(params, "file")
     w = Map.get(params, "w")
     thumb = Map.get(params, "thumb")

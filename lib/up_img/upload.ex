@@ -23,8 +23,6 @@ defmodule UpImg.Upload do
   def bucket, do: EnvReader.bucket()
 
   def upload(%{path: path} = image) do
-    binding() |> dbg()
-
     with {:ok, filename} <- FileUtils.hash_file(image),
          {:ok, upload_resp_body} <-
            upload_file_to_s3(%{filename: filename, path: path}) do
@@ -41,8 +39,7 @@ defmodule UpImg.Upload do
   # Fetching the URL of the returned file.
 
   def upload_file_to_s3(%{filename: filename, path: path}) do
-    binding() |> dbg()
-    UpImg.EnvReader.upload_limit() |> dbg()
+    UpImg.EnvReader.upload_limit()
 
     bucket =
       if Application.get_env(:up_img, :env) == :test,

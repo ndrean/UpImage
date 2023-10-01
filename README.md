@@ -2,7 +2,7 @@
 
 This app uploads images to S3 and transforms them into WEBP format to save on bandwidth and storage. The transformation is based on [libvips](https://www.libvips.org/) and the Elixir package [Vix.Vips](https://github.com/akash-akya/vix).
 
-We will further implement **image tagging** via AI.
+The idea is to evaluate an Image-To-Text implementation for **image tagging** or **caption creation** via AI. It will propose some tags and a caption to help the user to classify his pictures for him to retrieve them by tag.
 
 **[CanIUse-WEBP?](https://caniuse.com/webp)**
 

@@ -204,7 +204,6 @@ defmodule UpImgWeb.NoClientLive do
         thumb_name: thumb_name,
         thumb_path: thumb_path
       })
-      |> dbg()
 
     send(lv_pid, {:transform_success, entry})
   end
@@ -256,7 +255,6 @@ defmodule UpImgWeb.NoClientLive do
         thumb_url: set_image_url(entry.thumb_name),
         thumb_path: entry.thumb_path
       })
-      |> dbg()
 
     cleaner_ref = Process.send_after(self(), {:clean}, socket.assigns.cleaning_timer)
 
@@ -464,7 +462,7 @@ defmodule UpImgWeb.NoClientLive do
       thumb_path: thumb_path,
       uuid: uuid
     } =
-      find_image(socket.assigns.uploaded_files_locally, uuid) |> dbg()
+      find_image(socket.assigns.uploaded_files_locally, uuid)
 
     # Create 1) original file object and 2) thumbnail/compressed file object to upload
     file_resized =
@@ -561,8 +559,6 @@ defmodule UpImgWeb.NoClientLive do
 
   # In Task.async_stream, use "on_timeout: :kill_task" to intercept the timeout error
   def upload(lv_pid, files, uuid) when is_list(files) do
-    binding() |> dbg()
-
     files
     |> Task.async_stream(&UpImg.Upload.upload/1, on_timeout: :kill_task)
     |> Enum.map(&handle_async_result/1)
@@ -648,6 +644,9 @@ defmodule UpImgWeb.NoClientLive do
     Enum.map(images, fn image -> if image.uuid == uuid, do: img, else: image end)
   end
 
+  @doc """
+  Renders a new empty map or an image
+  """
   def find_image(images, img_uuid) do
     case Enum.find(images, fn %{uuid: uuid} ->
            uuid == img_uuid
