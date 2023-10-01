@@ -2,6 +2,8 @@
 
 This app uploads images to S3 and transforms them into WEBP format to save on bandwidth and storage. We will further implement **image tagging** via AI.
 
+**[CanIUse-WEBP?](https://caniuse.com/webp)**
+
 You can use it in two ways: API and WebApp.
 
 ## API
@@ -70,6 +72,7 @@ You can use the POST endpoint simply with a `fetch({method: 'POST'})` from the b
 
 - secure the API with a token provided by the app to a registered user. You can register simply via Google or Github, no friction. You then will request a token (valid 1 day).
 - rate limit the API.
+- open the CORS limitation.
 - implement a total MB uploaded per user.
 
 ### Stream downloads and save to file
@@ -112,9 +115,12 @@ end
 
 ## Webapp
 
-You select files and the server will produce a thumbnail (for the display) and a resized file. All will be WEBP and displayed in the browser.
+You can use it in two ways:
 
-[CanIUse-WEBP?](https://caniuse.com/webp)
+- select files from your device you want to upload to S3,
+- copy/paste a link of an image you want to upload to S3 (_UX en cours_)
+
+You select files from your device and the server will produce a thumbnail (for the display) and a resized file. All will be WEBP and displayed in the browser.
 
 Once you load images from your device, 2 transformations are made: a thumbnail (of max dimension 200px) and a resize into max **1440x726** (if needed).
 The transformation is based on the image processing library [libvips](https://www.libvips.org/) via the Elixir extension [Vix.Vips](https://github.com/akash-akya/vix).
