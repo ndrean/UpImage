@@ -10,7 +10,7 @@ defmodule RouterTest do
     assert json_response(conn, 200) == %{"error" => "bad_url"}
 
     conn = get(conn, "/api?url=https://google.com")
-    assert json_response(conn, 200) == %{"error" => "\"Failed to read image\""}
+    assert json_response(conn, 200) == %{"error" => ":not_acceptable"}
   end
 
   setup do
@@ -23,10 +23,13 @@ defmodule RouterTest do
     conn = post(conn, "/api", %{"file" => upload})
 
     assert json_response(conn, 200) == %{
-             "content_type" => "image/jpeg",
-             "h" => 3832,
-             "size" => 5_006_835,
-             "w" => 4177
+             "h" => 1321,
+             "w" => 1440,
+             "h_origin" => 3832,
+             "init_size" => 5_006_835,
+             "new_size" => 236_682,
+             "url" => "https://dwyl-imgup.s3.eu-west-3.amazonaws.com/640E6133.webp",
+             "w_origin" => 4177
            }
   end
 end

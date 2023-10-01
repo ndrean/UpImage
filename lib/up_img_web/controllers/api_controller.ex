@@ -202,7 +202,7 @@ defmodule UpImgWeb.ApiController do
     %{size: new_size} = File.stat!(data.resized_path)
 
     with {:ok, %{body: body}} <-
-           UpImg.Upload.upload_file_to_s3(data.resized_path, data.name) do
+           UpImg.Upload.upload_file_to_s3(%{path: data.resized_path, filename: data.name}) do
       attached = body |> xpath(~x"//text()") |> List.to_string() |> URI.parse()
       File.rm_rf!(data.resized_path)
 

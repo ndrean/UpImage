@@ -91,7 +91,7 @@ defmodule ApiControllerTest do
     assert resp == "{\"error\":\"Please provide an URL\"}"
 
     %{resp_body: resp} = Api.create(conn, %{"url" => "http://google.com"})
-    assert resp == "{\"error\":\"\\\"Failed to read image\\\"\"}"
+    assert resp == "{\"error\":\":not_acceptable\"}"
 
     %{resp_body: resp} = Api.create(conn, %{"name" => "test"})
     assert resp == "{\"error\":\"Please provide an URL\"}"
@@ -129,7 +129,7 @@ defmodule ApiControllerTest do
       Api.create(conn, %{"url" => @nasa, "w" => "1440"})
 
     assert resp =~
-             "{\"size\":236682,\"h\":1321,\"w\":1440,\"url\":\"https://dwyl-imgup.s3.eu-west-3.amazonaws.com/640E6133.webp\",\"attachment\":\"https://s3.eu-west-3.amazonaws.com/dwyl-imgup/640E6133.webp\",\"h_origin\":3832,\"init_size\":5006835,\"w_origin\":4177}"
+             "{\"h\":1321,\"w\":1440,\"url\":\"https://dwyl-imgup.s3.eu-west-3.amazonaws.com/640E6133.webp\",\"init_size\":5006835,\"w_origin\":4177,\"h_origin\":3832,\"new_size\":236682}"
 
     %{resp_body: resp} =
       Api.create(conn, %{"url" => @not_accepted_type, "w" => "1440"})

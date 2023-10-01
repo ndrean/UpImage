@@ -23,9 +23,11 @@ defmodule UpImg.Upload do
   def bucket, do: EnvReader.bucket()
 
   def upload(%{path: path} = image) do
+    binding() |> dbg()
+
     with {:ok, filename} <- FileUtils.hash_file(image),
          {:ok, upload_resp_body} <-
-           upload_file_to_s3(filename, path) do
+           upload_file_to_s3(%{filename: filename, path: path}) do
       {:ok,
        %{
          url: upload_resp_body.body |> xpath(~x"//text()") |> List.to_string(),
@@ -38,7 +40,10 @@ defmodule UpImg.Upload do
 
   # Fetching the URL of the returned file.
 
-  def upload_file_to_s3(path, filename) do
+  def upload_file_to_s3(%{filename: filename, path: path}) do
+    binding() |> dbg()
+    UpImg.EnvReader.upload_limit() |> dbg()
+
     bucket =
       if Application.get_env(:up_img, :env) == :test,
         do: System.get_env("AWS_S3_BUCKET"),
