@@ -1,6 +1,8 @@
 # UpImg
 
-This app uploads images to S3 and transforms them into WEBP format to save on bandwidth and storage. We will further implement **image tagging** via AI.
+This app uploads images to S3 and transforms them into WEBP format to save on bandwidth and storage. The transformation is based on `libvips` and the Elixir package `Vix.Vips`.
+
+We will further implement **image tagging** via AI.
 
 **[CanIUse-WEBP?](https://caniuse.com/webp)**
 
