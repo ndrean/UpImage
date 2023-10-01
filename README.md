@@ -6,7 +6,7 @@ We will further implement **image tagging** via AI.
 
 **[CanIUse-WEBP?](https://caniuse.com/webp)**
 
-You can use it in two ways: API and WebApp.
+You can use this app in two ways: API and WebApp.
 
 ## API
 
