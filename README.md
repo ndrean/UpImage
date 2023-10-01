@@ -1,20 +1,30 @@
 # UpImg
 
-This app uploads images to S3 and transforms them into WEBP format to save on bandwidth and storage.
+This app uploads images to S3 and transforms them into WEBP format to save on bandwidth and storage. We will further implement **image tagging** via AI.
 
-You can use it in two ways:
+You can use it in two ways: API and WebApp.
 
 ## API
 
-It exposes a GET endpoint <https://up-image.fly.dev/api> and accepts a query string with the "url" (which serves the picture you want) and possibly and "w" (the desired width) and optionally "h" (the height if you want to change the ratio).
+It is limited to 5Mb images with dimension less than 4200x4000. See TODOS.
 
-You receive a json response with a link to a resized WEBP picture from S3 along with informations on the original file and the new file.
+It exposes two endpoints at <https://up-image.fly.dev/api>:
 
-~~We use **[libmagic](https://packages.debian.org/sid/libmagic-dev)** via [gen_magic](https://github.com/evadne/gen_magic). It works with magic numbers. It needs a depency in the Dockerfile~~
+- a GET endpoint. It accepts a query string with the "url" (which serves the picture you want) and possibly and "w" (the desired width) and optionally "h" (the height if you want to change the ratio).
 
-We use [ExIamgeInfo](https://github.com/Group4Layers/ex_image_info) to recognize the type of data. It assures that we receive a file of type "image".
+- a POST endpoint. It accepts a payload with "multipart" - for a single file with hte key **"file"**- and a width with the key **"w"** to resize the file.
 
-### Example
+They return a json response with a link to a resized WEBP picture from S3 along with informations on the original file and the new file.
+
+We use two consecutive strategies to read information from the file other than the extension.
+
+- we firstly use **[libmagic](https://packages.debian.org/sid/libmagic-dev)** via [gen_magic](https://github.com/evadne/gen_magic). It works with **magic numbers**. It needs a depency in the Dockerfile. We run this as a worker in order not to reload the C code on each call.
+
+- if this test is positive, we then run [ExIamgeInfo](https://github.com/Group4Layers/ex_image_info) to confirm by matching on the type of data. It does not use magic number but rather reads the content of the file. Note that this gives a `Sobelow` warning since we read external data.
+
+This should assure that we receive a file of type "image" with the desired format: `["webp", "jpeg", ""jpg"]`.
+
+### Usage example
 
 To upload the 4177x3832-5MB image <https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg> to S3, and convert it into a WEBP image of 1440x1321-237kB, you pass into the query string the "url", and possibly the new desired width "w=1440".
 
@@ -27,9 +37,38 @@ curl  -X GET -H "Accept: application/json"  http://localhost:4000/api\?url\=http
 
 If successful, you will receive a json response: `{"url": "https://xxx.amazonaws.com/xxxx/new_file.webp}` or `{"error: reason}`. This link is valid 1 hour.
 
-You are limited to 5Mb and images with dimension less than 4200x4000.
+You can use the POST endpoint simply with a `fetch({method: 'POST'})` from the browser. A minimalist test: save and `serve` the "index.html" file below.
 
-To use the API, you need to register and get a token from the webapp. Then you pass this token
+```html
+<html>
+  <body>
+    <form
+      id="f"
+      action="https://up-image.fly.dev/api"
+      method="POST"
+      enctype="multipart/form-data"
+    >
+      <input type="file" name="file" />
+      <button form="f">Upload</button>
+    </form>
+
+    <script>
+      const form = ({ method, action } = document.forms[0]);
+      form.onsubmit=  async (e) => {
+        e.preventDefault();
+        return fetch(action, { method, body: new FormData(form) })
+          .then((r) => r.json())
+          .then(console.log);
+      });
+    </script>
+  </body>
+</html>
+```
+
+### Todos
+
+- secure the API with a token given by the app to a registered user.
+- rate limit the API.
 
 ### Stream downloads and save to file
 
