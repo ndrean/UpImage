@@ -58,7 +58,7 @@ defmodule UpImgWeb.Router do
     plug :accepts, ["json"]
 
     plug CORSPlug,
-      origin: ["http://localhost:3000", "http://localhost:4000", "https://dwyl-upimage.fly.dev"]
+      origin: ["http://localhost:3000", "http://localhost:4000", "https://up-image.fly.dev"]
 
     plug Plug.Parsers,
       parsers: [:urlencoded, :my_multipart, :json],
