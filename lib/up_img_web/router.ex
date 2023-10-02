@@ -61,8 +61,11 @@ defmodule UpImgWeb.Router do
       origin: ["http://localhost:3000", "http://localhost:4000", "https://dwyl-upimage.fly.dev"]
 
     plug Plug.Parsers,
-      parsers: [:urlencoded, :multipart, :json],
-      json_decoder: Jason
+      parsers: [:urlencoded, :my_multipart, :json],
+      pass: ["image/jpg", "image/png", "image/webp", "iamge/jpeg"],
+      json_decoder: Jason,
+      multipart_to_params: {Plug.Parsers.MY_MULTIPART, :multipart_to_params, []},
+      body_reader: {Plug.Parsers.MY_MULTIPART, :read_body, []}
   end
 
   scope "/api", UpImgWeb do

@@ -2,9 +2,9 @@
 
 This app uploads images to S3 and transforms them into WEBP format to save on bandwidth and storage. The transformation is based on [libvips](https://www.libvips.org/) and the Elixir package [Vix.Vips](https://github.com/akash-akya/vix).
 
-The idea is to evaluate an Image-To-Text implementation for **image tagging** or **caption creation** via AI. It will propose some tags and a caption to help the user to classify his pictures for him to retrieve them by tag.
+The idea is to evaluate an Image-To-Text implementation for **image tagging** or **caption creation** via AI. It will propose some tags and a caption to help the user to classify his pictures for him to retrieve them by tag. This might be a very slow process, especially on a free-tier Fly.io machine.
 
-**[CanIUse-WEBP?](https://caniuse.com/webp)**
+About **[CanIUse-WEBP?](https://caniuse.com/webp)**
 
 You can use this app in two ways: API and WebApp.
 
@@ -16,7 +16,9 @@ It exposes two endpoints at <https://up-image.fly.dev/api>:
 
 - a GET endpoint. It accepts a query string with the "url" (which serves the picture you want) and possibly and "w" (the desired width) and optionally "h" (the height if you want to change the ratio).
 
-- a POST endpoint. It accepts a payload with "multipart" - for a single file with the key **"file"**- and a width with the key **"w"** to resize the file.
+- a POST endpoint. It accepts a payload with "multipart" - for **multiple** files with a FormData. Use the key **"w"** to specify the width to resize the file and the key "thumb" as a checkbox to produce a thumbnail (standard 100px).
+
+> I did not find yet a way to accept multiples files or more generally any FormData with the Phoenix API (since a user may want to pass files with a "width" and possibly ask to generate a thumbnail from the picture).
 
 They return a json response with a link to a resized WEBP picture from S3 along with informations on the original file and the new file.
 
@@ -202,6 +204,107 @@ dot -Tpng ecto_erd.dot > erd.png
 ![ERD](erd.png)
 
 ## Notes
+
+### Custom MultiPart to allow multiple file upload
+
+Phoenix accepts multipart encoded (`FormData`) and sets up a `Plug.Upload` mechanism to write a temporary file on disk. It only accepts one file since it uses the same key.
+
+To change this to accept multiple files, one way is to create multiple keys, one for each file. This can be done by building a [custom multiparser](https://hexdocs.pm/plug/Plug.Parsers.MULTIPART.html#module-multipart-to-params).
+
+```elixir
+defmodule Plug.Parsers.MY_MULTIPART do
+  @multipart Plug.Parsers.MULTIPART
+
+  def init(opts) do
+    opts
+  end
+
+  def parse(conn, "multipart", subtype, headers, opts) do
+    length = System.fetch_env!("UPLOAD_LIMIT") |> String.to_integer()
+    opts = @multipart.init([length: length] ++ opts)
+    @multipart.parse(conn, "multipart", subtype, headers, opts)
+  end
+
+  def parse(conn, _type, _subtype, _headers, _opts) do
+    {:next, conn}
+  end
+
+  def multipart_to_params(parts, conn) do
+    case filter_content_type(parts) do
+      nil ->
+        {:ok, %{}, conn}
+
+      new_parts ->
+        acc =
+          for {name, _headers, body} <- Enum.reverse(new_parts),
+              reduce: Plug.Conn.Query.decode_init() do
+            acc -> Plug.Conn.Query.decode_each({name, body}, acc)
+          end
+
+        {:ok, Plug.Conn.Query.decode_done(acc, []), conn}
+    end
+  end
+
+  def filter_content_type(parts) do
+    # find the headers than contain "content-type"
+    filtered =
+      parts
+      |> Enum.filter(fn
+        {_, [{"content-type", _}, {"content-disposition", _}], %Plug.Upload{}} = part ->
+          part
+
+        {_, [_], _} ->
+          nil
+      end)
+
+    l = length(filtered)
+
+    case l do
+      0 ->
+        # we don't want to submit without files as the rest of the code breaks
+        nil
+
+      _ ->
+        # extract the others
+        other = Enum.filter(parts, fn elt -> !Enum.member?(filtered, elt) end)
+
+        # get the key identifier name
+        key = elem(hd(filtered), 0)
+        # build a list of indexed identifiers from the key: "key1", "key2",...
+        new_keys = keys = Enum.map(1..l, fn i -> key <> "#{i}" end)
+
+        # we do the following below: we change [{key, xxx,xxx}, {key,xxx,xxx}, ...] to
+        # [{key1, xxx,xxx}, {key2,xxx,xxx},...] so we get unique identifiers
+        f =
+          Enum.zip_reduce([filtered, new_keys], [], fn elts, acc ->
+            [{_, headers, content}, new_key] = elts
+            [{new_key, headers, content} | acc]
+          end)
+
+        f ++ other
+    end
+  end
+end
+```
+
+Then you declare it in the router in the `API` pipeline.
+
+```elixir
+#router.ex
+pipeline :api do
+  plug :accepts, ["json"]
+
+  plug CORSPlug,
+    origin: ["http://localhost:3000", "http://localhost:4000", "https://dwyl-upimage.fly.dev"]
+
+  plug Plug.Parsers,
+    parsers: [:urlencoded, :my_multipart, :json],
+    pass: ["image/jpg", "image/png", "image/webp", "iamge/jpeg"],
+    json_decoder: Jason,
+    multipart_to_params: {Plug.Parsers.MY_MULTIPART, :multipart_to_params, []},
+    body_reader: {Plug.Parsers.MY_MULTIPART, :read_body, []}
+end
+```
 
 ### About configuration
 
