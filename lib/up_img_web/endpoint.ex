@@ -41,11 +41,6 @@ defmodule UpImgWeb.Endpoint do
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
 
-  # plug Plug.Parsers,
-  #   parsers: [:urlencoded, :json],
-  #   pass: ["*/*"],
-  #   json_decoder: Phoenix.json_library(),
-
   plug CORSPlug
   plug Plug.MethodOverride
   plug Plug.Head

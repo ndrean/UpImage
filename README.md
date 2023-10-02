@@ -18,8 +18,6 @@ It exposes two endpoints at <https://up-image.fly.dev/api>:
 
 - a POST endpoint. It accepts a payload with "multipart" - for **multiple** files with a FormData. Use the key **"w"** to specify the width to resize the file and the key "thumb" as a checkbox to produce a thumbnail (standard 100px).
 
-> I did not find yet a way to accept multiples files or more generally any FormData with the Phoenix API (since a user may want to pass files with a "width" and possibly ask to generate a thumbnail from the picture).
-
 They return a json response with a link to a resized WEBP picture from S3 along with informations on the original file and the new file.
 
 We use two consecutive strategies to read information from the file other than the extension.
@@ -32,7 +30,8 @@ This should assure that we receive a file of type "image" with the desired forma
 
 ### Usage example
 
-To upload the 4177x3832-5MB image <https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg> to S3, and convert it into a WEBP image of 1440x1321-237kB, you pass into the query string the "url", and possibly the new desired width "w=1440".
+- GET: copy and paste an URL
+  To upload the 4177x3832-5MB image <https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg> to S3, and convert it into a WEBP image of 1440x1321-237kB, you pass into the query string the "url", and possibly the new desired width "w=1440".
 
 ```bash
 curl  -X GET -H "Accept: application/json"  http://up-image.fly.dev/api\?url\=https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg\&w\=1440
@@ -45,7 +44,8 @@ curl  -X GET -H "Accept: application/json"  http://up-image.fly.dev/api\?url\=ht
 
 If successful, you will receive a json response: `{"url": "https://xxx.amazonaws.com/xxxx/new_file.webp}` or `{"error: reason}`. This link is valid 1 hour.
 
-You can use the POST endpoint simply with a `fetch({method: 'POST'})` from the browser. A minimalist test: save and `serve` the "index.html" file below.
+-POST:
+You can use the POST endpoint simply with a `fetch({method: 'POST'})` from the browser. A minimalist test: save and `serve` the "index.html" file below. You can select multiple files to upload to S3.
 
 ```html
 <html>
@@ -56,22 +56,31 @@ You can use the POST endpoint simply with a `fetch({method: 'POST'})` from the b
       method="POST"
       enctype="multipart/form-data"
     >
-      <input type="file" name="file" />
+      <input type="file" name="file" multiple />
       <button form="f">Upload</button>
     </form>
 
     <script>
       const form = ({ method, action } = document.forms[0]);
-      form.onsubmit=  async (e) => {
+      form.onsubmit = async (e) => {
         e.preventDefault();
         return fetch(action, { method, body: new FormData(form) })
           .then((r) => r.json())
-          .then(console.log)
-          .catch(console.log)
-      });
+          .catch(console.log);
+      };
     </script>
   </body>
 </html>
+```
+
+You will receive a JSON response as a list:
+
+```js
+{"data":[
+  {"h":39,"w":100,"url":"https://dwyl-imgup.s3.eu-west-3.amazonaws.com/0E3A7F41.webp","init_size":340362,"w_origin":1152,"h_origin":452,"new_size":5300},
+  {"h":68,"w":100,"url":"https://dwyl-imgup.s3.eu-west-3.amazonaws.com/F09F2736.webp","init_size":82234,"w_origin":960,"h_origin":656,"new_size":2028}
+  ]
+}
 ```
 
 ### Todos

@@ -45,7 +45,6 @@ defmodule UpImgWeb.ApiController do
   # end
 
   # multi-files
-
   def handle(conn, params) when map_size(params) == 0 do
     json(conn, %{})
   end
@@ -53,8 +52,12 @@ defmodule UpImgWeb.ApiController do
   def handle(conn, params) do
     response =
       Api.parse_multi(params)
+      |> Enum.reduce([], fn
+        {:ok, data}, acc -> [data | acc]
+        {:error, _}, acc -> acc
+      end)
 
-    json(conn, "ok")
+    json(conn, %{data: response})
   end
 
   def parse_multi(params) do
@@ -144,16 +147,18 @@ defmodule UpImgWeb.ApiController do
                {:ok, response} <-
                  Api.upload_to_s3(data) do
             File.rm_rf!(file.path)
-            %{res: response}
+            response
           else
             {:error, reason} ->
               Logger.info(inspect(reason))
-              %{error: reason}
+              {:error, reason}
           end
         end)
-        |> Stream.run()
+        |> Enum.map(& &1)
     end
   end
+
+  # def handle_info({:response, data})
 
   def filter(file, w, h) do
     with {:ok, size} <-
