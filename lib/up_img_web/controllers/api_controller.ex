@@ -58,7 +58,6 @@ defmodule UpImgWeb.ApiController do
   end
 
   def parse_multi(params) do
-    params |> dbg()
     maybe_width = Map.get(params, "w", 1440)
     h = nil
 
@@ -74,7 +73,6 @@ defmodule UpImgWeb.ApiController do
         _ ->
           nil
       end)
-      |> dbg()
 
     case length(maybe_files) do
       0 ->
@@ -336,8 +334,6 @@ defmodule UpImgWeb.ApiController do
   Read with `File.stat` the size of the file.
   """
   def check_size_file_stat(path) do
-    Logger.info("downloaded..........")
-
     case File.stat(path) do
       {:ok, data} ->
         if data.size > @max_size, do: {:error, :too_large}, else: {:ok, data.size}
