@@ -64,7 +64,7 @@ defmodule UpImgWeb.ApiController do
     maybe_width = Map.get(params, "w", 1440)
     h = nil
 
-    maybe_thumb = Map.get(params, "thumb", "off")
+    # maybe_thumb = Map.get(params, "thumb", "off")
 
     maybe_files =
       params
@@ -122,7 +122,7 @@ defmodule UpImgWeb.ApiController do
                {:ok, %{width: width, height: height}} <-
                  check_headers_via_image_info(file.path, width, height, file.mime),
                {:ok, {hor_scale, vert_scale}} <-
-                 parse_size(file.w, nil, width, height),
+                 parse_size(file.w, h, width, height),
                {:ok, img_resized} <-
                  Api.resize(img, hor_scale, vert_scale),
                {:ok, %{width: new_w, height: new_h}} <-
@@ -149,6 +149,12 @@ defmodule UpImgWeb.ApiController do
             File.rm_rf!(file.path)
             response
           else
+            {:no_tmp, reason} ->
+              {:error, reason}
+
+            {:too_many_attempts, reason} ->
+              {:error, reason}
+
             {:error, reason} ->
               Logger.info(inspect(reason))
               {:error, reason}
@@ -186,7 +192,7 @@ defmodule UpImgWeb.ApiController do
            Operation.webpsave(img_resized, resized_path),
          {:file_exists, true} <-
            {:file_exists, File.exists?(resized_path)},
-         {:ok, name} =
+         {:ok, name} <-
            FileUtils.hash_file(%{path: resized_path, content_type: "image/webp"}) do
       {:ok,
        %{
@@ -280,7 +286,7 @@ defmodule UpImgWeb.ApiController do
         json(conn, %{error: :bad_url})
 
       {:error, reason} ->
-        json(conn, %{error: reason})
+        json(conn, %{error: inspect(reason)})
 
       response ->
         json(conn, response)
@@ -344,7 +350,7 @@ defmodule UpImgWeb.ApiController do
         if data.size > @max_size, do: {:error, :too_large}, else: {:ok, data.size}
 
       {:error, reason} ->
-        {:error, reason}
+        {:error, inspect(reason)}
     end
   end
 
@@ -354,7 +360,7 @@ defmodule UpImgWeb.ApiController do
   def gen_magic_eval(path) do
     case GenMagic.Server.perform(:gen_magic, path) do
       {:error, reason} ->
-        {:error, reason}
+        {:error, inspect(reason)}
 
       {:ok,
        %GenMagic.Result{
@@ -364,11 +370,11 @@ defmodule UpImgWeb.ApiController do
        }} ->
         if Enum.member?(@accepted_mime, mime),
           do: {:ok, %{mime_type: mime}},
-          else: {:error, :bad_mime}
+          else: {:error, "bad mime"}
 
       {:ok, %GenMagic.Result{} = res} ->
         Logger.warning(%{gen_magic_response: res})
-        {:error, :not_acceptable}
+        {:error, "not acceptable"}
     end
   end
 
@@ -416,14 +422,14 @@ defmodule UpImgWeb.ApiController do
   def check_headers_via_image_info(path, width, height, mime) do
     case ExImageInfo.info(File.read!(path)) do
       nil ->
-        {:error, :not_an_accepted_type}
+        {:error, "not_an_accepted_type"}
 
       {^mime, ^width, ^height, _} ->
         {:ok, %{width: width, height: height}}
 
       res ->
         Logger.info(inspect(res))
-        {:error, :does_not_match}
+        {:error, "does_not_match"}
     end
   end
 
@@ -457,18 +463,15 @@ defmodule UpImgWeb.ApiController do
   end
 
   def parse_size(_, _, width, height) when width > 4200 or height > 4000 do
-    {:error, :too_large}
+    {:error, "too_large"}
   end
 
   def parse_size(w, h, width, height) do
     binding()
 
     case {Integer.parse(w), Integer.parse(h)} do
-      {:error, :error} ->
-        {:error, :wrong_format}
-
-      {:error, {_h_int, _}} ->
-        {:error, :wrong_format}
+      {:error, _} ->
+        {:error, "wrong_format"}
 
       {{w_int, _}, :error} ->
         {:ok, {w_int / width, nil}}
