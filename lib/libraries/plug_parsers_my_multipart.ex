@@ -52,7 +52,7 @@ defmodule Plug.Parsers.MY_MULTIPART do
         other = Enum.filter(parts, fn elt -> !Enum.member?(filtered, elt) end)
 
         key = elem(hd(filtered), 0)
-        new_keys = keys = Enum.map(1..l, fn i -> key <> "#{i}" end)
+        new_keys = Enum.map(1..l, fn i -> key <> "#{i}" end)
 
         f =
           Enum.zip_reduce([filtered, new_keys], [], fn elts, acc ->

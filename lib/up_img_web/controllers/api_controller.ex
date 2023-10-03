@@ -145,7 +145,7 @@ defmodule UpImgWeb.ApiController do
                    h: new_h
                  },
                {:ok, response} <-
-                 Api.upload_to_s3(data) do
+                 Api.upload_to_s3(data, file.filename) do
             File.rm_rf!(file.path)
             response
           else
@@ -208,7 +208,7 @@ defmodule UpImgWeb.ApiController do
     end
   end
 
-  def upload_to_s3(data) do
+  def upload_to_s3(data, string) do
     bucket =
       if UpImg.env() == :test,
         do: System.get_env("AWS_S3_BUCKET"),
@@ -239,7 +239,12 @@ defmodule UpImgWeb.ApiController do
          h: data.h
        }
        |> Map.put(:url, url)
-       |> Map.put(:new_size, new_size)}
+       |> Map.put(:new_size, new_size)
+       |> then(fn res ->
+         if is_valid_url?(string),
+           do: Map.put(res, :url_origin, string),
+           else: Map.put(res, :filename, string)
+       end)}
     end
   end
 
@@ -249,7 +254,7 @@ defmodule UpImgWeb.ApiController do
 
     response =
       with true <-
-             check_url(url),
+             is_valid_url?(url),
            req <-
              Finch.build(:get, url),
            {:ok, stream_path} <-
@@ -259,7 +264,7 @@ defmodule UpImgWeb.ApiController do
            {:ok, data} <-
              filter(file, w, h),
            {:ok, response} <-
-             upload_to_s3(data) do
+             upload_to_s3(data, url) do
         response
       else
         false ->
@@ -297,8 +302,8 @@ defmodule UpImgWeb.ApiController do
     if Map.get(params, "url") == nil, do: json(conn, %{error: "Please provide an URL"})
   end
 
-  def check_url(url) do
-    URI.parse(url)
+  def is_valid_url?(string) do
+    URI.parse(string)
     |> Utils.values_from_map([:scheme, :authority, :host, :port])
     |> Enum.all?()
   end
