@@ -645,3 +645,10 @@ Database_URL: <FLY_STRING>
 iex(up_img@683d47dcd65948)4>
 Application.app_dir(:up_img, ["priv", "static", "image_uploads"]) |> File.ls!()
 ```
+
+### Misc
+
+#### Sitemap
+
+<https://andrewian.dev/blog/sitemap-in-phoenix-with-verified-routes>
+<https://medium.com/@ricardoruwer/create-dynamic-sitemap-xml-in-elixir-and-phoenix-6167504e0e4b>

@@ -20,8 +20,7 @@ defmodule UpImgWeb.ApiController do
   @doc """
   Catch all JSON response to a no-machting URL.
   """
-  def no_route(conn, params) do
-    params |> dbg()
+  def no_route(conn, _params) do
     json(conn |> Plug.Conn.put_status(404), %{error: "bad request"})
   end
 

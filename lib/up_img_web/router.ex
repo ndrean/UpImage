@@ -27,6 +27,7 @@ defmodule UpImgWeb.Router do
     pipe_through [:browser]
 
     get "/github/callback", GithubCallbackController, :new
+    get "/sitemap", SitemapController, :index
   end
 
   scope "/", UpImgWeb do
