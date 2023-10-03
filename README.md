@@ -34,11 +34,11 @@ This should assure that we receive a file of type "image" with the desired forma
   To upload the 4177x3832-5MB image <https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg> to S3, and convert it into a WEBP image of 1440x1321-237kB, you pass into the query string the "url", and possibly the new desired width "w=1440".
 
 ```bash
-curl  -X GET -H "Accept: application/json"  http://up-image.fly.dev/api\?url\=https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg\&w\=1440
+curl  -X GET  http://up-image.fly.dev/api\?url\=https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg\&w\=1440
 ```
 
 ```bash
-{"size":236682,"h":1321,"w":1440,"url":"https://zzzz.amazonaws.com/xxxx/640E6133.webp","h_origin":3832,"w_origin":4177,"init_size":5006835}%
+{"size":236682,"h":1321,"w":1440,"url":"https://zzzz.amazonaws.com/xxxx/640E6133.webp","h_origin":3832,"w_origin":4177,"init_size":5006835,"url_orign":"https://apod.nasa.gov/apod/image/2309/SteveMw_Clarke_4177.jpg"}%
 
 ```
 
@@ -57,6 +57,7 @@ You can use the POST endpoint simply with a `fetch({method: 'POST'})` from the b
       enctype="multipart/form-data"
     >
       <input type="file" name="file" multiple />
+      <input type="number" name="w" />
       <button form="f">Upload</button>
     </form>
 
@@ -77,8 +78,8 @@ You will receive a JSON response as a list:
 
 ```js
 {"data":[
-  {"h":39,"w":100,"url":"https://dwyl-imgup.s3.eu-west-3.amazonaws.com/0E3A7F41.webp","init_size":340362,"w_origin":1152,"h_origin":452,"new_size":5300},
-  {"h":68,"w":100,"url":"https://dwyl-imgup.s3.eu-west-3.amazonaws.com/F09F2736.webp","init_size":82234,"w_origin":960,"h_origin":656,"new_size":2028}
+  {"h":39,"w":100,"url":"https://dwyl-imgup.s3.eu-west-3.amazonaws.com/0E3A7F41.webp","init_size":340362,"w_origin":1152,"h_origin":452,"new_size":5300,"filename":"test1"},
+  {"h":68,"w":100,"url":"https://dwyl-imgup.s3.eu-west-3.amazonaws.com/F09F2736.webp","init_size":82234,"w_origin":960,"h_origin":656,"new_size":2028,"filename":"test2"}
   ]
 }
 ```

@@ -54,7 +54,7 @@ defmodule UpImgWeb.Router do
   end
 
   # Other scopes may use custom stacks.
-  pipeline :api do
+  pipeline :api_multi do
     plug :accepts, ["json"]
 
     plug CORSPlug,
@@ -69,7 +69,7 @@ defmodule UpImgWeb.Router do
   end
 
   scope "/api", UpImgWeb do
-    pipe_through :api
+    pipe_through :api_multi
     get "/", ApiController, :create
     post "/", ApiController, :handle
   end

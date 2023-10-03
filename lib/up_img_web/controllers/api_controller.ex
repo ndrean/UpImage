@@ -46,6 +46,7 @@ defmodule UpImgWeb.ApiController do
 
   # multi-files
   def handle(conn, params) when map_size(params) == 0 do
+    IO.puts("ici-----")
     json(conn, %{})
   end
 
@@ -299,7 +300,9 @@ defmodule UpImgWeb.ApiController do
   end
 
   def create(conn, params) do
-    if Map.get(params, "url") == nil, do: json(conn, %{error: "Please provide an URL"})
+    if Map.get(params, "url") == nil do
+      json(conn, %{error: "Please provide an URL"})
+    end
   end
 
   def is_valid_url?(string) do
