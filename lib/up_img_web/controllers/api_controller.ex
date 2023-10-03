@@ -18,8 +18,12 @@ defmodule UpImgWeb.ApiController do
   @max_size 5_100_000
 
   @doc """
-  POST endpoint to receive images files from a client
+  Catch all JSON response to a no-machting URL.
   """
+  def no_route(conn, params) do
+    params |> dbg()
+    json(conn |> Plug.Conn.put_status(404), %{error: "bad request"})
+  end
 
   # single file
   # def handle(conn, params) do
@@ -43,6 +47,12 @@ defmodule UpImgWeb.ApiController do
   #       end
   #   end
   # end
+
+  @doc """
+  POST endpoint to receive a FormData containg files from a client.
+
+  It accepts multiple files with the custom multipart parser.
+  """
 
   # multi-files
   def handle(conn, params) when map_size(params) == 0 do
@@ -90,6 +100,7 @@ defmodule UpImgWeb.ApiController do
                  gen_magic_eval(path),
                :ok <-
                  ex_image_check(path, mime) do
+            # copy temp file in "priv/static/image_uploads
             new_name = Utils.clean_name(filename)
             new_path = UpImg.build_path(new_name)
 
@@ -97,6 +108,7 @@ defmodule UpImgWeb.ApiController do
             |> Stream.into(File.stream!(UpImg.build_path(new_name)))
             |> Stream.run()
 
+            # add file to the list
             [
               Map.merge(file, %{
                 filename: new_name,
@@ -113,14 +125,13 @@ defmodule UpImgWeb.ApiController do
               acc
           end
         end)
+        # each file is streamed to S3 after some checks and resizing upon request.
         |> Task.async_stream(fn file ->
           with {:ok, img} <-
                  Image.new_from_file(file.path),
                {:ok, %{width: width, height: height}} <-
                  image_get_dim(img),
                :ok <- check_dim_from_image(width, height),
-               {:ok, %{width: width, height: height}} <-
-                 check_headers_via_image_info(file.path, width, height, file.mime),
                {:ok, {hor_scale, vert_scale}} <-
                  parse_size(file.w, h, width, height),
                {:ok, img_resized} <-
@@ -164,8 +175,6 @@ defmodule UpImgWeb.ApiController do
     end
   end
 
-  # def handle_info({:response, data})
-
   def filter(file, w, h) do
     with {:ok, size} <-
            check_size_file_stat(file),
@@ -178,8 +187,6 @@ defmodule UpImgWeb.ApiController do
          {:ok, %{width: width, height: height}} <-
            image_get_dim(img),
          :ok <- check_dim_from_image(width, height),
-         {:ok, %{width: width, height: height}} <-
-           check_headers_via_image_info(file, width, height, mime),
          {:ok, {hor_scale, vert_scale}} <-
            parse_size(w, h, width, height),
          {:ok, img_resized} <-
@@ -214,9 +221,9 @@ defmodule UpImgWeb.ApiController do
         do: System.get_env("AWS_S3_BUCKET"),
         else: UpImg.EnvReader.bucket()
 
-    %{size: new_size} = File.stat!(data.resized_path)
-
-    with {:ok, %{body: body}} <-
+    with %{size: new_size} <-
+           File.stat!(data.resized_path),
+         {:ok, %{body: body}} <-
            UpImg.Upload.upload_file_to_s3(%{path: data.resized_path, filename: data.name}) do
       attached = body |> xpath(~x"//text()") |> List.to_string() |> URI.parse()
       File.rm_rf!(data.resized_path)
@@ -248,6 +255,9 @@ defmodule UpImgWeb.ApiController do
     end
   end
 
+  @doc """
+  GET endpoint. It receive an URL and returns a JSON response with the URL on S3 of the result.
+  """
   def create(conn, %{"url" => url} = params) do
     w = Map.get(params, "w")
     h = Map.get(params, "h")
@@ -275,20 +285,20 @@ defmodule UpImgWeb.ApiController do
 
         {:no_tmp, msg} ->
           Logger.warning(inspect(msg))
-          {:error, inspect(msg)}
+          {:error, msg}
 
         {:too_many_attemps, msg} ->
           Logger.warning(inspect(msg))
-          {:error, inspect(msg)}
+          {:error, msg}
 
         {:error, msg} ->
           Logger.warning(inspect(msg))
-          {:error, inspect(msg)}
+          {:error, msg}
       end
 
     case response do
       {:error, :bad_url} ->
-        json(conn, %{error: :bad_url})
+        json(conn, %{error: "bad url"})
 
       {:error, reason} ->
         json(conn, %{error: inspect(reason)})
@@ -304,6 +314,9 @@ defmodule UpImgWeb.ApiController do
     end
   end
 
+  @doc """
+  Returns `true` if the string is a valid URL.
+  """
   def is_valid_url?(string) do
     URI.parse(string)
     |> Utils.values_from_map([:scheme, :authority, :host, :port])
@@ -362,7 +375,7 @@ defmodule UpImgWeb.ApiController do
   end
 
   @doc """
-  Check file type via magic number and C lib "libmagic"
+  Check file type via magic number. It uses a GenServer running the `C` lib "libmagic".
   """
   def gen_magic_eval(path) do
     case GenMagic.Server.perform(:gen_magic, path) do
@@ -385,17 +398,23 @@ defmodule UpImgWeb.ApiController do
     end
   end
 
+  @doc """
+  Counter-check with ExImage the findings of `gem_magic`. It reads the file.
+  It determines if the file is an acceptable image and matches `gen_magic`.
+
+  !! It reads the file => Sobelow warning.
+  """
   def ex_image_check(file, mime) when is_binary(file) do
     case ExImageInfo.info(File.read!(file)) do
       nil ->
-        {:error, "Unable to read the file"}
+        {:error, "Error reading the file"}
 
       {^mime, _w, _h, _} ->
         :ok
 
       {type, _, _, _} ->
         Logger.info(%{content_type: type})
-        {:error, "suspicious file"}
+        {:error, "Does not match"}
     end
   end
 
@@ -426,19 +445,20 @@ defmodule UpImgWeb.ApiController do
 
   !! It read the file => Sobelow warning.
   """
-  def check_headers_via_image_info(path, width, height, mime) do
-    case ExImageInfo.info(File.read!(path)) do
-      nil ->
-        {:error, "not_an_accepted_type"}
 
-      {^mime, ^width, ^height, _} ->
-        {:ok, %{width: width, height: height}}
+  # def check_headers_via_image_info(path, width, height, mime) do
+  #   case ExImageInfo.info(File.read!(path)) do
+  #     nil ->
+  #       {:error, "not_an_accepted_type"}
 
-      res ->
-        Logger.info(inspect(res))
-        {:error, "does_not_match"}
-    end
-  end
+  #     {^mime, ^width, ^height, _} ->
+  #       {:ok, %{width: width, height: height}}
+
+  #     res ->
+  #       Logger.info(inspect(res))
+  #       {:error, "does_not_match"}
+  #   end
+  # end
 
   def resize(img, horizontal_scale, vertical_scale \\ nil) do
     cond do

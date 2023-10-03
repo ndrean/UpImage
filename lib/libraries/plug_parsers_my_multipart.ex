@@ -1,6 +1,11 @@
 defmodule Plug.Parsers.MY_MULTIPART do
   @multipart Plug.Parsers.MULTIPART
 
+  @moduledoc """
+  Custom multipart parser to enable multiple files upload.
+
+  It generates a unique key for each file input.
+  """
   def init(opts) do
     opts
   end
@@ -18,6 +23,7 @@ defmodule Plug.Parsers.MY_MULTIPART do
   def multipart_to_params(parts, conn) do
     case filter_content_type(parts) do
       nil ->
+        # do nothing if no files
         {:ok, %{}, conn}
 
       new_parts ->
@@ -31,6 +37,11 @@ defmodule Plug.Parsers.MY_MULTIPART do
     end
   end
 
+  @doc """
+  Rebuild the "parts" by indexing the keys.
+
+  When it captures an entry with header "content-type", a new key will be assigned
+  """
   def filter_content_type(parts) do
     filtered =
       parts
@@ -51,9 +62,12 @@ defmodule Plug.Parsers.MY_MULTIPART do
       _ ->
         other = Enum.filter(parts, fn elt -> !Enum.member?(filtered, elt) end)
 
+        # get the initial key
         key = elem(hd(filtered), 0)
+        # build a list of new keys, indexed.
         new_keys = Enum.map(1..l, fn i -> key <> "#{i}" end)
 
+        # exchange the key to a new key
         f =
           Enum.zip_reduce([filtered, new_keys], [], fn elts, acc ->
             [{_, headers, content}, new_key] = elts
