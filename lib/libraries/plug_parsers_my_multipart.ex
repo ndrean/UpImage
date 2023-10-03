@@ -16,8 +16,6 @@ defmodule Plug.Parsers.MY_MULTIPART do
   end
 
   def multipart_to_params(parts, conn) do
-    parts |> dbg()
-
     case filter_content_type(parts) do
       nil ->
         {:ok, %{}, conn}
