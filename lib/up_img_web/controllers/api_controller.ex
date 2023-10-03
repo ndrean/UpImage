@@ -46,7 +46,6 @@ defmodule UpImgWeb.ApiController do
 
   # multi-files
   def handle(conn, params) when map_size(params) == 0 do
-    IO.puts("ici-----")
     json(conn, %{})
   end
 
