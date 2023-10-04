@@ -652,3 +652,26 @@ Application.app_dir(:up_img, ["priv", "static", "image_uploads"]) |> File.ls!()
 
 <https://andrewian.dev/blog/sitemap-in-phoenix-with-verified-routes>
 <https://medium.com/@ricardoruwer/create-dynamic-sitemap-xml-in-elixir-and-phoenix-6167504e0e4b>
+
+## Claoudfare R2
+
+<https://dash.cloudflare.com/843179836f19f3543d8ed2866db92b5f/r2/cli?from=overview>
+
+Run `pnpm create cladufare@latest`, choose a folder, say "r2", choose worker, and then `npx wrangler` to `npx wrangler r2 bucket create <name>`.
+
+In CF/R2 dashboard, go to your bucket, and in "settings", in CORS-policy, add:
+
+```json
+[
+  {
+    "AllowedOrigins": [
+      "http://localhost:3000",
+      "http://localhost:4000",
+      "https://up-image.fly.dev"
+    ],
+    "AllowedMethods": ["GET", "PUT", "POST"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": []
+  }
+]
+```

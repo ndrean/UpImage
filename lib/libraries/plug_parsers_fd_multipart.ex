@@ -1,4 +1,4 @@
-defmodule Plug.Parsers.MY_MULTIPART do
+defmodule Plug.Parsers.FD_MULTIPART do
   @multipart Plug.Parsers.MULTIPART
 
   @moduledoc """
@@ -6,6 +6,7 @@ defmodule Plug.Parsers.MY_MULTIPART do
 
   It generates a unique key for each file input.
   """
+  @spec init(any) :: any
   def init(opts) do
     opts
   end
@@ -41,6 +42,12 @@ defmodule Plug.Parsers.MY_MULTIPART do
   Rebuild the "parts" by indexing the keys.
 
   When it captures an entry with header "content-type", a new key will be assigned
+
+  ## Example
+      iex> parts = [{"w", [{"content-disposition", "form-data; name=\"w\""}], "200"},{"files",[{"content-type", "image/png"},{"content-disposition","form-data; name=\"files\"; filename=\"one.png\""}],%Plug.Upload{path: "/var/folders/...",content_type: "image/png",filename: "one.png"}},{"files",[{"content-type", "image/webp"},{"content-disposition","form-data; name=\"files\"; filename=\"two.webp\""}],%Plug.Upload{path: "/var/folders/...",content_type: "image/webp",filename: "two.webp"}}]
+
+      iex> PlugParsersFD_MULITPART(parts)
+      [{"files-1", [{"content-type", "image/webp"},{"content-disposition","form-data; name=\"files\"; filename=\"one.webp\""}],%Plug.Upload{path: "/var/folders/...",content_type: "image/webp",filename: "one.webp"}},"files-2",["content-type", "image/png"},"content-disposition","form-data; name=\"files\"; filename=\"two.png\""}],%Plug.Upload{path: "/var/folders/...",content_type: "image/png",filename: "two.png"}},{"w", [{"content-disposition", "form-data; name=\"w\""}], "200"}]
   """
   def filter_content_type(parts) do
     filtered =
@@ -65,7 +72,7 @@ defmodule Plug.Parsers.MY_MULTIPART do
         # get the initial key
         key = elem(hd(filtered), 0)
         # build a list of new keys, indexed.
-        new_keys = Enum.map(1..l, fn i -> key <> "#{i}" end)
+        new_keys = Enum.map(1..l, fn i -> key <> "-#{i}" end)
 
         # exchange the key to a new key
         f =

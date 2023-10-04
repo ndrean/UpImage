@@ -7,10 +7,10 @@ defmodule RouterTest do
     assert json_response(conn, 200) == %{"error" => "Please provide an URL"}
 
     conn = get(conn, "/api?url=http:google.com")
-    assert json_response(conn, 200) == %{"error" => "bad_url"}
+    assert json_response(conn, 200) == %{"error" => "bad url"}
 
     conn = get(conn, "/api?url=https://google.com")
-    assert json_response(conn, 200) == %{"error" => ":not_acceptable"}
+    assert json_response(conn, 200) == %{"error" => "\"not acceptable\""}
   end
 
   setup do

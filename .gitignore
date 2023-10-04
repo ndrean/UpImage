@@ -37,3 +37,6 @@ npm-debug.log
 
 /docker/.env-docker
 .env
+/r2
+package.json
+pnpm-lock.yaml

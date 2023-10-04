@@ -62,11 +62,11 @@ defmodule UpImgWeb.Router do
       origin: ["*"]
 
     plug Plug.Parsers,
-      parsers: [:urlencoded, :my_multipart, :json],
+      parsers: [:urlencoded, :fd_multipart, :json],
       pass: ["image/jpg", "image/png", "image/webp", "iamge/jpeg"],
       json_decoder: Jason,
-      multipart_to_params: {Plug.Parsers.MY_MULTIPART, :multipart_to_params, []},
-      body_reader: {Plug.Parsers.MY_MULTIPART, :read_body, []}
+      multipart_to_params: {Plug.Parsers.FD_MULTIPART, :multipart_to_params, []},
+      body_reader: {Plug.Parsers.FD_MULTIPART, :read_body, []}
   end
 
   scope "/api", UpImgWeb do

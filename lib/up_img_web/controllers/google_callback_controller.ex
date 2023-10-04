@@ -3,7 +3,7 @@ defmodule UpImgWeb.GoogleCallbackController do
   alias UpImg.Accounts
   require Logger
 
-  def handle(conn, %{"credential" => credential, "g_csrf_token" => _g_csrf_token}) do
+  def handle(conn, %{"credential" => credential, "g_csrf_token" => _g_csrf_token} = _params) do
     with {:ok, profil} <-
            ElixirGoogleCerts.verified_identity(%{jwt: credential}),
          {:ok, user} <- Accounts.register_google_user(profil) do

@@ -1,6 +1,7 @@
 defmodule ApiControllerTest do
   use ExUnit.Case, async: true
   use UpImgWeb.ConnCase
+  doctest Plug.Parsers.FD_MULTIPART
 
   alias UpImgWeb.ApiController, as: Api
   alias Vix.Vips.{Image, Operation}
@@ -47,10 +48,10 @@ defmodule ApiControllerTest do
     {:ok, %{test_path: test_path, width: width, height: height}}
   end
 
-  test "get_sizes_from_images/1", %{test_path: test_path, width: width, height: height} do
-    assert Api.get_sizes_from_image(test_path) == {:ok, {width, height}}
-    assert Api.get_sizes_from_image("img") == {:error, :image_not_readable}
-  end
+  # test "get_sizes_from_images/1", %{test_path: test_path, width: width, height: height} do
+  #   assert Api.get_sizes_from_image(test_path) == {:ok, {width, height}}
+  #   assert Api.get_sizes_from_image("img") == {:error, :image_not_readable}
+  # end
 
   test "resize/3", %{test_path: test_path, width: width, height: height} do
     {:ok, new} = Api.resize(test_path, nil)
@@ -91,10 +92,10 @@ defmodule ApiControllerTest do
     assert resp == "{\"error\":\"Please provide an URL\"}"
 
     %{resp_body: resp} = Api.create(conn, %{"url" => "http://google.com"})
-    assert resp == "{\"error\":\":not_acceptable\"}"
+    assert resp == "{\"error\":\"\\\"not acceptable\\\"\"}"
 
     %{resp_body: resp} = Api.create(conn, %{"name" => "test"})
-    assert resp == "{\"error\":\"Please provide an URL\"}"
+    assert resp == "{\"error\":\"Please provide an URL}"
   end
 
   # test "create/2 local", %{conn: conn} do

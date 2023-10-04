@@ -1,6 +1,8 @@
-name = "R2"
+name = "r2"
 main = "src/index.js"
 compatibility_date = "2023-10-02"
+account_id = "843179836f19f3543d8ed2866db92b5f"
+workers_dev = true
 
 # Variable bindings. These are arbitrary, plaintext strings (similar to environment variables)
 # Note: Use secrets to store sensitive data.
@@ -16,9 +18,9 @@ compatibility_date = "2023-10-02"
 
 # Bind an R2 Bucket. Use R2 to store arbitrarily large blobs of data, such as files.
 # Docs: https://developers.cloudflare.com/r2/api/workers/workers-api-usage/
-# [[r2_buckets]]
-# binding = "MY_BUCKET"
-# bucket_name = "my-bucket"
+[[r2_buckets]]
+binding = "upImg"
+bucket_name = "up-img"
 
 # Bind a Queue producer. Use this binding to schedule an arbitrary task that may be processed later by a Queue consumer.
 # Docs: https://developers.cloudflare.com/queues/get-started

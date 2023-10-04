@@ -39,19 +39,26 @@ defmodule UpImgWeb.WelcomeLive do
           <p class="mt-10 text-lg leading-8 text-gray-600">
             You can upload pictures. These pictures will be transformed into WEBP format. You are limited to sizes no more than <b>5Mb</b>.
           </p>
+          <hr/>
+          <h2>The API</h2>
+          <hr/>
           <h2 class="mb-4 mt-4">
             <.link
               href="#"
               class="rounded-md bg-purple-600 mb-2 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600"
             >
-              Go to the API
+              Go to the API (not finished)
             </.link>
           </h2>
           <details>
             <summary>
-              The API offers two endopints, a GET for passing an URL, and a POST for submitting a file via a FormData.
+              The API offers two endopints at <a href="https://up-image.fly.dev/api" taget="_#"/>. 
+              It offers a GET for passing an URL, and a POST for submitting files via a FormData. Click to read more.
             </summary>
-            By default, any uploaded image will be resized to a maximum width of 1440px. A GET where you pass a query string with the "url" key and possibly the desired width "w" for the desired resizing. You also have a POST endpoint where you can submit your FormData with a file. You need to use the key "file" and possibly the key "w" for the desired width resizing.
+            By default, any uploaded image will be resized to a maximum width of 1440px. 
+            A GET where you pass a query string with the "url" key and possibly the desired width "w" for the desired resizing. 
+            You also have a POST endpoint where you can submit your FormData with several files. 
+            You need to use the key "file" and possibly the key "w" for the desired width resizing.
           </details>
         </div>
       </div>
