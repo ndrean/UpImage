@@ -5,17 +5,6 @@ defmodule UpImgWeb.Router do
   alias UpImg.Plug.CheckCsrf
   alias UpImgWeb.Plug.FetchUser
 
-  pipeline :google do
-    # plug CheckCsrf
-    plug :accepts, ["json"]
-  end
-
-  scope "/", UpImgWeb do
-    pipe_through [:google]
-
-    post "/google/callback", GoogleCallbackController, :handle
-  end
-
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -33,6 +22,21 @@ defmodule UpImgWeb.Router do
     get "/sitemap", SitemapController, :index
   end
 
+  # Google sends urlencoded and no more json
+  pipeline :google do
+    plug Plug.Parsers,
+      parsers: [:urlencoded],
+      pass: ["text/html"]
+
+    plug CheckCsrf
+  end
+
+  scope "/", UpImgWeb do
+    pipe_through [:google]
+
+    post "/google/callback", GoogleCallbackController, :handle
+  end
+
   pipeline :redirect_if_user do
     plug FetchUser
   end
@@ -47,17 +51,17 @@ defmodule UpImgWeb.Router do
     live_session :default, on_mount: [{UpImgWeb.UserAuth, :current_user}] do
       live "/signin", SignInLive
       live "/welcome", WelcomeLive
-      live "/api_liveview", ApiLive
     end
 
     live_session :authenticated,
       on_mount: [{UpImgWeb.UserAuth, :ensure_authenticated}] do
       live "/liveview_clientless", NoClientLive
+      live "/api_liveview", ApiLive
       # live "/:profile_username", ProfileLive
     end
   end
 
-  # Other scopes may use custom stacks.
+  # Mulitpart for multiple files parsing.
   pipeline :api_multi do
     plug :accepts, ["json"]
 
@@ -65,7 +69,7 @@ defmodule UpImgWeb.Router do
       origin: ["*"]
 
     plug Plug.Parsers,
-      parsers: [:urlencoded, :fd_multipart, :json],
+      parsers: [:fd_multipart, :json],
       pass: ["image/jpg", "image/png", "image/webp", "iamge/jpeg"],
       json_decoder: Jason,
       multipart_to_params: {Plug.Parsers.FD_MULTIPART, :multipart_to_params, []},
@@ -77,10 +81,6 @@ defmodule UpImgWeb.Router do
     get "/", ApiController, :create
     post "/", ApiController, :handle
   end
-
-  # scope "", UpImgWeb do
-  #   get "*path", ApiController, :no_route
-  # end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   # if Application.compile_env(:up_img, :dev_routes) do

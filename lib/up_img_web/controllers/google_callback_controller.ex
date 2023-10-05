@@ -3,10 +3,13 @@ defmodule UpImgWeb.GoogleCallbackController do
   alias UpImg.Accounts
   require Logger
 
-  def handle(conn, params) do
-    params |> dbg()
+  def handle(conn, params) when map_size(params) == 0 do
+    redirect_home_with_message(conn, "Please try again later")
+  end
+
+  def handle(conn, %{"credential" => jwt} = params) do
     with {:ok, profil} <-
-           ElixirGoogleCerts.verified_identity(%{jwt: params.credential}),
+           ElixirGoogleCerts.verified_identity(%{jwt: jwt}),
          {:ok, user} <- Accounts.register_google_user(profil) do
       conn
       |> Plug.Conn.fetch_session()
@@ -17,19 +20,22 @@ defmodule UpImgWeb.GoogleCallbackController do
       {:error, %Ecto.Changeset{} = changeset} ->
         Logger.debug("failed Google insert #{inspect(changeset.errors)}")
 
-        conn
-        |> put_flash(
-          :error,
+        redirect_home_with_message(
+          conn,
           "We were unable to fetch the necessary information from your Google account"
         )
-        |> redirect(to: "/")
 
       {:error, reason} ->
         Logger.debug("failed Google exchange #{inspect(reason)}")
-
-        conn
-        |> put_flash(:error, "Please try again later")
-        |> redirect(to: "/")
+        redirect_home_with_message(conn, "Please try again later")
     end
+  end
+
+  def redirect_home_with_message(conn, msg) do
+    conn
+    |> fetch_session()
+    |> fetch_flash()
+    |> put_flash(:error, msg)
+    |> redirect(to: "/")
   end
 end

@@ -4,7 +4,6 @@ defmodule UpImg.Accounts.User do
   alias UpImg.Accounts.User
   alias UpImg.Gallery.Url
 
-  @derive {Inspect, except: [:email]}
   schema "users" do
     field :email, UpImg.Encrypted.Binary
     field :hashed_email, Cloak.Ecto.SHA256
