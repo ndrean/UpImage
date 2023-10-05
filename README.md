@@ -648,6 +648,38 @@ Application.app_dir(:up_img, ["priv", "static", "image_uploads"]) |> File.ls!()
 
 ### Misc
 
+#### Process Supervision - restart: :transient
+
+We want a process to be supervised and restart if fails, but we don't want this process to kill the parent LiveView. For example, when we ask to delete a file in S3, we don't want this to fail to avoid a difference with a database.
+
+An example in a LiveBook:
+
+```elixir
+Supervisor.start_link(
+  [
+    {DynamicSupervisor, name: DynSup, strategy: :one_for_one},
+    {Registry, keys: :unique, name: MyRegistry},
+    {Task.Supervisor, name: MyTSup}
+  ],
+  strategy: :one_for_one,
+  name: MySupervisor
+)
+{:ok, pid1} = Task.start(fn -> Process.sleep(10000); IO.puts "ok" end)
+{:ok, pid2} = Task.Supervisor.start_child(MyTSup, fn -> Process.sleep(10000); IO.puts "ok sup" end, restart: :transient)
+IO.inspect({pid1, pid2})
+
+# check if pid2 is indeed supervised
+Task.Supervisor.children(MyTSup)
+
+# we kill pid2. The LV is not stopped, and pid2 will be restarted
+Process.exit(pid2, :kill)
+
+"ok"
+"ok sup"
+```
+
+````
+
 #### Sitemap
 
 <https://andrewian.dev/blog/sitemap-in-phoenix-with-verified-routes>
@@ -674,4 +706,4 @@ In CF/R2 dashboard, go to your bucket, and in "settings", in CORS-policy, add:
     "ExposeHeaders": []
   }
 ]
-```
+````

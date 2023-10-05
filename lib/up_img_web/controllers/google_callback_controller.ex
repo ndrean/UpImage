@@ -7,7 +7,7 @@ defmodule UpImgWeb.GoogleCallbackController do
     redirect_home_with_message(conn, "Please try again later")
   end
 
-  def handle(conn, %{"credential" => jwt} = params) do
+  def handle(conn, %{"credential" => jwt} = _params) do
     with {:ok, profil} <-
            ElixirGoogleCerts.verified_identity(%{jwt: jwt}),
          {:ok, user} <- Accounts.register_google_user(profil) do

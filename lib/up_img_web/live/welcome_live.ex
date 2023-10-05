@@ -36,12 +36,11 @@ defmodule UpImgWeb.WelcomeLive do
             You are asked to register an account to upload pictures.  Your email is safely encrypted.
             We only use your data to retrieve your files from the service.
           </p>
-          <p class="mt-10 text-lg leading-8 text-gray-600">
+          <p class="mt-10 text-lg text-left leading-8 text-gray-600">
             You can upload pictures. These pictures will be transformed into WEBP format. You are limited to sizes no more than <b>5Mb</b>.
           </p>
           <hr />
-          <h2>The API</h2>
-          <hr />
+
           <h2 class="mb-4 mt-4">
             <.link
               href="#"
@@ -52,13 +51,24 @@ defmodule UpImgWeb.WelcomeLive do
           </h2>
           <details>
             <summary>
-              The API offers two endopints at <a href="https://up-image.fly.dev/api" taget="_#" />.
-              It offers a GET for passing an URL, and a POST for submitting files via a FormData. Click to read more.
+              Click for details.
             </summary>
-            By default, any uploaded image will be resized to a maximum width of 1440px.
-            A GET where you pass a query string with the "url" key and possibly the desired width "w" for the desired resizing.
-            You also have a POST endpoint where you can submit your FormData with several files.
-            You need to use the key "file" and possibly the key "w" for the desired width resizing.
+            <p class="text-left">
+              The API offers two endopints at "https://up-image.fly.dev/api".
+              It offers a GET for passing an URL, and a POST for submitting files via a FormData.
+              By default, any uploaded image will be resized to a maximum width of 1440px.
+            </p>
+            <p class="text-left">
+              You have a GET where you pass a query string with the "url" key and possibly the desired width "w" for the desired resizing.
+              You can try:
+            </p>
+            <code class="text-left">
+              curl -X GET https://up-image.fly.dev/api?url=https://world-celebs.com/public/media/resize/800x-/2019/8/5/porter-robinson-3.jpg&h=600&w=600
+            </code>
+            <p>
+              You also have a POST endpoint where you can submit your FormData with several files from the client.
+              You can possibly the key "w" for the desired width resizing. Note that it is not set individually.
+            </p>
           </details>
         </div>
       </div>

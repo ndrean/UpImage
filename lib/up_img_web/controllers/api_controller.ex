@@ -60,7 +60,9 @@ defmodule UpImgWeb.ApiController do
 
   def handle(conn, params) do
     response =
-      Api.parse_multi(params)
+      params
+      |> parse_params()
+      |> Api.parse_multi()
       |> Enum.reduce([], fn
         {:ok, data}, acc -> [data | acc]
         {:error, _}, acc -> acc
@@ -69,11 +71,11 @@ defmodule UpImgWeb.ApiController do
     json(conn, %{data: response})
   end
 
-  def parse_multi(params) do
+  def parse_params(params) do
     maybe_width = Map.get(params, "w", 1440)
     h = nil
 
-    # maybe_thumb = Map.get(params, "thumb", "off")
+    maybe_thumb = Map.get(params, "thumb", "off")
 
     maybe_files =
       params
@@ -86,92 +88,92 @@ defmodule UpImgWeb.ApiController do
           nil
       end)
 
-    case length(maybe_files) do
-      0 ->
-        nil
+    {maybe_width, h, maybe_files, maybe_thumb}
+  end
 
-      _ ->
-        maybe_files
-        |> Enum.reduce([], fn %Plug.Upload{filename: filename, path: path} = file, acc ->
-          with {:ok, size} <-
-                 check_size_file_stat(path),
-               {:ok, %{mime_type: mime}} <-
-                 gen_magic_eval(path),
-               :ok <-
-                 ex_image_check(path, mime) do
-            # copy temp file in "priv/static/image_uploads
-            new_name = Utils.clean_name(filename)
-            new_path = UpImg.build_path(new_name)
+  def parse_multi({_maybe_width, _h, [], _maybe_thumb}), do: nil
 
-            File.stream!(path, [], 64_000)
-            |> Stream.into(File.stream!(UpImg.build_path(new_name)))
-            |> Stream.run()
+  def parse_multi({maybe_width, h, maybe_files, _maybe_thumb}) do
+    maybe_files
+    |> Enum.reduce([], fn %Plug.Upload{filename: filename, path: path} = file, acc ->
+      with {:ok, size} <-
+             check_size_file_stat(path),
+           {:ok, %{mime_type: mime}} <-
+             gen_magic_eval(path),
+           :ok <-
+             ex_image_check(path, mime) do
+        # copy temp file in "priv/static/image_uploads
+        new_name = Utils.clean_name(filename)
+        new_path = UpImg.build_path(new_name)
 
-            # add file to the list
-            [
-              Map.merge(file, %{
-                filename: new_name,
-                path: new_path,
-                w: maybe_width,
-                init_size: size,
-                mime: mime
-              })
-              | acc
-            ]
-          else
-            {:error, reason} ->
-              Logger.info(reason)
-              acc
-          end
-        end)
-        # each file is streamed to S3 after some checks and resizing upon request.
-        |> Task.async_stream(fn file ->
-          with {:ok, img} <-
-                 Image.new_from_file(file.path),
-               {:ok, %{width: width, height: height}} <-
-                 image_get_dim(img),
-               :ok <- check_dim_from_image(width, height),
-               {:ok, {hor_scale, vert_scale}} <-
-                 parse_size(file.w, h, width, height),
-               {:ok, img_resized} <-
-                 Api.resize(img, hor_scale, vert_scale),
-               {:ok, %{width: new_w, height: new_h}} <-
-                 image_get_dim(img_resized),
-               {:ok, resized_path} <-
-                 Plug.Upload.random_file("local_file"),
-               :ok <-
-                 Operation.webpsave(img_resized, resized_path),
-               {:ok, name} =
-                 FileUtils.hash_file(%{path: resized_path, content_type: "image/webp"}),
-               data <-
-                 %{
-                   resized_path: resized_path,
-                   init_size: file.init_size,
-                   content_type: "image/webp",
-                   name: name,
-                   w_origin: width,
-                   h_origin: height,
-                   w: new_w,
-                   h: new_h
-                 },
-               {:ok, response} <-
-                 Api.upload_to_s3(data, file.filename) do
-            File.rm_rf!(file.path)
-            response
-          else
-            {:no_tmp, reason} ->
-              {:error, reason}
+        File.stream!(path, [], 64_000)
+        |> Stream.into(File.stream!(UpImg.build_path(new_name)))
+        |> Stream.run()
 
-            {:too_many_attempts, reason} ->
-              {:error, reason}
+        # add file to the list
+        [
+          Map.merge(file, %{
+            filename: new_name,
+            path: new_path,
+            w: maybe_width,
+            init_size: size,
+            mime: mime
+          })
+          | acc
+        ]
+      else
+        {:error, reason} ->
+          Logger.info(reason)
+          acc
+      end
+    end)
+    # each file is streamed to S3 after some checks and resizing upon request.
+    |> Task.async_stream(fn file ->
+      with {:ok, img} <-
+             Image.new_from_file(file.path),
+           {:ok, %{width: width, height: height}} <-
+             image_get_dim(img),
+           :ok <- check_dim_from_image(width, height),
+           {:ok, {hor_scale, vert_scale}} <-
+             parse_size(file.w, h, width, height),
+           {:ok, img_resized} <-
+             Api.resize(img, hor_scale, vert_scale),
+           {:ok, %{width: new_w, height: new_h}} <-
+             image_get_dim(img_resized),
+           {:ok, resized_path} <-
+             Plug.Upload.random_file("local_file"),
+           :ok <-
+             Operation.webpsave(img_resized, resized_path),
+           {:ok, name} =
+             FileUtils.hash_file(%{path: resized_path, content_type: "image/webp"}),
+           data <-
+             %{
+               resized_path: resized_path,
+               init_size: file.init_size,
+               content_type: "image/webp",
+               name: name,
+               w_origin: width,
+               h_origin: height,
+               w: new_w,
+               h: new_h
+             },
+           {:ok, response} <-
+             Api.upload_to_s3(data, file.filename) do
+        File.rm_rf!(file.path)
+        response
+      else
+        {:no_tmp, reason} ->
+          {:error, reason}
 
-            {:error, reason} ->
-              Logger.info(inspect(reason))
-              {:error, reason}
-          end
-        end)
-        |> Enum.map(& &1)
-    end
+        {:too_many_attempts, reason} ->
+          {:error, reason}
+
+        {:error, reason} ->
+          Logger.info(inspect(reason))
+          {:error, reason}
+      end
+    end)
+    |> Enum.map(& &1)
   end
 
   def filter(file, w, h) do
