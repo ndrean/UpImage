@@ -2,6 +2,8 @@ defmodule UpImg.Application do
   @moduledoc false
 
   use Application
+  @model_fb "facebook/deit-base-distilled-patch16-224"
+  @model_mn "microsoft/resnet-50"
 
   @impl true
   def start(_type, _args) do
@@ -15,7 +17,16 @@ defmodule UpImg.Application do
       {Task.Supervisor, name: UpImg.TaskSup},
       UpImg.EnvReader,
       UpImg.CleanFiles,
-      {GenMagic.Server, name: :gen_magic}
+      {GenMagic.Server, name: :gen_magic},
+      {UpImg.GsPredict, [model: @model_mn]}
+      # %{
+      #   id: TaskPredict,
+      #   start: {TaskPredict, :start_link, [[model: @model_fb]]},
+      #   type: :worker,
+      #   restart: :permanent,
+      #   shutdown: 500
+      # }
+
       # {GenMagic.Pool.NimblePool, pool_name: MagicPool, pool_size: 2}
     ]
 

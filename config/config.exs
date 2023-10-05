@@ -19,6 +19,8 @@ config :up_img,
 config :up_img,
   http_client: UpImg.Finch
 
+config :nx, :default_backend, EXLA.Backend
+
 # Configures the endpoint
 config :up_img, UpImgWeb.Endpoint,
   url: [host: "localhost"],

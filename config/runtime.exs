@@ -91,6 +91,12 @@ if config_env() == :prod do
 
   config :up_img, :upload_limit, System.fetch_env!("UPLOAD_LIMIT") |> String.to_integer()
 
+  # config :image, :classifier,
+  #   model: {:hf, "microsoft/resnet-50"},
+  #   featurizer: {:hf, "microsoft/resnet-50"},
+  #   name: Image.Classification.Server,
+  #   autostart: true
+
   # ## SSL Support
   #
   # To get SSL working, you will need to add the `https` key

@@ -8,7 +8,8 @@ defmodule UpImgWeb.ApiController do
   import SweetXml
 
   alias UpImgWeb.ApiController, as: Api
-  alias Vix.Vips.{Image, Operation}
+  alias Vix.Vips.Operation
+  alias Image, as: Img
 
   require Logger
 
@@ -64,8 +65,13 @@ defmodule UpImgWeb.ApiController do
       |> parse_params()
       |> Api.parse_multi()
       |> Enum.reduce([], fn
-        {:ok, data}, acc -> [data | acc]
-        {:error, _}, acc -> acc
+        {:ok, data}, acc ->
+          data.url |> dbg()
+
+          [data | acc]
+
+        {:error, _}, acc ->
+          acc
       end)
 
     json(conn, %{data: response})
@@ -130,7 +136,7 @@ defmodule UpImgWeb.ApiController do
     # each file is streamed to S3 after some checks and resizing upon request.
     |> Task.async_stream(fn file ->
       with {:ok, img} <-
-             Image.new_from_file(file.path),
+             Vix.Vips.Image.new_from_file(file.path),
            {:ok, %{width: width, height: height}} <-
              image_get_dim(img),
            :ok <- check_dim_from_image(width, height),
@@ -148,6 +154,7 @@ defmodule UpImgWeb.ApiController do
              FileUtils.hash_file(%{path: resized_path, content_type: "image/webp"}),
            data <-
              %{
+               predictions: Map.get(predict(%Vix.Vips.Image{} = img_resized), :predictions),
                resized_path: resized_path,
                init_size: file.init_size,
                content_type: "image/webp",
@@ -184,7 +191,7 @@ defmodule UpImgWeb.ApiController do
          :ok <-
            ex_image_check(file, mime),
          {:ok, img} <-
-           Image.new_from_file(file),
+           Vix.Vips.Image.new_from_file(file),
          {:ok, %{width: width, height: height}} <-
            image_get_dim(img),
          :ok <- check_dim_from_image(width, height),
@@ -202,8 +209,18 @@ defmodule UpImgWeb.ApiController do
            {:file_exists, File.exists?(resized_path)},
          {:ok, name} <-
            FileUtils.hash_file(%{path: resized_path, content_type: "image/webp"}) do
+      # serving = UpImg.GsPredict.serve()
+
+      # {:ok, %Vix.Tensor{data: data, shape: shape, names: names, type: type}} =
+      #   Vix.Vips.Image.write_to_tensor(%Vix.Vips.Image{} = img_resized)
+
+      # t_img = Nx.from_binary(data, type) |> Nx.reshape(shape, names: names)
+
+      predictions = predict(img_resized) |> dbg()
+
       {:ok,
        %{
+         predictions: Map.get(predictions, :predictions),
          resized_path: resized_path,
          init_size: size,
          content_type: mime,
@@ -212,8 +229,20 @@ defmodule UpImgWeb.ApiController do
          h_origin: height,
          w: new_w,
          h: new_h
-       }}
+       }
+       |> dbg()}
     end
+  end
+
+  def predict(%Vix.Vips.Image{} = image) do
+    serving = UpImg.GsPredict.serve()
+
+    {:ok, %Vix.Tensor{data: data, shape: shape, names: names, type: type}} =
+      Vix.Vips.Image.write_to_tensor(image)
+
+    t_img = Nx.from_binary(data, type) |> Nx.reshape(shape, names: names)
+
+    Nx.Serving.run(serving, t_img)
   end
 
   def upload_to_s3(data, string) do
@@ -227,6 +256,7 @@ defmodule UpImgWeb.ApiController do
          {:ok, %{body: body}} <-
            UpImg.Upload.upload_file_to_s3(%{path: data.resized_path, filename: data.name}) do
       attached = body |> xpath(~x"//text()") |> List.to_string() |> URI.parse()
+
       File.rm_rf!(data.resized_path)
 
       url =
@@ -240,6 +270,7 @@ defmodule UpImgWeb.ApiController do
 
       {:ok,
        %{
+         predictions: data.predictions,
          w_origin: data.w_origin,
          h_origin: data.h_origin,
          init_size: data.init_size,
@@ -423,7 +454,7 @@ defmodule UpImgWeb.ApiController do
   Read Vix image dimensions
   """
   def image_get_dim(img) do
-    %{width: width, height: height} = Image.headers(img)
+    %{width: width, height: height} = Vix.Vips.Image.headers(img)
     {:ok, %{width: width, height: height}}
   rescue
     e ->

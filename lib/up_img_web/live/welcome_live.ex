@@ -33,7 +33,7 @@ defmodule UpImgWeb.WelcomeLive do
             </div>
           <% end %>
           <p :if={!@current_user} class="text-xs pt-4">
-            You are asked to register an account to upload pictures.  Your email is safely encrypted.
+            You are asked to register an account to upload pictures.  No password is required. Your email is safely encrypted.
             We only use your data to retrieve your files from the service.
           </p>
           <p class="mt-10 text-lg text-left leading-8 text-gray-600">
