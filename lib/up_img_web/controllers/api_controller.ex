@@ -24,8 +24,6 @@ defmodule UpImgWeb.ApiController do
     json(conn |> Plug.Conn.put_status(404), %{error: "bad request"})
   end
 
- 
-
   # single file
   # def handle(conn, params) do
   #   file = Map.get(params, "file")

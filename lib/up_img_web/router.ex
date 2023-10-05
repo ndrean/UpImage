@@ -5,6 +5,17 @@ defmodule UpImgWeb.Router do
   alias UpImg.Plug.CheckCsrf
   alias UpImgWeb.Plug.FetchUser
 
+  pipeline :google do
+    plug CheckCsrf
+    plug :accepts, ["json"]
+  end
+
+  scope "/", UpImgWeb do
+    pipe_through [:google]
+
+    post "/google/callback", GoogleCallbackController, :handle
+  end
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -14,9 +25,12 @@ defmodule UpImgWeb.Router do
     plug :put_secure_browser_headers
   end
 
-  pipeline :google do
-    plug CheckCsrf
-    plug :accepts, ["json"]
+  scope "/", UpImgWeb do
+    pipe_through [:browser]
+
+    get "/signout", LogOutController, :sign_out
+    get "/github/callback", GithubCallbackController, :new
+    get "/sitemap", SitemapController, :index
   end
 
   pipeline :redirect_if_user do
@@ -24,23 +38,11 @@ defmodule UpImgWeb.Router do
   end
 
   scope "/", UpImgWeb do
-    pipe_through [:browser]
-
-    get "/github/callback", GithubCallbackController, :new
-    get "/sitemap", SitemapController, :index
-  end
-
-  scope "/", UpImgWeb do
-    pipe_through [:google]
-
-    post "/google/callback", GoogleCallbackController, :handle
-  end
-
-  scope "/", UpImgWeb do
     pipe_through [:browser, :redirect_if_user]
     get "/", RedirectController, :redirect_authenticated
+    # get "/signout", LogOutController, :sign_out
 
-    delete "/signout", LogOutController, :sign_out
+    # delete "/signout", LogOutController, :sign_out
 
     live_session :default, on_mount: [{UpImgWeb.UserAuth, :current_user}] do
       live "/signin", SignInLive

@@ -27,9 +27,10 @@ defmodule UpImgWeb.NoClientLive do
   def mount(_, _, socket) do
     File.mkdir_p!(@upload_dir)
 
-    @upload_dir
-    |> File.ls!()
-    |> then(&Logger.info("uploads folder: #{&1}"))
+
+    # @upload_dir
+    # |> File.ls!()
+    # |> then(&Logger.info("uploads folder: #{&1}"))
 
     cleaning_timer =
       if Application.get_env(:up_img, :env) == :test,
