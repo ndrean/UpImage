@@ -74,6 +74,8 @@ You can use the POST endpoint simply with a `fetch({method: 'POST'})` from the b
 </html>
 ```
 
+
+
 You will receive a JSON response as a list:
 
 ```js
@@ -152,6 +154,8 @@ A scrubber also cleans all "old" files (at most one hour old).
 ## Authentication/Authorization
 
 Minimum friction: full authorization for authenticated users. You can use `Github` or `Google One-Tap` authentication; no password is required as it is a "find_or_create" process.
+
+Signin with [Google One Tap](https://developers.google.com/identity/gsi/web/guides/overview) now POST a `url-encoded` body instead of JSON. The code is updated to parse this.
 
 ## Image transformation: Vix Vips
 
