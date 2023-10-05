@@ -74,8 +74,6 @@ You can use the POST endpoint simply with a `fetch({method: 'POST'})` from the b
 </html>
 ```
 
-
-
 You will receive a JSON response as a list:
 
 ```js
@@ -481,7 +479,6 @@ end
 
 <img width="478" alt="Screenshot 2023-10-05 at 14 05 32" src="https://github.com/ndrean/UpImage/assets/6793008/6f1ecd68-e2c8-4587-a039-d5c46277debb">
 
-
 - set up callback URI for both,
 - come back to theses settings once you get the app deployed (https://up-image.fly.dev)
 
@@ -684,7 +681,6 @@ Process.exit(pid2, :kill)
 "ok sup"
 ```
 
-
 #### Sitemap
 
 <https://andrewian.dev/blog/sitemap-in-phoenix-with-verified-routes>
@@ -713,3 +709,6 @@ In CF/R2 dashboard, go to your bucket, and in "settings", in CORS-policy, add:
 ]
 ```
 
+## Error Bumblebee
+
+"could not make directory (with -p) "/nonexistent/.cache/bumblebee/huggingface": no such file or directory"
