@@ -18,7 +18,7 @@ defmodule UpImg.Application do
       UpImg.EnvReader,
       UpImg.CleanFiles,
       {GenMagic.Server, name: :gen_magic},
-      {UpImg.GsPredict, [model: @model_mn]}
+      {UpImg.GsPredict, [model: System.fetch_env!("MODEL")]}
       # %{
       #   id: TaskPredict,
       #   start: {TaskPredict, :start_link, [[model: @model_fb]]},

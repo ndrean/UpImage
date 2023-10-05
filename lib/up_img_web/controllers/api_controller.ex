@@ -216,7 +216,7 @@ defmodule UpImgWeb.ApiController do
 
       # t_img = Nx.from_binary(data, type) |> Nx.reshape(shape, names: names)
 
-      predictions = predict(img_resized) |> dbg()
+      predictions = predict(img_resized)
 
       {:ok,
        %{
