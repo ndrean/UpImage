@@ -12,9 +12,9 @@ defmodule UpImgWeb.SitemapHTML do
     [
       ~p"/",
       ~p"/welcome",
-      ~p"/clientless_liveview",
-      ~p"/api",
-      ~p"/api_liveview"
+      ~p"/liveview_clientless",
+      ~p"/api"
+      # ~p"/api_liveview"
     ]
   end
 

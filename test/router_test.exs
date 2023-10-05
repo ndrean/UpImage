@@ -20,7 +20,7 @@ defmodule RouterTest do
   end
 
   test "POST api", %{conn: conn, upload: upload} do
-    conn = post(conn, "/api", %{"file" => upload})
+    conn = post(conn, "/api", %{"file" => [upload]})
 
     assert json_response(conn, 200) == %{
              "h" => 1321,

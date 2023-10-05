@@ -27,7 +27,6 @@ defmodule UpImgWeb.NoClientLive do
   def mount(_, _, socket) do
     File.mkdir_p!(@upload_dir)
 
-
     # @upload_dir
     # |> File.ls!()
     # |> then(&Logger.info("uploads folder: #{&1}"))

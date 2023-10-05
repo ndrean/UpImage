@@ -43,11 +43,6 @@ defmodule Plug.Parsers.FD_MULTIPART do
 
   When it captures an entry with header "content-type", a new key will be assigned
 
-  ## Example
-      iex> parts = [{"w", [{"content-disposition", "form-data; name=\"w\""}], "200"},{"files",[{"content-type", "image/png"},{"content-disposition","form-data; name=\"files\"; filename=\"one.png\""}],%Plug.Upload{path: "/var/folders/...",content_type: "image/png",filename: "one.png"}},{"files",[{"content-type", "image/webp"},{"content-disposition","form-data; name=\"files\"; filename=\"two.webp\""}],%Plug.Upload{path: "/var/folders/...",content_type: "image/webp",filename: "two.webp"}}]
-
-      iex> PlugParsersFD_MULITPART(parts)
-      [{"files-1", [{"content-type", "image/webp"},{"content-disposition","form-data; name=\"files\"; filename=\"one.webp\""}],%Plug.Upload{path: "/var/folders/...",content_type: "image/webp",filename: "one.webp"}},"files-2",["content-type", "image/png"},"content-disposition","form-data; name=\"files\"; filename=\"two.png\""}],%Plug.Upload{path: "/var/folders/...",content_type: "image/png",filename: "two.png"}},{"w", [{"content-disposition", "form-data; name=\"w\""}], "200"}]
   """
   def filter_content_type(parts) do
     filtered =

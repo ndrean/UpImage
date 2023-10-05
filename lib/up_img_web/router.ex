@@ -6,7 +6,7 @@ defmodule UpImgWeb.Router do
   alias UpImgWeb.Plug.FetchUser
 
   pipeline :google do
-    plug CheckCsrf
+    # plug CheckCsrf
     plug :accepts, ["json"]
   end
 
@@ -47,6 +47,7 @@ defmodule UpImgWeb.Router do
     live_session :default, on_mount: [{UpImgWeb.UserAuth, :current_user}] do
       live "/signin", SignInLive
       live "/welcome", WelcomeLive
+      live "/api_liveview", ApiLive
     end
 
     live_session :authenticated,
@@ -77,9 +78,9 @@ defmodule UpImgWeb.Router do
     post "/", ApiController, :handle
   end
 
-  scope "", UpImgWeb do
-    get "*path", ApiController, :no_route
-  end
+  # scope "", UpImgWeb do
+  #   get "*path", ApiController, :no_route
+  # end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   # if Application.compile_env(:up_img, :dev_routes) do

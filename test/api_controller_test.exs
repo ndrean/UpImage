@@ -28,8 +28,8 @@ defmodule ApiControllerTest do
     assert Api.parse_size(nil, nil, 4000, nil) == {:ok, {1440 / 4000, nil}}
     assert Api.parse_size("400", nil, 1440, 700) == {:ok, {400 / 1440, nil}}
     assert Api.parse_size(nil, "600", 1400, 700) == {:ok, {1440 / 1400, nil}}
-    assert Api.parse_size("a", "b", 1440, 700) == {:error, :wrong_format}
-    assert Api.parse_size("a", "1", 1440, 700) == {:error, :wrong_format}
+    assert Api.parse_size("a", "b", 1440, 700) == {:error, "wrong_format"}
+    assert Api.parse_size("a", "1", 1440, 700) == {:error, "wrong_format"}
     assert Api.parse_size("600", "a", 1440, 700) == {:ok, {600 / 1440, nil}}
     assert Api.parse_size("600", "400", 1400, 700) == {:ok, {600 / 1400, 400 / 700}}
     assert Api.parse_size("600", "400", 5000, 2000) == {:error, :too_large}
@@ -95,7 +95,7 @@ defmodule ApiControllerTest do
     assert resp == "{\"error\":\"\\\"not acceptable\\\"\"}"
 
     %{resp_body: resp} = Api.create(conn, %{"name" => "test"})
-    assert resp == "{\"error\":\"Please provide an URL}"
+    assert resp == "{\"error\":\"Please provide an URL\"}"
   end
 
   # test "create/2 local", %{conn: conn} do
@@ -144,9 +144,9 @@ defmodule ApiControllerTest do
   end
 
   test "check_dim/2" do
-    assert Api.check_dim(5000, 1000) == :error
-    assert Api.check_dim(1000, 5000) == :error
-    assert Api.check_dim(1000, 1000) == :ok
+    assert Api.check_dim_from_image(5000, 1000) == :error
+    assert Api.check_dim_from_image(1000, 5000) == :error
+    assert Api.check_dim_from_image(1000, 1000) == :ok
   end
 
   test "check_headers/3" do
