@@ -154,7 +154,7 @@ defmodule UpImgWeb.ApiController do
              FileUtils.hash_file(%{path: resized_path, content_type: "image/webp"}),
            data <-
              %{
-               predictions: Map.get(predict(%Vix.Vips.Image{} = img_resized), :predictions),
+               #  predictions: Map.get(predict(%Vix.Vips.Image{} = img_resized), :predictions),
                resized_path: resized_path,
                init_size: file.init_size,
                content_type: "image/webp",
@@ -209,18 +209,11 @@ defmodule UpImgWeb.ApiController do
            {:file_exists, File.exists?(resized_path)},
          {:ok, name} <-
            FileUtils.hash_file(%{path: resized_path, content_type: "image/webp"}) do
-      # serving = UpImg.GsPredict.serve()
-
-      # {:ok, %Vix.Tensor{data: data, shape: shape, names: names, type: type}} =
-      #   Vix.Vips.Image.write_to_tensor(%Vix.Vips.Image{} = img_resized)
-
-      # t_img = Nx.from_binary(data, type) |> Nx.reshape(shape, names: names)
-
-      predictions = predict(img_resized)
+      # predictions = predict(img_resized)
 
       {:ok,
        %{
-         predictions: Map.get(predictions, :predictions),
+         #  predictions: Map.get(predictions, :predictions),
          resized_path: resized_path,
          init_size: size,
          content_type: mime,
@@ -270,7 +263,7 @@ defmodule UpImgWeb.ApiController do
 
       {:ok,
        %{
-         predictions: data.predictions,
+         #  predictions: data.predictions,
          w_origin: data.w_origin,
          h_origin: data.h_origin,
          init_size: data.init_size,
