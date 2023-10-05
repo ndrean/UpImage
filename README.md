@@ -400,7 +400,6 @@ end
 The email is encrypted and the email is hashed. We use the Cloak special types for the Ecto schema
 
 ```elixir
-@derive {Inspect, except: [:email]}
 schema "users" do
   field :email, UpImg.Encrypted.Binary
   field :hashed_email, Cloak.Ecto.SHA256
@@ -473,11 +472,12 @@ end
 
 <img width="666" alt="Screenshot 2023-09-19 at 21 09 22" src="https://github.com/ndrean/UpImage/assets/6793008/35f41cc6-e8ba-4536-8384-d236fbe0d133">
 
-- Create credentials for Google: <https://console.cloud.google.com/apis/credentials/> and pass Authorized Javascript origins and Authorized redirects URLs.
+- Create credentials for Google: <https://console.cloud.google.com/apis/credentials/> and pass Authorized Javascript origins and Authorized redirects URLs. The local set up is shown below (!! you need `http://localhost:4000` AND `http://localhost` in the authorised Javascript origin).
 
-  <img width="484" alt="Screenshot 2023-09-19 at 21 07 17" src="https://github.com/ndrean/UpImage/assets/6793008/85da0045-6ca2-4726-a6d1-66fa4e8bb56f">
+  <img width="478" alt="Screenshot 2023-10-05 at 14 05 32" src="https://github.com/ndrean/UpImage/assets/6793008/526ec463-56f7-4855-b75f-d6698f518843">
 
-- set up callback URI for both, once you get the app URL (http://localhost:4000 firstly, then https://up-image.fly.dev once deployed)
+- set up callback URI for both,
+- come back to theses settings once you get the app deployed (https://up-image.fly.dev)
 
 ### Temporary saved on the server
 
