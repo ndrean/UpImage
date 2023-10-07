@@ -2,7 +2,9 @@
 
 This app uploads images to S3 and transforms them into WEBP format to save on bandwidth and storage. The transformation is based on [libvips](https://www.libvips.org/) and the Elixir package [Vix.Vips](https://github.com/akash-akya/vix).
 
-The idea is to evaluate an Image-To-Text implementation for **image tagging** or **caption creation** via a ML modle. It will propose some tags and a caption to help the user to classify his pictures for him to retrieve them by tag. This might be a slow process, especially on a free-tier Fly.io machine. We set up the model with the env variable `MODEL`.
+Care is taken to maximise the usage of streams to limit the memory usage, especially when you upload multiple files. Care is taken to spawn processes whenever needed.
+
+We propose an Image-To-Text implementation for **image tagging** or **caption creation** via a ML modle. It will propose some tags and a caption to help the user to classify his pictures for him to retrieve them by tag. This might be a slow process, especially on a free-tier Fly.io machine. We set up the model with the env variable `MODEL`.
 
 About **[CanIUse-WEBP?](https://caniuse.com/webp)**
 
