@@ -172,8 +172,8 @@ defmodule UpImgWeb.ApiController do
     end)
     |> Enum.map(fn
       {:ok, response} ->
-        if response.task_predictions != nil do
-          predictions = Task.await(response.task_predictions).predictions
+        if Map.get(response, :task_predictions) != nil do
+          [%{label: predictions}] = Task.await(response.task_predictions).predictions |> dbg()
           {_, response} = Map.pop(response, :task_predictions)
 
           {
@@ -207,7 +207,7 @@ defmodule UpImgWeb.ApiController do
          {:ok, img_resized} <-
            Api.resize(img, hor_scale, vert_scale),
          {:ok, task_predictions} <-
-           if(predict == "on", do: {:ok, predict(img_resized)}, else: {:ok, nil}) |> dbg(),
+           if(predict == "on", do: {:ok, predict(img_resized)}, else: {:ok, nil}),
          #  (predict && predict(img_resized)) || nil,
          {:ok, %{width: new_w, height: new_h}} <-
            image_get_dim(img_resized),
@@ -298,6 +298,20 @@ defmodule UpImgWeb.ApiController do
     h = Map.get(params, "h")
     predict = Map.get(params, "pred")
 
+    # allow images sourced from unsplash that are redirected
+    url =
+      case Finch.build(:get, url) |> Finch.request!(UpImg.Finch) do
+        %{status: 302, headers: headers} ->
+          {"location", location} = Enum.find(headers, fn
+            {"location", location} -> location
+            {_, _} -> nil
+          end)
+          location
+
+        %{status: 200} ->
+          url
+      end
+
     response =
       with true <-
              is_valid_url?(url),
@@ -311,14 +325,14 @@ defmodule UpImgWeb.ApiController do
              filter(file, w, h, predict),
            {:ok, response} <-
              upload_to_s3(data, url) do
-          if response.task_predictions != nil do
-            predictions = Task.await(response.task_predictions).predictions
-            {_, response} = Map.pop(response, :task_predictions)
+        if Map.get(response, :task_predictions) != nil do
+          [%{label: predictions}] = Task.await(response.task_predictions).predictions
+          {_, response} = Map.pop(response, :task_predictions)
 
-            Map.put(response, :predictions, predictions)
-          else
-            response
-          end
+          Map.put(response, :predictions, predictions)
+        else
+          response
+        end
       else
         false ->
           {:error, :bad_url}
