@@ -173,7 +173,7 @@ defmodule UpImgWeb.ApiController do
     |> Enum.map(fn
       {:ok, response} ->
         if Map.get(response, :task_predictions) != nil do
-          [%{label: predictions}] = Task.await(response.task_predictions).predictions |> dbg()
+          [%{label: predictions}] = Task.await(response.task_predictions).predictions
           {_, response} = Map.pop(response, :task_predictions)
 
           {
@@ -243,7 +243,7 @@ defmodule UpImgWeb.ApiController do
     {width, height, channels} = shape
     t_img = Nx.from_binary(data, type) |> Nx.reshape({height, width, channels}, names: names)
 
-    # Nx.Serving.batched_run(UpImg.Serving, t_img) |> dbg()
+    # Nx.Serving.batched_run(UpImg.Serving, t_img)
     # Task.async(fn -> Nx.Serving.batched_run(UpImg.Serving, t_img) end)
     Task.async(fn -> Nx.Serving.batched_run(UpImg.Serving, t_img) end)
     # Task.async(fn -> Nx.Serving.run(serving, t_img) end)
@@ -290,6 +290,34 @@ defmodule UpImgWeb.ApiController do
     end
   end
 
+  def follow_redirect(url, path) do
+    Finch.build(:get, url)
+    |> Api.stream_request_into(path)
+  end
+
+  # def follow_redirect(url, path) do
+  #   Finch.build(:get, url)
+  #   |> Finch.request!(UpImg.Finch)
+  #   |> case do
+  #     %{status: 302, headers: headers} ->
+  #       {"location", location} =
+  #         Enum.find(headers, fn
+  #           {"location", location} -> location
+  #           {_, _} -> nil
+  #         end)
+
+  #       Finch.build(:get, location)
+  #       |> stream_request_into(path)
+
+  #     %{status: 200, body: body}  ->
+  #       File.write!(path, body)
+  #       {:ok, path}
+
+  #     _ ->
+  #       {:error, "too much redirects"}
+  #   end
+  # end
+
   @doc """
   GET endpoint. It receive an URL and returns a JSON response with the URL on S3 of the result.
   """
@@ -299,28 +327,14 @@ defmodule UpImgWeb.ApiController do
     predict = Map.get(params, "pred")
 
     # allow images sourced from unsplash that are redirected
-    url =
-      case Finch.build(:get, url) |> Finch.request!(UpImg.Finch) do
-        %{status: 302, headers: headers} ->
-          {"location", location} = Enum.find(headers, fn
-            {"location", location} -> location
-            {_, _} -> nil
-          end)
-          location
-
-        %{status: 200} ->
-          url
-      end
 
     response =
       with true <-
              is_valid_url?(url),
-           req <-
-             Finch.build(:get, url),
            {:ok, stream_path} <-
              Plug.Upload.random_file("streamed"),
            {:ok, file} <-
-             stream_request_into(req, stream_path),
+             follow_redirect(url, stream_path),
            {:ok, data} <-
              filter(file, w, h, predict),
            {:ok, response} <-
@@ -383,40 +397,59 @@ defmodule UpImgWeb.ApiController do
   @doc """
   Download in streams and write the stream into a temp file
   """
-  def stream_request_into(req, path) do
-    {:ok, file} = File.open(path, [:binary, :write])
 
-    streaming =
-      Finch.stream(req, UpImg.Finch, nil, fn
-        {:status, status}, _acc ->
-          status
+def stream_request_into(req, path) do
+  {:ok, file} = File.open(path, [:binary, :write])
 
-        {:headers, headers}, _acc ->
-          headers
+  streaming = Api.stream_write(req, file)
 
-        {:data, data}, _acc ->
-          case IO.binwrite(file, data) do
-            :ok -> :ok
-            {:error, reason} -> {:error, reason}
-          end
+  case File.close(file) do
+    :ok ->
+      case streaming do
+        {:ok, _} ->
+          {:ok, path}
 
-          # we don't return the whole binary since we put it in a temp file
-      end)
+        {:error, reason} ->
+          {:error, reason}
+      end
 
-    case File.close(file) do
-      :ok ->
-        case streaming do
-          {:ok, _} ->
-            {:ok, path}
+    {:error, reason} ->
+      {:error, reason}
+  end
+end
 
-          {:error, reason} ->
-            {:error, reason}
+@doc """
+We write into a file stream by stream
+"""
+  def stream_write(req, file) do
+    Finch.stream(req, UpImg.Finch, nil, fn
+      {:status, status}, _acc -> status
+
+      {:headers, headers}, _acc ->
+        case Enum.find(headers, fn
+               {"location", location} -> location
+               _ -> nil
+             end) do
+          {"location", location} -> location
+          _ -> headers
         end
 
-      {:error, reason} ->
-        {:error, reason}
-    end
+      {:data, data}, acc ->
+        case is_binary(acc) do
+          true ->
+            Finch.build(:get, acc) |> Api.stream_write(file)
+
+          false ->
+            case IO.binwrite(file, data) do
+              :ok -> :ok
+              {:error, reason} -> {:error, reason}
+            end
+        end
+        # we don't return the whole binary since we put it in a temp file
+    end)
   end
+
+
 
   @doc """
   Read with `File.stat` the size of the file.

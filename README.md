@@ -14,7 +14,7 @@ It is limited to 5Mb images with dimension less than 4200x4000. See TODOS. The u
 
 It exposes two endpoints at <https://up-image.fly.dev/api>:
 
-- a GET endpoint. It accepts a query string with the "url" (which serves the picture you want) and possibly and "w" (the desired width) and optionally "h" (the height if you want to change the ratio).
+- a GET endpoint. It accepts a query string with the "url" (which serves the picture you want) and possibly and "w" (the desired width) and optionally "h" (the height if you want to change the ratio). It accepts **redirects**, such as unsplash urls (`https://source.unsplash.com/<photo_id>`).
 
 - a POST endpoint. It accepts a payload with "multipart" - for **multiple** files with a FormData. Use the key **"w"** to specify the width to resize the file and the key "thumb" as a checkbox to produce a thumbnail (standard 100px).
 
@@ -84,11 +84,82 @@ You will receive a JSON response as a list:
 }
 ```
 
+### Redirect with streams
+
+We send a request and build a stream with the body since we want to write it into a file. This limits the memory usage.
+
+```elixir
+def follow_redirect(url, path) do
+    Finch.build(:get, url)
+    |> Api.stream_request_into(path)
+end
+```
+
+```elixir
+def stream_request_into(req, path) do
+  {:ok, file} = File.open(path, [:binary, :write])
+
+  streaming = stream_write(req, file)
+
+  case File.close(file) do
+    :ok ->
+      case streaming do
+        {:ok, _} ->
+          {:ok, path}
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+
+    {:error, reason} ->
+      {:error, reason}
+  end
+end
+```
+
+We write stram by stream into the file. When we have a redirect, we have a `{"location", location}` header. In this case, we return the value `location` of the tuple. The third function gets the headers in the acc, the second value of the function [Finch.stream](https://hexdocs.pm/finch/Finch.html#stream/5). In case we have the value "location", we use recursion. If not, we write into the file.
+
+```elixir
+def stream_write(req, file) do
+    Finch.stream(req, UpImg.Finch, nil, fn
+      {:status, status}, _acc -> status
+
+
+      {:headers, headers}, _acc ->
+
+        case Enum.find(headers, fn
+               {"location", location} -> location
+               _ -> nil
+             end) do
+          {"location", location} -> location
+          _ -> headers
+        end
+
+      {:data, data}, acc ->
+        case is_binary(acc) do
+          true ->
+            Finch.build(:get, acc) |> stream_write(file)
+
+          false ->
+            case IO.binwrite(file, data) do
+              :ok -> :ok
+              {:error, reason} -> {:error, reason}
+            end
+        end
+        # we don't return the whole binary since we put it in a temp file
+    end)
+  end
+```
+
 ### Todos
 
+- ~~implement One Tap newest version~~
+- ~~"image caption" via ML~~
+- ~~provide an API with GET via query string for URLS~~
+- ~~capable of using redirected "unsplash" type URLs~~
+- ~~provide an API with POST via FormData for mulitple files~~
 - secure the API with a token provided by the app to a registered user. You can register simply via Google or Github, no friction. You then will request a token (valid 1 day).
 - rate limit the API.
-- open the CORS limitation.
 - implement a total MB uploaded per user.
 
 ### Stream downloads and save to file
