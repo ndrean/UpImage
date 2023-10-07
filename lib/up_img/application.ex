@@ -18,8 +18,8 @@ defmodule UpImg.Application do
       UpImg.EnvReader,
       UpImg.CleanFiles,
       {GenMagic.Server, name: :gen_magic},
-      {UpImg.GsPredict, [model: System.fetch_env!("MODEL")]}
-      # {Nx.Serving, serving: serve(), name: UpImg.Serving, batch_size: 10, batch_timeout: 100}
+      # {UpImg.GsPredict, [model: System.fetch_env!("MODEL")]}
+      {Nx.Serving, serving: serve(), name: UpImg.Serving, batch_size: 10, batch_timeout: 100}
     ]
 
     opts = [strategy: :one_for_one, name: UpImg.Supervisor]

@@ -235,7 +235,7 @@ defmodule UpImgWeb.ApiController do
   end
 
   def predict(%Vix.Vips.Image{} = image) do
-    serving = UpImg.GsPredict.serve()
+    # serving = UpImg.GsPredict.serve()
 
     {:ok, %Vix.Tensor{data: data, shape: shape, names: names, type: type}} =
       Vix.Vips.Image.write_to_tensor(image)
@@ -245,8 +245,8 @@ defmodule UpImgWeb.ApiController do
 
     # Nx.Serving.batched_run(UpImg.Serving, t_img) |> dbg()
     # Task.async(fn -> Nx.Serving.batched_run(UpImg.Serving, t_img) end)
-    # Task.async(fn -> Nx.Serving.batched_run(UpImg.Serving, t_img) end)
-    Task.async(fn -> Nx.Serving.run(serving, t_img) end)
+    Task.async(fn -> Nx.Serving.batched_run(UpImg.Serving, t_img) end)
+    # Task.async(fn -> Nx.Serving.run(serving, t_img) end)
   end
 
   def upload_to_s3(data, string) do
@@ -311,7 +311,6 @@ defmodule UpImgWeb.ApiController do
              filter(file, w, h, predict),
            {:ok, response} <-
              upload_to_s3(data, url) do
-        response =
           if response.task_predictions != nil do
             predictions = Task.await(response.task_predictions).predictions
             {_, response} = Map.pop(response, :task_predictions)
