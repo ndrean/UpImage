@@ -129,11 +129,11 @@ def stream_write(req, file) do
       {:status, status}, _acc -> status
 
       {:headers, headers}, _acc ->
-
-        case Enum.find(headers, fn
-               {"location", location} -> location
-               _ -> nil
-             end) do
+        Enum.find(headers, fn
+          {"location", location} -> location
+          _ -> nil
+        end)
+        |> case do
           {"location", location} -> location
           _ -> headers
         end

@@ -398,38 +398,40 @@ defmodule UpImgWeb.ApiController do
   Download in streams and write the stream into a temp file
   """
 
-def stream_request_into(req, path) do
-  {:ok, file} = File.open(path, [:binary, :write])
+  def stream_request_into(req, path) do
+    {:ok, file} = File.open(path, [:binary, :write])
 
-  streaming = Api.stream_write(req, file)
+    streaming = Api.stream_write(req, file)
 
-  case File.close(file) do
-    :ok ->
-      case streaming do
-        {:ok, _} ->
-          {:ok, path}
+    case File.close(file) do
+      :ok ->
+        case streaming do
+          {:ok, _} ->
+            {:ok, path}
 
-        {:error, reason} ->
-          {:error, reason}
-      end
+          {:error, reason} ->
+            {:error, reason}
+        end
 
-    {:error, reason} ->
-      {:error, reason}
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
-end
 
-@doc """
-We write into a file stream by stream
-"""
+  @doc """
+  We write into a file stream by stream
+  """
   def stream_write(req, file) do
     Finch.stream(req, UpImg.Finch, nil, fn
-      {:status, status}, _acc -> status
+      {:status, status}, _acc ->
+        status
 
       {:headers, headers}, _acc ->
-        case Enum.find(headers, fn
-               {"location", location} -> location
-               _ -> nil
-             end) do
+        Enum.find(headers, fn
+          {"location", location} -> location
+          _ -> nil
+        end)
+        |> case do
           {"location", location} -> location
           _ -> headers
         end
@@ -445,11 +447,10 @@ We write into a file stream by stream
               {:error, reason} -> {:error, reason}
             end
         end
+
         # we don't return the whole binary since we put it in a temp file
     end)
   end
-
-
 
   @doc """
   Read with `File.stat` the size of the file.
