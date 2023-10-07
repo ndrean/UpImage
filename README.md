@@ -119,7 +119,7 @@ def stream_request_into(req, path) do
 end
 ```
 
-We write stram by stream into the file. When we have a redirect, we have a `{"location", location}` header. In this case, we return the value `location` of the tuple. The third function gets the headers in the acc, the second value of the function [Finch.stream](https://hexdocs.pm/finch/Finch.html#stream/5). In case we have the value "location", we use recursion. If not, we write into the file.
+We write stram by stream into the file. When we have a redirect, we have a `{"location", location}` header. In this case, we return the value `location` of the tuple. The third function gets the headers in the acc, the second value of the function [Finch.stream](https://hexdocs.pm/finch/Finch.html#stream/5). In case we have the value "location", we use recursion. If not, we write into the file so we do't return the whole binary.
 
 ```elixir
 def stream_write(req, file) do
@@ -148,7 +148,6 @@ def stream_write(req, file) do
               {:error, reason} -> {:error, reason}
             end
         end
-        # we don't return the whole binary since we put it in a temp file
     end)
   end
 ```
@@ -259,7 +258,7 @@ Phoenix accepts multipart encoded (`FormData`) and sets up a `Plug.Upload` mecha
 To change this to accept multiple files, one way is to create multiple keys, one for each file. This can be done by building a [custom multiparser](https://hexdocs.pm/plug/Plug.Parsers.MULTIPART.html#module-multipart-to-params).
 
 ```elixir
-defmodule Plug.Parsers.MY_MULTIPART do
+defmodule Plug.Parsers.FD_MULTIPART do
   @multipart Plug.Parsers.MULTIPART
 
   def init(opts) do
@@ -348,8 +347,8 @@ pipeline :api do
     parsers: [:urlencoded, :my_multipart, :json],
     pass: ["image/jpg", "image/png", "image/webp", "iamge/jpeg"],
     json_decoder: Jason,
-    multipart_to_params: {Plug.Parsers.MY_MULTIPART, :multipart_to_params, []},
-    body_reader: {Plug.Parsers.MY_MULTIPART, :read_body, []}
+    multipart_to_params: {Plug.Parsers.FD_MULTIPART, :multipart_to_params, []},
+    body_reader: {Plug.Parsers.FD_MULTIPART, :read_body, []}
 end
 ```
 
