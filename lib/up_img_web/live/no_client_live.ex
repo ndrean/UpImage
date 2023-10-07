@@ -46,8 +46,8 @@ defmodule UpImgWeb.NoClientLive do
       uploaded_files_locally: [],
       uploaded_files_to_S3: [],
       errors: [],
-      cleaner_ref: cleaner_ref
-      # list_s3: Gallery.get_limited_urls_by_user(socket.assigns.current_user, 4, 0)
+      cleaner_ref: cleaner_ref,
+      list_s3: Gallery.get_limited_urls_by_user(socket.assigns.current_user, 2, 0)
     }
 
     socket =
@@ -57,7 +57,7 @@ defmodule UpImgWeb.NoClientLive do
       |> assign_new(:bucket, fn _ -> EnvReader.bucket() end)
       |> allow_upload(:image_list,
         accept: ~w(.jpg .jpeg .png .webp),
-        max_entries: 10,
+        max_entries: 2,
         chunk_size: 64_000,
         auto_upload: true,
         max_file_size: 5_000_000,
@@ -68,7 +68,7 @@ defmodule UpImgWeb.NoClientLive do
       |> paginate(0)
       |> push_event("screen", %{})
 
-    # |> assign_async(:list_s3, fn -> {:ok, %{list_s3: nil}} end)
+    # |> assign_async(:list_s3, fn -> {:ok, %{list_s3: init_assigns.list_s3}} end)
 
     {:ok, socket}
 
@@ -480,17 +480,17 @@ defmodule UpImgWeb.NoClientLive do
     # concurrently upload the 2 files to the bucket
     lv_pid = self()
 
-    Task.Supervisor.start_child(UpImg.TaskSup, fn ->
-      upload(lv_pid, [file_resized, file_thumb], uuid)
-    end)
+    # Task.Supervisor.start_child(UpImg.TaskSup, fn ->
+    #   upload(lv_pid, [file_resized, file_thumb], uuid)
+    # end)
 
     {
       :noreply,
       socket
       |> update(:uploaded_files_locally, fn list -> Enum.filter(list, &(&1.uuid != uuid)) end)
-      # |> assign_async(:list_s3, fn ->
-      #   {:ok, %{list_s3: upload(pid, image_path, [file_resized, file_thumb], uuid)}}
-      # end)
+      |> assign_async(:list_s3, fn ->
+        {:ok, %{list_s3: upload(lv_pid, [file_resized, file_thumb], uuid)}}
+      end)
     }
   end
 

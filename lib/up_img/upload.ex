@@ -2,7 +2,7 @@ defmodule UpImg.Upload do
   @moduledoc """
   Handles uploading to S3 in a convenient reusable (DRY) function.
   """
-  import SweetXml
+  # import SweetXml
   require Logger
   alias ExAws.S3
   alias UpImg.EnvReader
@@ -24,11 +24,11 @@ defmodule UpImg.Upload do
 
   def upload(%{path: path} = image) do
     with {:ok, filename} <- FileUtils.hash_file(image),
-         {:ok, upload_resp_body} <-
-           upload_file_to_s3(%{filename: filename, path: path}) do
+         {:ok, %{body: body}} <-
+           UpImg.Upload.upload_file_to_s3(%{filename: filename, path: path}) do
       {:ok,
        %{
-         url: upload_resp_body.body |> xpath(~x"//text()") |> List.to_string(),
+         url: body.location,
          name: Path.basename(path)
        }}
     else

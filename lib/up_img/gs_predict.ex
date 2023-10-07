@@ -23,7 +23,8 @@ defmodule UpImg.GsPredict do
     {:noreply,
      Bumblebee.Vision.image_classification(resnet, featurizer,
        defn_options: [compiler: EXLA],
-       compile: [batch_size: :erlang.system_info(:schedulers_online)]
+       top_k: 1,
+       compile: [batch_size: 10]
      )}
   end
 

@@ -17,8 +17,9 @@ defmodule UpImg.Application do
       {Task.Supervisor, name: UpImg.TaskSup},
       UpImg.EnvReader,
       UpImg.CleanFiles,
-      {GenMagic.Server, name: :gen_magic}
-      # {UpImg.GsPredict, [model: System.fetch_env!("MODEL")]}
+      {GenMagic.Server, name: :gen_magic},
+      {UpImg.GsPredict, [model: System.fetch_env!("MODEL")]}
+      # {Nx.Serving, serving: serve(), name: UpImg.Serving, batch_size: 10, batch_timeout: 100}
     ]
 
     opts = [strategy: :one_for_one, name: UpImg.Supervisor]
@@ -30,5 +31,17 @@ defmodule UpImg.Application do
   def config_change(changed, _new, removed) do
     UpImgWeb.Endpoint.config_change(changed, removed)
     :ok
+  end
+
+  def serve() do
+    model = System.fetch_env!("MODEL")
+    {:ok, resnet} = Bumblebee.load_model({:hf, model})
+    {:ok, featurizer} = Bumblebee.load_featurizer({:hf, model})
+
+    Bumblebee.Vision.image_classification(resnet, featurizer,
+      defn_options: [compiler: EXLA],
+      top_k: 1,
+      compile: [batch_size: 10]
+    )
   end
 end

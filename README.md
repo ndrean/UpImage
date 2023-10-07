@@ -711,4 +711,6 @@ In CF/R2 dashboard, go to your bucket, and in "settings", in CORS-policy, add:
 
 ## Error Bumblebee
 
-"could not make directory (with -p) "/nonexistent/.cache/bumblebee/huggingface": no such file or directory"
+lib/file.ex:319: File.mkdir_p!/1 "could not make directory (with -p) "/nonexistent/.cache/bumblebee/huggingface": no such file or directory"
+(bumblebee 0.4.2): lib/bumblebee/huggingface/hub.ex:59: Bumblebee.HuggingFace.Hub.cached_download/2
+(bumblebee 0.4.2): lib/bumblebee.ex:1072: Bumblebee.get_repo_files/1

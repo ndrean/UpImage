@@ -12,7 +12,7 @@ defmodule ElixirGoogleCerts do
   @registered_http_client Application.compile_env!(:up_img, :http_client)
 
   @doc """
-  This is run **after** the plug "check_csrf".
+  This runs **after** the plug `UpImg.CheckCsrf.
 
   It takes a map with the JWT token. It deciphers the JWT against Google public key (PEM).
 

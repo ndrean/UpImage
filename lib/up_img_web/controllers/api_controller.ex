@@ -5,11 +5,10 @@ defmodule UpImgWeb.ApiController do
   Returns a JSON response.
   """
   use UpImgWeb, :controller
-  import SweetXml
+  # import SweetXml
 
   alias UpImgWeb.ApiController, as: Api
   alias Vix.Vips.Operation
-  alias Image, as: Img
 
   require Logger
 
@@ -25,48 +24,21 @@ defmodule UpImgWeb.ApiController do
     json(conn |> Plug.Conn.put_status(404), %{error: "bad request"})
   end
 
-  # single file
-  # def handle(conn, params) do
-  #   file = Map.get(params, "file")
-  #   w = Map.get(params, "w")
-  #   thumb = Map.get(params, "thumb")
-
-  #   case file do
-  #     nil ->
-  #       json(conn, %{error: "input is empty"})
-
-  #     %Plug.Upload{path: path} ->
-  #       with {:ok, data} <-
-  #              filter(path, w, nil),
-  #            {:ok, response} <-
-  #              Api.upload_to_s3(data) do
-  #         json(conn, response)
-  #       else
-  #         {:error, reason} ->
-  #           json(conn, %{error: reason})
-  #       end
-  #   end
-  # end
-
   @doc """
-  POST endpoint to receive a FormData containg files from a client.
+  POST endpoint to handle files from FormData
 
-  It accepts multiple files with the custom multipart parser.
+  It uses the custom multipart parser.
   """
 
   # multi-files
-  def handle(conn, params) when map_size(params) == 0 do
-    json(conn, %{})
-  end
-
-  def handle(conn, params) do
+  def handle(conn, params) when map_size(params) > 0 do
     response =
       params
-      |> parse_params()
+      |> Api.parse_params()
       |> Api.parse_multi()
       |> Enum.reduce([], fn
         {:ok, data}, acc ->
-          data.url |> dbg()
+          data.url
 
           [data | acc]
 
@@ -77,11 +49,16 @@ defmodule UpImgWeb.ApiController do
     json(conn, %{data: response})
   end
 
+  def handle(conn, %{}) do
+    json(conn, %{error: "no file input"})
+  end
+
   def parse_params(params) do
     maybe_width = Map.get(params, "w", 1440)
     h = nil
 
     maybe_thumb = Map.get(params, "thumb", "off")
+    maybe_predict = Map.get(params, "predict", "off")
 
     maybe_files =
       params
@@ -94,12 +71,12 @@ defmodule UpImgWeb.ApiController do
           nil
       end)
 
-    {maybe_width, h, maybe_files, maybe_thumb}
+    {maybe_width, h, maybe_files, maybe_thumb, maybe_predict}
   end
 
-  def parse_multi({_maybe_width, _h, [], _maybe_thumb}), do: nil
+  def parse_multi({_maybe_width, _h, [], _maybe_thumb, _}), do: nil
 
-  def parse_multi({maybe_width, h, maybe_files, _maybe_thumb}) do
+  def parse_multi({maybe_width, h, maybe_files, _maybe_thumb, maybe_predict}) do
     maybe_files
     |> Enum.reduce([], fn %Plug.Upload{filename: filename, path: path} = file, acc ->
       with {:ok, size} <-
@@ -116,6 +93,15 @@ defmodule UpImgWeb.ApiController do
         |> Stream.into(File.stream!(UpImg.build_path(new_name)))
         |> Stream.run()
 
+        task_predictions =
+          if maybe_predict == "on" do
+            {:ok, img_for_predictions} = Vix.Vips.Image.new_from_file(new_path)
+
+            predict(img_for_predictions)
+          else
+            nil
+          end
+
         # add file to the list
         [
           Map.merge(file, %{
@@ -123,7 +109,9 @@ defmodule UpImgWeb.ApiController do
             path: new_path,
             w: maybe_width,
             init_size: size,
-            mime: mime
+            mime: mime,
+            task_predictions: task_predictions,
+            pid: self()
           })
           | acc
         ]
@@ -154,7 +142,7 @@ defmodule UpImgWeb.ApiController do
              FileUtils.hash_file(%{path: resized_path, content_type: "image/webp"}),
            data <-
              %{
-               #  predictions: Map.get(predict(%Vix.Vips.Image{} = img_resized), :predictions),
+               task_predictions: file.task_predictions,
                resized_path: resized_path,
                init_size: file.init_size,
                content_type: "image/webp",
@@ -167,7 +155,9 @@ defmodule UpImgWeb.ApiController do
            {:ok, response} <-
              Api.upload_to_s3(data, file.filename) do
         File.rm_rf!(file.path)
+
         response
+        |> Map.put(:task_predictions, data.task_predictions)
       else
         {:no_tmp, reason} ->
           {:error, reason}
@@ -180,10 +170,27 @@ defmodule UpImgWeb.ApiController do
           {:error, reason}
       end
     end)
-    |> Enum.map(& &1)
+    |> Enum.map(fn
+      {:ok, response} ->
+        if response.task_predictions != nil do
+          predictions = Task.await(response.task_predictions).predictions
+          {_, response} = Map.pop(response, :task_predictions)
+
+          {
+            :ok,
+            response
+            |> Map.put(:predictions, predictions)
+          }
+        else
+          {:ok, response}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end)
   end
 
-  def filter(file, w, h) do
+  def filter(file, w, h, predict) do
     with {:ok, size} <-
            check_size_file_stat(file),
          {:ok, %{mime_type: mime}} <-
@@ -199,6 +206,9 @@ defmodule UpImgWeb.ApiController do
            parse_size(w, h, width, height),
          {:ok, img_resized} <-
            Api.resize(img, hor_scale, vert_scale),
+         {:ok, task_predictions} <-
+           if(predict == "on", do: {:ok, predict(img_resized)}, else: {:ok, nil}) |> dbg(),
+         #  (predict && predict(img_resized)) || nil,
          {:ok, %{width: new_w, height: new_h}} <-
            image_get_dim(img_resized),
          {:ok, resized_path} <-
@@ -209,11 +219,9 @@ defmodule UpImgWeb.ApiController do
            {:file_exists, File.exists?(resized_path)},
          {:ok, name} <-
            FileUtils.hash_file(%{path: resized_path, content_type: "image/webp"}) do
-      # predictions = predict(img_resized)
-
       {:ok,
        %{
-         #  predictions: Map.get(predictions, :predictions),
+         task_predictions: task_predictions,
          resized_path: resized_path,
          init_size: size,
          content_type: mime,
@@ -222,8 +230,7 @@ defmodule UpImgWeb.ApiController do
          h_origin: height,
          w: new_w,
          h: new_h
-       }
-       |> dbg()}
+       }}
     end
   end
 
@@ -233,9 +240,13 @@ defmodule UpImgWeb.ApiController do
     {:ok, %Vix.Tensor{data: data, shape: shape, names: names, type: type}} =
       Vix.Vips.Image.write_to_tensor(image)
 
-    t_img = Nx.from_binary(data, type) |> Nx.reshape(shape, names: names)
+    {width, height, channels} = shape
+    t_img = Nx.from_binary(data, type) |> Nx.reshape({height, width, channels}, names: names)
 
-    Nx.Serving.run(serving, t_img)
+    # Nx.Serving.batched_run(UpImg.Serving, t_img) |> dbg()
+    # Task.async(fn -> Nx.Serving.batched_run(UpImg.Serving, t_img) end)
+    # Task.async(fn -> Nx.Serving.batched_run(UpImg.Serving, t_img) end)
+    Task.async(fn -> Nx.Serving.run(serving, t_img) end)
   end
 
   def upload_to_s3(data, string) do
@@ -246,29 +257,28 @@ defmodule UpImgWeb.ApiController do
 
     with %{size: new_size} <-
            File.stat!(data.resized_path),
-         {:ok, %{body: body}} <-
+         {:ok, %{body: %{location: location}}} <-
            UpImg.Upload.upload_file_to_s3(%{path: data.resized_path, filename: data.name}) do
-      attached = body |> xpath(~x"//text()") |> List.to_string() |> URI.parse()
-
+      location = URI.parse(location)
       File.rm_rf!(data.resized_path)
 
       url =
         %URI{
-          attached
-          | authority: bucket <> "." <> Map.get(attached, :authority),
-            host: bucket <> "." <> Map.get(attached, :host),
-            path: "/" <> Path.basename(Map.get(attached, :path))
+          location
+          | authority: bucket <> "." <> Map.get(location, :authority),
+            host: bucket <> "." <> Map.get(location, :host),
+            path: "/" <> Path.basename(Map.get(location, :path))
         }
         |> URI.to_string()
 
       {:ok,
        %{
-         #  predictions: data.predictions,
          w_origin: data.w_origin,
          h_origin: data.h_origin,
          init_size: data.init_size,
          w: data.w,
-         h: data.h
+         h: data.h,
+         task_predictions: data.task_predictions
        }
        |> Map.put(:url, url)
        |> Map.put(:new_size, new_size)
@@ -286,6 +296,7 @@ defmodule UpImgWeb.ApiController do
   def create(conn, %{"url" => url} = params) do
     w = Map.get(params, "w")
     h = Map.get(params, "h")
+    predict = Map.get(params, "pred")
 
     response =
       with true <-
@@ -297,10 +308,18 @@ defmodule UpImgWeb.ApiController do
            {:ok, file} <-
              stream_request_into(req, stream_path),
            {:ok, data} <-
-             filter(file, w, h),
+             filter(file, w, h, predict),
            {:ok, response} <-
              upload_to_s3(data, url) do
-        response
+        response =
+          if response.task_predictions != nil do
+            predictions = Task.await(response.task_predictions).predictions
+            {_, response} = Map.pop(response, :task_predictions)
+
+            Map.put(response, :predictions, predictions)
+          else
+            response
+          end
       else
         false ->
           {:error, :bad_url}
@@ -533,3 +552,11 @@ defmodule UpImgWeb.ApiController do
     end
   end
 end
+
+# Here is the new code to be inserted
+# def handle_errors(conn, params) do
+#   case params do
+#     %{} -> json(conn, %{error: "no parameters"})
+#     _ -> conn
+#   end
+# end
