@@ -124,7 +124,6 @@ def stream_write(req, file) do
     Finch.stream(req, UpImg.Finch, nil, fn
       {:status, status}, _acc -> status
 
-
       {:headers, headers}, _acc ->
 
         case Enum.find(headers, fn
@@ -137,9 +136,10 @@ def stream_write(req, file) do
 
       {:data, data}, acc ->
         case is_binary(acc) do
+          # we received the redirection "location", thus recursion
           true ->
             Finch.build(:get, acc) |> stream_write(file)
-
+          # we receive "normal" headers -> we write the stream into the file
           false ->
             case IO.binwrite(file, data) do
               :ok -> :ok
