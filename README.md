@@ -84,11 +84,13 @@ You will receive a JSON response as a list:
 }
 ```
 
-### Redirect with streams
+### Redirect & download in streams
 
 We send a request and build a stream with the body since we want to write it into a file. This limits the memory usage.
 
 ```elixir
+{:ok, path} = Plug.Upload.random_file("stream")
+
 def follow_redirect(url, path) do
     Finch.build(:get, url)
     |> Api.stream_request_into(path)
@@ -151,7 +153,7 @@ def stream_write(req, file) do
   end
 ```
 
-### Todos
+## Todos
 
 - ~~implement One Tap newest version~~
 - ~~"image caption" via ML~~
@@ -161,44 +163,6 @@ def stream_write(req, file) do
 - secure the API with a token provided by the app to a registered user. You can register simply via Google or Github, no friction. You then will request a token (valid 1 day).
 - rate limit the API.
 - implement a total MB uploaded per user.
-
-### Stream downloads and save to file
-
-While streaming down the data from the source, we simply write the chunk into a file. This file is a temporary file `Plug.Upload.random_file`. Note that we can also directly read the whole data from memory with `Vix.Vips.Image.new_from_buffer`.
-
-```elixir
-{:ok, path} = Plug.Upload.random_file("stream")
-
-def stream_request_into(req, path) do
-  {:ok, file} = File.open(path, [:binary, :write])
-
-  streaming =
-    Finch.stream(req, UpImg.Finch, nil, fn
-      {:status, status}, _acc ->
-        status
-
-      {:headers, headers}, _acc ->
-        headers
-
-      {:data, data}, _acc ->
-        :ok = IO.binwrite(file, data)
-    end)
-
-  case File.close(file) do
-    :ok ->
-      case streaming do
-        {:ok, _} ->
-          {:ok, path}
-
-        {:error, reason} ->
-          {:error, reason}
-      end
-
-    {:error, reason} ->
-      {:error, reason}
-  end
-end
-```
 
 ## Webapp
 
