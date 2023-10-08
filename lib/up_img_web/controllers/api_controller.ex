@@ -419,36 +419,33 @@ defmodule UpImgWeb.ApiController do
   end
 
   @doc """
-  We write into a file stream by stream
+  We write the body of the request into a file stream by stream.
   """
   def stream_write(req, file) do
     Finch.stream(req, UpImg.Finch, nil, fn
       {:status, status}, _acc ->
         status
 
-      {:headers, headers}, _acc ->
-        Enum.find(headers, fn
-          {"location", location} -> location
-          _ -> nil
-        end)
-        |> case do
-          {"location", location} -> location
-          _ -> headers
+      {:headers, headers}, status ->
+        case status do
+          302 ->
+            Enum.filter(headers, &(elem(&1, 0) == "location")) |> List.first()
+
+          200 ->
+            headers
         end
 
-      {:data, data}, acc ->
-        case is_binary(acc) do
-          true ->
-            Finch.build(:get, acc) |> Api.stream_write(file)
+      {:data, data}, headers ->
+        case headers do
+          {"location", location} ->
+            Finch.build(:get, location) |> Api.stream_write(file)
 
-          false ->
+          _headers ->
             case IO.binwrite(file, data) do
               :ok -> :ok
               {:error, reason} -> {:error, reason}
             end
         end
-
-        # we don't return the whole binary since we put it in a temp file
     end)
   end
 

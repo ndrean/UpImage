@@ -126,25 +126,24 @@ We write stram by stream into the file. When we have a redirect, we have a `{"lo
 ```elixir
 def stream_write(req, file) do
     Finch.stream(req, UpImg.Finch, nil, fn
-      {:status, status}, _acc -> status
+      {:status, status}, _acc ->
+        status
 
-      {:headers, headers}, _acc ->
-        Enum.find(headers, fn
-          {"location", location} -> location
-          _ -> nil
-        end)
-        |> case do
-          {"location", location} -> location
-          _ -> headers
+      {:headers, headers}, status ->
+        case status do
+          302 ->
+            Enum.filter(headers, &(elem(&1, 0) == "location")) |> List.first()
+
+          200 ->
+            headers
         end
 
-      {:data, data}, acc ->
-        case is_binary(acc) do
-          # we received the redirection "location", thus recursion
-          true ->
-            Finch.build(:get, acc) |> stream_write(file)
-          # we receive "normal" headers -> we write the stream into the file
-          false ->
+      {:data, data}, headers ->
+        case headers do
+          {"location", location} ->
+            Finch.build(:get, location) |> Api.stream_write(file)
+
+          _headers ->
             case IO.binwrite(file, data) do
               :ok -> :ok
               {:error, reason} -> {:error, reason}
