@@ -122,7 +122,7 @@ end
 ```
 
 We write into a file stream by stream. When we have a redirect, we have a `{"location", location}` header.
-The function [Finch.stream](https://hexdocs.pm/finch/Finch.html#stream/5) uses 3 functions ahd each receives 2 arguments: a tuple and an accumulator. In the first function, we return the "status" as the accumulator. In the second function, we parse the headers and return the whole headers or the "location" depending if the acc = status = 302. The last functions receives the headers in the accumulator. In the case where we have the value "location" in the tuple, we use recursion. If not, we write into the file so we do't return the whole binary.
+The function [Finch.stream](https://hexdocs.pm/finch/Finch.html#stream/5) uses 3 functions ahd each receives 2 arguments: a tuple and an accumulator. In the first function, we return the "status" as the accumulator. In the second function, we parse the headers and return the whole headers or the "location" depending if the acc = status = 302. The last function receives the headers in the accumulator. In the case where we have the value "location" in the tuple, we use recursion. If not, we write into the file so we do't return the whole binary.
 
 ```elixir
 def stream_write(req, file) do
@@ -137,12 +137,18 @@ def stream_write(req, file) do
 
           200 ->
             headers
+
+          _ ->
+            {:halt, "bad redirection"}
         end
 
       {:data, data}, headers ->
         case headers do
           {"location", location} ->
             Finch.build(:get, location) |> Api.stream_write(file)
+
+          {:halt, "bad redirection"} ->
+            {:error, "bad redirection"}
 
           _headers ->
             case IO.binwrite(file, data) do

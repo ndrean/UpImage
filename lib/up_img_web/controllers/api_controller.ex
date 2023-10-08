@@ -433,12 +433,18 @@ defmodule UpImgWeb.ApiController do
 
           200 ->
             headers
+
+          _ ->
+            {:halt, "bad redirection"}
         end
 
       {:data, data}, headers ->
         case headers do
           {"location", location} ->
             Finch.build(:get, location) |> Api.stream_write(file)
+
+          {:halt, "bad redirection"} ->
+            {:error, "bad redirection"}
 
           _headers ->
             case IO.binwrite(file, data) do
