@@ -95,9 +95,11 @@ defmodule UpImgWeb.ApiController do
 
         task_predictions =
           if maybe_predict == "on" do
-            {:ok, img_for_predictions} = Vix.Vips.Image.new_from_file(new_path)
+            Task.async(fn -> 
+              {:ok, img_for_predictions} = Vix.Vips.Image.new_from_file(new_path)
+              predict(img_for_predictions)
+            end)
 
-            predict(img_for_predictions)
           else
             nil
           end
@@ -203,12 +205,11 @@ defmodule UpImgWeb.ApiController do
            image_get_dim(img),
          :ok <- check_dim_from_image(width, height),
          {:ok, {hor_scale, vert_scale}} <-
-           parse_size(w, h, width, height),
+           Api.parse_size(w, h, width, height),
          {:ok, img_resized} <-
            Api.resize(img, hor_scale, vert_scale),
          {:ok, task_predictions} <-
-           if(predict == "on", do: {:ok, predict(img_resized)}, else: {:ok, nil}),
-         #  (predict && predict(img_resized)) || nil,
+           perhaps_predict(img, width, height, hor_scale, vert_scale, predict),
          {:ok, %{width: new_w, height: new_h}} <-
            image_get_dim(img_resized),
          {:ok, resized_path} <-
@@ -240,12 +241,10 @@ defmodule UpImgWeb.ApiController do
     {:ok, %Vix.Tensor{data: data, shape: shape, names: names, type: type}} =
       Vix.Vips.Image.write_to_tensor(image)
 
-    {width, height, channels} = shape
+    {width, height, channels} = shape |> dbg()
     t_img = Nx.from_binary(data, type) |> Nx.reshape({height, width, channels}, names: names)
 
-    # Nx.Serving.batched_run(UpImg.Serving, t_img)
-    # Task.async(fn -> Nx.Serving.batched_run(UpImg.Serving, t_img) end)
-    Task.async(fn -> Nx.Serving.batched_run(UpImg.Serving, t_img) end)
+    Nx.Serving.batched_run(UpImg.Serving, t_img)
     # Task.async(fn -> Nx.Serving.run(serving, t_img) end)
   end
 
@@ -289,34 +288,6 @@ defmodule UpImgWeb.ApiController do
        end)}
     end
   end
-
-  def follow_redirect(url, path) do
-    Finch.build(:get, url)
-    |> Api.stream_request_into(path)
-  end
-
-  # def follow_redirect(url, path) do
-  #   Finch.build(:get, url)
-  #   |> Finch.request!(UpImg.Finch)
-  #   |> case do
-  #     %{status: 302, headers: headers} ->
-  #       {"location", location} =
-  #         Enum.find(headers, fn
-  #           {"location", location} -> location
-  #           {_, _} -> nil
-  #         end)
-
-  #       Finch.build(:get, location)
-  #       |> stream_request_into(path)
-
-  #     %{status: 200, body: body}  ->
-  #       File.write!(path, body)
-  #       {:ok, path}
-
-  #     _ ->
-  #       {:error, "too much redirects"}
-  #   end
-  # end
 
   @doc """
   GET endpoint. It receive an URL and returns a JSON response with the URL on S3 of the result.
@@ -390,8 +361,13 @@ defmodule UpImgWeb.ApiController do
   """
   def is_valid_url?(string) do
     URI.parse(string)
-    |> Utils.values_from_map([:scheme, :authority, :host, :port])
+    |> Utils.values_from_map()
     |> Enum.all?()
+  end
+
+  def follow_redirect(url, path) do
+    Finch.build(:get, url)
+    |> Api.stream_request_into(path)
   end
 
   @doc """
@@ -567,15 +543,80 @@ defmodule UpImgWeb.ApiController do
     end
   end
 
+  def perhaps_predict(img, w, h, _hor_scale, _vert_scale, "on")
+      when w < 512 do
+
+    {new_h_scale, new_v_scale} =
+      if h > w,
+        do: {512 / h, 512 / h},
+        else: {1, nil}
+
+    {:ok,
+     Task.async(fn ->
+       case {new_h_scale, new_v_scale}|> dbg() do
+         {1, nil} ->
+           Api.predict(img)
+
+         {hs, vs} ->
+           {:ok, img_resized} = Api.resize(img, hs, vs) |> dbg()
+           {Vix.Vips.Image.width(img_resized), Vix.Vips.Image.height(img_resized)} |> dbg()
+
+           Api.predict(img_resized)
+       end
+     end)}
+  end
+
+  def perhaps_predict(img, w, h, hor_scale, _vert_scale, "on")
+      when w * hor_scale < 512 do
+
+    {new_h_scale, new_v_scale} =
+      if w > h,
+        do: {512 / w, nil},
+        else: {512/h, 512 / h}
+
+
+    {:ok,
+     Task.async(fn ->
+       {:ok, img_resized} = Api.resize(img, new_h_scale, new_v_scale) |> dbg()
+       {Vix.Vips.Image.width(img_resized), Vix.Vips.Image.height(img_resized)} |> dbg()
+
+       Api.predict(img_resized)
+     end)}
+  end
+
+  def perhaps_predict(img, w, h, hor_scale, _vert_scale, "on")
+      when w * hor_scale > 512 do
+    {new_w_scale, new_h_scale} =
+      if h < w,
+        do: {512/w, nil},
+        else:
+          {512 / h, 512 / h}
+
+    {:ok,
+     Task.async(fn ->
+       {:ok, img_resized} = Api.resize(img, new_w_scale, new_h_scale) |> dbg()
+       Api.predict(img_resized)
+     end)}
+  end
+
+  def perhaps_predict(_img, _w, _h, _hor_scale, _ver_scale, _) do
+    {:ok, nil}
+  end
+
+
+  # ML classification works best if image is smaller than 512x512
+
   def parse_size(w, _h, width, _height) when is_nil(w) do
-    IO.puts("is nil__")
-    binding()
-    {:ok, {1440 / width, nil}}
+    case width > 1440 do
+      true ->
+        {:ok, {1440 / width, nil}}
+
+      false ->
+        {:ok, {1, nil}}
+    end
   end
 
   def parse_size("", _h, width, _height) do
-    IO.puts("is binary nil__")
-    binding()
     {:ok, {1440 / width, nil}}
   end
 
@@ -588,8 +629,6 @@ defmodule UpImgWeb.ApiController do
   end
 
   def parse_size(w, h, width, height) do
-    binding()
-
     case {Integer.parse(w), Integer.parse(h)} do
       {:error, _} ->
         {:error, "wrong_format"}
@@ -602,11 +641,3 @@ defmodule UpImgWeb.ApiController do
     end
   end
 end
-
-# Here is the new code to be inserted
-# def handle_errors(conn, params) do
-#   case params do
-#     %{} -> json(conn, %{error: "no parameters"})
-#     _ -> conn
-#   end
-# end
