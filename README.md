@@ -121,7 +121,8 @@ def stream_request_into(req, path) do
 end
 ```
 
-We write stram by stream into the file. When we have a redirect, we have a `{"location", location}` header. In this case, we return the value `location` of the tuple. The third function gets the headers in the acc, the second value of the function [Finch.stream](https://hexdocs.pm/finch/Finch.html#stream/5). In case we have the value "location", we use recursion. If not, we write into the file so we do't return the whole binary.
+We write into a file stream by stream. When we have a redirect, we have a `{"location", location}` header.
+The function [Finch.stream](https://hexdocs.pm/finch/Finch.html#stream/5) uses 3 functions ahd each returns 2 values: a tuple and an accumulator. In the first function, we return the "status" as the accumulator. In the second function, we parse the headers and return the whole headers or the "location" depending if the acc = status = 302. The last functions receives the headers in the accumulator. In the case where we have the value "location" in the tuple, we use recursion. If not, we write into the file so we do't return the whole binary.
 
 ```elixir
 def stream_write(req, file) do
