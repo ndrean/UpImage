@@ -69,6 +69,33 @@ defmodule ElixirGoogleCerts do
     end
   end
 
+  # HTTP client used :http to limit dependencies. Cf https://elixirforum.com/t/httpc-cheatsheet/50337
+  # defp fetch(url) do
+  #   :inets.start()
+  #   :ssl.start()
+  #   # headers = [{~c"accept", ~c"application/x-www-form-urlencoded"}]
+  #   headers = [{~c"accept", ~c"application/json"}]
+
+  #   http_request_opts = [
+  #     ssl: [
+  #       verify: :verify_peer,
+  #       cacerts: :public_key.cacerts_get(),
+  #       customize_hostname_check: [
+  #         match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
+  #       ]
+  #     ]
+  #   ]
+
+  #   case :httpc.request(:get, {~c"#{url}", headers}, http_request_opts, []) do
+  #     {:ok, {{_version, 200, _}, headers, body}} ->
+  #       headers |> dbg()
+  #       {:ok, body}
+
+  #     error ->
+  #       {:error, error}
+  #   end
+  # end
+
   # ---- Google checking recommendations
 
   def run_checks(claims) do

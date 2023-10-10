@@ -17,11 +17,8 @@ defmodule UpImgWeb.ApiController do
   @max_h 4000
   @max_size 5_100_000
 
-  @doc """
-  Catch all JSON response to a no-machting URL.
-  """
-  def no_route(conn, _params) do
-    json(conn |> Plug.Conn.put_status(404), %{error: "bad request"})
+  def no_route(conn, _) do
+    json(conn, %{error: "nothing to do"})
   end
 
   @doc """
@@ -89,17 +86,17 @@ defmodule UpImgWeb.ApiController do
         new_name = Utils.clean_name(filename)
         new_path = UpImg.build_path(new_name)
 
+        # copy file located at "path" into another one in "priv/static/image_uploads"
         File.stream!(path, [], 64_000)
         |> Stream.into(File.stream!(UpImg.build_path(new_name)))
         |> Stream.run()
 
         task_predictions =
           if maybe_predict == "on" do
-            Task.async(fn -> 
+            Task.async(fn ->
               {:ok, img_for_predictions} = Vix.Vips.Image.new_from_file(new_path)
               predict(img_for_predictions)
             end)
-
           else
             nil
           end
@@ -241,7 +238,7 @@ defmodule UpImgWeb.ApiController do
     {:ok, %Vix.Tensor{data: data, shape: shape, names: names, type: type}} =
       Vix.Vips.Image.write_to_tensor(image)
 
-    {width, height, channels} = shape |> dbg()
+    {width, height, channels} = shape
     t_img = Nx.from_binary(data, type) |> Nx.reshape({height, width, channels}, names: names)
 
     Nx.Serving.batched_run(UpImg.Serving, t_img)
@@ -545,7 +542,6 @@ defmodule UpImgWeb.ApiController do
 
   def perhaps_predict(img, w, h, _hor_scale, _vert_scale, "on")
       when w < 512 do
-
     {new_h_scale, new_v_scale} =
       if h > w,
         do: {512 / h, 512 / h},
@@ -553,56 +549,52 @@ defmodule UpImgWeb.ApiController do
 
     {:ok,
      Task.async(fn ->
-       case {new_h_scale, new_v_scale}|> dbg() do
+       case {new_h_scale, new_v_scale} do
          {1, nil} ->
            Api.predict(img)
 
          {hs, vs} ->
-           {:ok, img_resized} = Api.resize(img, hs, vs) |> dbg()
-           {Vix.Vips.Image.width(img_resized), Vix.Vips.Image.height(img_resized)} |> dbg()
+           {:ok, img_resized} = Api.resize(img, hs, vs)
+           {Vix.Vips.Image.width(img_resized), Vix.Vips.Image.height(img_resized)}
 
            Api.predict(img_resized)
        end
      end)}
   end
 
-  def perhaps_predict(img, w, h, hor_scale, _vert_scale, "on")
-      when w * hor_scale < 512 do
-
+  def perhaps_predict(img, w, h, _hor_scale, _vert_scale, "on") do
     {new_h_scale, new_v_scale} =
       if w > h,
         do: {512 / w, nil},
-        else: {512/h, 512 / h}
-
+        else: {512 / h, 512 / h}
 
     {:ok,
      Task.async(fn ->
-       {:ok, img_resized} = Api.resize(img, new_h_scale, new_v_scale) |> dbg()
-       {Vix.Vips.Image.width(img_resized), Vix.Vips.Image.height(img_resized)} |> dbg()
+       {:ok, img_resized} = Api.resize(img, new_h_scale, new_v_scale)
+       {Vix.Vips.Image.width(img_resized), Vix.Vips.Image.height(img_resized)}
 
        Api.predict(img_resized)
      end)}
   end
 
-  def perhaps_predict(img, w, h, hor_scale, _vert_scale, "on")
-      when w * hor_scale > 512 do
-    {new_w_scale, new_h_scale} =
-      if h < w,
-        do: {512/w, nil},
-        else:
-          {512 / h, 512 / h}
+  # def perhaps_predict(img, w, h, hor_scale, _vert_scale, "on")
+  #     when w * hor_scale > 512 do
+  #   {new_w_scale, new_h_scale} =
+  #     if w>h,
+  #       do: {512/w, nil},
+  #       else:
+  #         {512 / h, 512 / h}
 
-    {:ok,
-     Task.async(fn ->
-       {:ok, img_resized} = Api.resize(img, new_w_scale, new_h_scale) |> dbg()
-       Api.predict(img_resized)
-     end)}
-  end
+  #   {:ok,
+  #    Task.async(fn ->
+  #      {:ok, img_resized} = Api.resize(img, new_w_scale, new_h_scale)
+  #      Api.predict(img_resized)
+  #    end)}
+  # end
 
   def perhaps_predict(_img, _w, _h, _hor_scale, _ver_scale, _) do
     {:ok, nil}
   end
-
 
   # ML classification works best if image is smaller than 512x512
 

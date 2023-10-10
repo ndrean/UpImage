@@ -11,7 +11,12 @@ defmodule UpImgWeb.Router do
     plug :fetch_live_flash
     plug :put_root_layout, html: {UpImgWeb.Layouts, :root}
     plug :protect_from_forgery
-    plug :put_secure_browser_headers
+
+    plug :put_secure_browser_headers,
+         %{
+           "content-security-policy" =>
+             "img-src data: w3.org/svg/2000 'self' https://*.googleapis.com/ https://s3.eu-west-3.amazonaws.com/; connect-src 'self' https://www.googleapis.com/oauth2 https://accounts.google.com; script-src-elem https://www.googleapis.com/oauth2 https://accounts.google.com 'self'; frame-src 'self' https://accounts.google.com; style-src-elem https://accounts.google.com 'self' 'unsafe-inline'; default-src 'self'"
+         }
   end
 
   scope "/", UpImgWeb do
@@ -22,13 +27,17 @@ defmodule UpImgWeb.Router do
     get "/sitemap", SitemapController, :index
   end
 
-  # Google sends urlencoded and no more json
+  # Google sends urlencoded and no more JSON. It is kept in case it changes!
   pipeline :google do
     plug Plug.Parsers,
-      parsers: [:urlencoded],
+      parsers: [:urlencoded, :json],
+      json_decoder: Phoenix.json_library(),
       pass: ["text/html"]
 
     plug CheckCsrf
+
+    plug :put_secure_browser_headers,
+         %{"content-security-policy" => "default-src 'self'"}
   end
 
   scope "/", UpImgWeb do
@@ -65,13 +74,16 @@ defmodule UpImgWeb.Router do
   pipeline :api_multi do
     plug :accepts, ["json"]
 
+    plug :put_secure_browser_headers,
+         %{"content-security-policy" => "default-src 'self'"}
+
     plug CORSPlug,
       origin: ["*"]
 
     plug Plug.Parsers,
-      parsers: [:fd_multipart, :json],
-      pass: ["image/jpg", "image/png", "image/webp", "iamge/jpeg"],
-      json_decoder: Jason,
+      parsers: [:fd_multipart],
+      pass: ["image/jpg", "image/png", "image/webp", "image/jpeg"],
+      # json_decoder: Phoenix.json_library(),
       multipart_to_params: {Plug.Parsers.FD_MULTIPART, :multipart_to_params, []},
       body_reader: {Plug.Parsers.FD_MULTIPART, :read_body, []}
   end
@@ -80,6 +92,13 @@ defmodule UpImgWeb.Router do
     pipe_through :api_multi
     get "/", ApiController, :create
     post "/", ApiController, :handle
+  end
+
+  scope "/", UpImgWeb do
+    post "/*path", ApiController, :no_route
+    put "/*path", ApiController, :no_route
+    patch "/*path", ApiController, :no_route
+    delete "/*path", ApiController, :no_route
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

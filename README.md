@@ -1,6 +1,6 @@
-# Up-Image
+# Table of contents, Up-Image
 
-- [Up-Image](#up-image)
+- [Table of contents, Up-Image](#table-of-contents-up-image)
   - [About UpImg](#about-upimg)
   - [API](#api)
     - [GET endpoint](#get-endpoint)
@@ -13,6 +13,7 @@
     - [Encrypt email and query it](#encrypt-email-and-query-it)
     - [Credentials for Github, Google and AWS S3](#credentials-for-github-google-and-aws-s3)
     - [Database migration schema](#database-migration-schema)
+    - [CSP](#csp)
   - [Image transformation: Vix Vips](#image-transformation-vix-vips)
   - [ML set up in Elixir](#ml-set-up-in-elixir)
   - [Notes](#notes)
@@ -86,7 +87,9 @@ If successful, you will receive a json response: `{"url": "https://xxx.amazonaws
 
 ### POST endpoint
 
-You can use the POST endpoint simply with a `fetch({method: 'POST'})` from the browser. A minimalist test: save and `serve` the "index.html" file below. You can select multiple files to upload to S3.
+You can use the POST endpoint simply with a `fetch({method: 'POST'})` from the browser.
+
+A minimalist test: save the file below as "index.html" and `serve` it. You can select multiple files to upload to S3 to test the endpoint.
 
 ```html
 <html>
@@ -381,6 +384,24 @@ dot -Tpng ecto_erd.dot > erd.png
 
 ![ERD](erd.png)
 
+### CSP
+
+Following `Sobelow` and Google's recommendations, a Content-Security-Policy is set up in the browser pipeline (don't put a "newline" as in the example below).
+
+```elixir
+plug :put_secure_browser_headers,
+  %{
+    "content-security-policy" =>
+      "img-src data: w3.org/svg/2000 'self' https://*.googleapis.com/ https://s3.eu-west-3.amazonaws.com/; connect-src 'self' https://www.googleapis.com/oauth2 https://accounts.google.com;
+      script-src-elem https://www.googleapis.com/oauth2 https://accounts.google.com 'self';
+      frame-src 'self' https://accounts.google.com;
+      style-src-elem https://accounts.google.com 'self' 'unsafe-inline';
+      default-src 'self'"
+  }
+```
+
+A [blog about CSP and Elixir](https://furlough.merecomplexities.com/elixir/phoenix/security/2021/02/26/content-security-policy-configuration-in-phoenix.html)
+
 ## Image transformation: Vix Vips
 
 It uses [Vix Vips](https://github.com/akash-akya/vix) (NIF based binding for `libvips`) to transform inputs into WEBP format, resize and produce thumbnails on the server from a binary.
@@ -567,6 +588,8 @@ You can serve SVGs located in "/priv/static/images" (as `<img src={~p"/my-svg.sv
  def static_paths, do:
  ~w(assets fonts images favicon.ico robots.txt image_uploads)
 ```
+
+In the CSP, use: `"img-src w3.org/svg/2000;`
 
 #### Example: spinner
 
