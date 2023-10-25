@@ -20,18 +20,21 @@ import "phoenix_html";
 // Establish Phoenix Socket and LiveView configuration.
 import { Socket } from "phoenix";
 import { LiveSocket } from "phoenix_live_view";
-import topbar from "../vendor/topbar";
+import topbar from "../vendor/topbar.cjs";
 import ScreenSize from "./screenSize.js";
 import ActivityTracker from "./activityTracker.js";
 import TabClosed from "./tabClosed";
 import Url2Clip from "./url2Clip";
+import Uploaders from "./uploaders";
+import HandleImages from "./handleImages";
 
 let csrfToken = document
   .querySelector("meta[name='csrf-token']")
   .getAttribute("content");
 let liveSocket = new LiveSocket("/live", Socket, {
   params: { _csrf_token: csrfToken },
-  hooks: { ActivityTracker, ScreenSize, TabClosed, Url2Clip },
+  hooks: { ActivityTracker, ScreenSize, TabClosed, Url2Clip, HandleImages },
+  uploaders: Uploaders,
 });
 
 // Show progress bar on live navigation and form submits
@@ -43,7 +46,7 @@ window.addEventListener("phx:page-loading-stop", (_info) => topbar.hide());
 liveSocket.connect();
 
 // expose liveSocket on window for web console debug logs and latency simulation:
-// >> liveSocket.enableDebug()
+liveSocket.enableDebug();
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket;
