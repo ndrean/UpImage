@@ -17,10 +17,6 @@ defmodule UpImgWeb.ClientLive do
        max_entries: 6,
        chunk_size: 64_000,
        max_file_size: 5_000_000
-       #  auto_upload: true,
-       #  writer: &r2_writer/3
-       #  progress: &handle_progress/3
-       #  external: &presign_upload/2
      )}
   end
 
@@ -41,19 +37,19 @@ defmodule UpImgWeb.ClientLive do
                 tmp_path
                 |> UpImg.run_prediction_task()
 
-              %{base: base, pred_ref: inspect(task.ref), ml_name: name}
+              %{base: base, pred_ref: task.ref, ml_name: name}
 
             String.contains?(name, "m200.webp") ->
-              task =
-                UpImg.Upload.upload_task(tmp_path, name)
+              UpImg.Upload.upload_task(tmp_path, name)
 
-              %{base: base, thumb_ref: inspect(task.ref), thumb_name: name}
+              # %{base: base, thumb_name: name}
+              %{base: base}
 
             String.contains?(name, "m1440.webp") ->
-              task =
-                UpImg.Upload.upload_task(tmp_path, name)
+              UpImg.Upload.upload_task(tmp_path, name)
 
-              %{base: base, full_ref: inspect(task.ref), full_name: name}
+              # %{base: base, full_name: name}
+              %{base: base}
 
             true ->
               nil
@@ -83,17 +79,6 @@ defmodule UpImgWeb.ClientLive do
       end
     end)
   end
-
-  # list
-  # |> Enum.reduce([], fn curr, acc ->
-  #   case Enum.find(acc, fn map -> Map.get(map, key) == Map.get(curr, key) end) do
-  #     nil ->
-  #       [curr | acc]
-
-  #     exists ->
-  #       [Map.merge(exists, curr) | Enum.filter(acc, &(&1 != exists))]
-  #   end
-  # end)
 
   def extract_base(name) do
     [base | _] = String.split(name, "-")
@@ -157,7 +142,7 @@ defmodule UpImgWeb.ClientLive do
   def find_key(list, ref) do
     list
     |> List.flatten()
-    |> Enum.find(&(&1.pred_ref == inspect(ref)))
+    |> Enum.find(&(&1.pred_ref == ref))
     |> Map.get(:ml_name)
   end
 
