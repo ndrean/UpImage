@@ -22,13 +22,25 @@ defmodule UpImg.Upload do
   # def bucket, do: UpImg.bucket()
   def bucket, do: EnvReader.bucket()
 
+  def upload_task(path, name) do
+    Task.Supervisor.async_nolink(UpImg.TaskSup, fn ->
+      path
+      |> S3.Upload.stream_file()
+      |> S3.upload(EnvReader.bucket(), name)
+      |> ExAws.request()
+    end)
+  rescue
+    e ->
+      {:error, inspect(e)}
+  end
+
   def upload(%{path: path} = image) do
     with {:ok, filename} <- FileUtils.hash_file(image),
          {:ok, %{body: body}} <-
-           UpImg.Upload.upload_file_to_s3(%{filename: filename, path: path}) do
+           upload_file_to_bucket(%{filename: filename, path: path}) do
       {:ok,
        %{
-         url: body.location,
+         url: "https://" <> UpImg.EnvReader.endpoint() <> body.location,
          name: Path.basename(path)
        }}
     else
@@ -38,13 +50,13 @@ defmodule UpImg.Upload do
 
   # Fetching the URL of the returned file.
 
-  def upload_file_to_s3(%{filename: filename, path: path}) do
-    UpImg.EnvReader.upload_limit()
+  def upload_file_to_bucket(%{filename: filename, path: path}) do
+    EnvReader.upload_limit()
 
     bucket =
       if Application.get_env(:up_img, :env) == :test,
         do: System.get_env("AWS_S3_BUCKET"),
-        else: UpImg.EnvReader.bucket()
+        else: EnvReader.bucket()
 
     path
     |> S3.Upload.stream_file()

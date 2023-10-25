@@ -62,7 +62,7 @@ defmodule UpImgWeb.NoClientLive do
         auto_upload: true,
         max_file_size: 5_000_000,
         progress: &handle_progress/3,
-        writer: fn _name, _entry, _socket -> {ChunkWriter, level: :debug} end
+        writer: &chunk_writer/3
       )
       |> stream_configure(:uploaded_files_to_S3, dom_id: &"uploaded-s3-#{&1.uuid}")
       |> paginate(0)
@@ -73,6 +73,10 @@ defmodule UpImgWeb.NoClientLive do
     {:ok, socket}
 
     # Do not define presign_upload. This will create a local photo in /vars
+  end
+
+  def chunk_writer(_name, _entry, _socket) do
+    {ChunkWriter, []}
   end
 
   def paginate(socket, page) do

@@ -12,11 +12,11 @@ defmodule UpImgWeb.Router do
     plug :put_root_layout, html: {UpImgWeb.Layouts, :root}
     plug :protect_from_forgery
 
-    plug :put_secure_browser_headers,
-         %{
-           "content-security-policy" =>
-             "img-src data: w3.org/svg/2000 'self' https://*.googleapis.com/ https://s3.eu-west-3.amazonaws.com/; connect-src 'self' https://www.googleapis.com/oauth2 https://accounts.google.com; script-src-elem https://www.googleapis.com/oauth2 https://accounts.google.com 'self'; frame-src 'self' https://accounts.google.com; style-src-elem https://accounts.google.com 'self' 'unsafe-inline'; default-src 'self'"
-         }
+    # plug :put_secure_browser_headers,
+    #      %{
+    #        "content-security-policy" =>
+    #          "img-src data: w3.org/svg/2000 blob:  'self' https://*.googleapis.com/ https://s3.eu-west-3.amazonaws.com/ https://s3.eu-central-003.backblazeb2.com/; connect-src 'self' https://www.googleapis.com/oauth2 https://accounts.google.com https://s3.eu-central-003.backblazeb2.com/; script-src-elem  https://www.googleapis.com/oauth2 https://accounts.google.com 'self'; frame-src 'self' https://accounts.google.com; style-src-elem https://accounts.google.com 'self' 'unsafe-inline'; default-src 'self'"
+    #      }
   end
 
   scope "/", UpImgWeb do
@@ -65,6 +65,7 @@ defmodule UpImgWeb.Router do
     live_session :authenticated,
       on_mount: [{UpImgWeb.UserAuth, :ensure_authenticated}] do
       live "/liveview_clientless", NoClientLive
+      live "/direct", ClientLive
       live "/api_liveview", ApiLive
       # live "/:profile_username", ProfileLive
     end
@@ -92,6 +93,7 @@ defmodule UpImgWeb.Router do
     pipe_through :api_multi
     get "/", ApiController, :create
     post "/", ApiController, :handle
+    post "/r2", ApiController, :r2_handle
   end
 
   scope "/", UpImgWeb do

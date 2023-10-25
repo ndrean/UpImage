@@ -30,13 +30,31 @@ config :up_img, UpImgWeb.Endpoint,
     tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
   ]
 
-config :ex_aws,
-  access_key_id: System.get_env("AWS_ACCESS_KEY_ID"),
-  secret_access_key: System.get_env("AWS_SECRET_ACCESS_KEY"),
-  region: System.get_env("AWS_REGION"),
-  bucket: System.get_env("AWS_S3_BUCKET"),
-  request_config_override: %{},
-  debug_requests: true
+# config :ex_aws, :s3,
+#   access_key_id: System.get_env("AWS_ACCESS_KEY_ID"),
+#   secret_access_key: System.get_env("AWS_SECRET_ACCESS_KEY"),
+#   region: System.get_env("AWS_REGION"),
+#   bucket: System.get_env("AWS_S3_BUCKET"),
+#   request_config_override: %{},
+#   debug_requests: true
+
+# config :ex_aws, :s3,
+#   debug_requests: true,
+#   bucket: System.get_env("B2_BUCKET"),
+#   access_key_id: System.get_env("B2_KEY_ID"),
+#   secret_access_key: System.get_env("B2_KEY_SECRET"),
+#   host:
+#     "https://s3." <>
+#       System.get_env("B2_REGION") <>
+#       "." <> System.get_env("B2_AUTH") <> "/" <> System.get_env("B2_BUCKET"),
+#   region: System.get_env("B2_REGION")
+
+config :ex_aws, :s3,
+  r2_account_id: System.get_env("R2_ACCOUNT_ID"),
+  host: System.get_env("R2_ENDPOINT"),
+  access_key_id: System.get_env("R2_CLIENT_ID"),
+  secret_access_key: System.get_env("R2_CLIENT_SECRET"),
+  bucket: System.get_env("R2_BUCKET")
 
 config :up_img, :github,
   github_client_id: System.get_env("GITHUB_CLIENT_ID"),

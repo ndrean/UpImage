@@ -168,39 +168,78 @@ end
 We write into a file stream by stream. When we have a redirect, we have a `{"location", location}` header.
 The function [Finch.stream](https://hexdocs.pm/finch/Finch.html#stream/5) uses 3 functions ahd each receives 2 arguments: a tuple and an accumulator. In the first function, we return the "status" as the accumulator. In the second function, we parse the headers and return the whole headers or the `Location` header depending if the acc = status = 302. The last function receives the headers in the accumulator. In the case where we have the value "location" in the `Location` header, we use recursion. If not, we write into the file so we do't return the whole binary.
 
+<https://github.com/sneako/finch/blob/ff6a162174aa391cf4c7c7d6b59afb420cfec259/lib/finch.ex#L231>
+
+A word on IOData : <https://elixirforum.com/t/understanding-iodata/3932/3>
+
 ```elixir
+
+def follow_redirect(url, path) do
+  Finch.build(:get, url)
+  |> stream_request_into(path)
+end
+
+def stream_request_into(req, path) do
+    {:ok, file} = File.open(path, [:binary, :write])
+
+    streaming = stream_write(req, file)
+
+    case File.close(file) do
+      :ok ->
+        case streaming do
+          {:ok, _} ->
+            {:ok, path}
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+
 def stream_write(req, file) do
-    Finch.stream(req, UpImg.Finch, nil, fn
-      {:status, status}, _acc ->
+    fun = fn
+      {:status, status}, acc ->
         status
 
       {:headers, headers}, status ->
-        case status do
-          302 ->
-            Enum.filter(headers, &(elem(&1, 0) == "location")) |> List.first()
-
-          200 ->
-            headers
-
-          _ ->
-            {:halt, "bad redirection"}
-        end
+        handle_headers(headers, status)
 
       {:data, data}, headers ->
-        case headers do
-          {"location", location} ->
-            Finch.build(:get, location) |> Api.stream_write(file)
+        handle_data(data, headers, file)
+    end
 
-          {:halt, "bad redirection"} ->
-            {:error, "bad redirection"}
+    Finch.stream(req, UpImg.Finch, nil, fun)
+  end
 
-          _headers ->
-            case IO.binwrite(file, data) do
-              :ok -> :ok
-              {:error, reason} -> {:error, reason}
-            end
-        end
-    end)
+  defp handle_headers(headers, 302) do
+    Enum.find(headers, &(elem(&1, 0) == "location"))
+  end
+
+  defp handle_headers(headers, 200) do
+    headers
+  end
+
+  defp handle_headers(_headers, _status) do
+    {:halt, "bad redirection"}
+  end
+
+  defp handle_data(_data, {"location", location}, file) do
+    Finch.build(:get, location) |> Api.stream_write(file)
+  end
+
+  defp handle_data(_data, {:halt, "bad redirection"}, _file) do
+    {:error, "bad redirection"}
+  end
+
+  defp handle_data(data, _headers, file) do
+    case IO.binwrite(file, data) do
+      :ok -> :ok
+      {:error, reason} -> {:error, reason}
+    end
   end
 ```
 
@@ -792,6 +831,44 @@ Application.app_dir(:up_img, ["priv", "static", "image_uploads"]) |> File.ls!()
 
 ## Cloudfare R2
 
+Install the CLI.
+Save your "keyID" and "applicationKey"
+
+Save this file locally, named "b2_cors.json" here:
+
+```json
+[
+  {
+    "corsRuleName": "downloadFromAnyOrigin",
+    "allowedOrigins": ["https", "http://localhost:4000"],
+    "allowedHeaders": ["range"],
+    "allowedOperations": [
+      "b2_download_file_by_id",
+      "b2_download_file_by_name",
+      "b2_upload_file",
+      "b2_upload_part",
+      "s3_delete",
+      "s3_get",
+      "s3_post",
+      "s3_put"
+    ],
+    "exposeHeaders": [
+      "x-bz-content-sha1",
+      "X-Bz-File-Name",
+      "X-Bz-Part-Number"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]
+```
+
+```bash
+> b2 authorize-account <keyID> <applicationKey>
+> b2 list-buckets
+up-image
+> b2 update-bucket --corsRules "$(<./b2_cors.json)" <bucket> allPublic
+```
+
 <https://dash.cloudflare.com/843179836f19f3543d8ed2866db92b5f/r2/cli?from=overview>
 
 Run `pnpm create cladufare@latest`, choose a folder, say "r2", choose worker, and then `npx wrangler` to `npx wrangler r2 bucket create <name>`.
@@ -809,6 +886,87 @@ In CF/R2 dashboard, go to your bucket, and in "settings", in CORS-policy, add:
     "AllowedMethods": ["GET", "PUT", "POST"],
     "AllowedHeaders": ["*"],
     "ExposeHeaders": []
+  }
+]
+```
+
+```elixir
+[
+  %{
+    base: "dff3a13e58c2fcb2d1382f8f016e035405bad359",
+    full_ref: "#Reference<0.0.575235.90977385.2484928518.78414>",
+    full_name: "dff3a13e58c2fcb2d1382f8f016e035405bad359-m1440.webp"
+  },
+  %{
+    base: "dff3a13e58c2fcb2d1382f8f016e035405bad359",
+    pred_ref: "#Reference<0.0.575235.90977385.2484928518.78487>",
+    ml_name: "dff3a13e58c2fcb2d1382f8f016e035405bad359-m512.webp"
+  },
+  %{
+    base: "dff3a13e58c2fcb2d1382f8f016e035405bad359",
+    thumb_ref: "#Reference<0.0.575235.90977385.2484928518.78510>",
+    thumb_name: "dff3a13e58c2fcb2d1382f8f016e035405bad359-m200.webp"
+  },
+  %{
+    base: "1110df0436fd62b85bb8579695102f38ff034092",
+    full_ref: "#Reference<0.0.575235.90977385.2484928515.120170>",
+    full_name: "1110df0436fd62b85bb8579695102f38ff034092-m1440.webp"
+  },
+  %{
+    base: "1110df0436fd62b85bb8579695102f38ff034092",
+    pred_ref: "#Reference<0.0.575235.90977385.2484928515.120244>",
+    ml_name: "1110df0436fd62b85bb8579695102f38ff034092-m512.webp"
+  },
+  %{
+    base: "1110df0436fd62b85bb8579695102f38ff034092",
+    thumb_ref: "#Reference<0.0.575235.90977385.2484928515.120256>",
+    thumb_name: "1110df0436fd62b85bb8579695102f38ff034092-m200.webp"
+  }
+]
+
+[
+  %{
+    base: "1110df0436fd62b85bb8579695102f38ff034092",
+    pred_ref: "#Reference<0.0.575235.90977385.2484928515.120244>",
+    thumb_ref: "#Reference<0.0.575235.90977385.2484928515.120256>",
+    full_ref: "#Reference<0.0.575235.90977385.2484928515.120170>",
+    ml_name: "1110df0436fd62b85bb8579695102f38ff034092-m512.webp",
+    thumb_name: "1110df0436fd62b85bb8579695102f38ff034092-m200.webp",
+    full_name: "1110df0436fd62b85bb8579695102f38ff034092-m1440.webp"
+  },
+  %{
+    base: "dff3a13e58c2fcb2d1382f8f016e035405bad359",
+    pred_ref: "#Reference<0.0.575235.90977385.2484928518.78487>",
+    thumb_ref: "#Reference<0.0.575235.90977385.2484928518.78510>",
+    full_ref: "#Reference<0.0.575235.90977385.2484928518.78414>",
+    ml_name: "dff3a13e58c2fcb2d1382f8f016e035405bad359-m512.webp",
+    thumb_name: "dff3a13e58c2fcb2d1382f8f016e035405bad359-m200.webp",
+    full_name: "dff3a13e58c2fcb2d1382f8f016e035405bad359-m1440.webp"
+  }
+]
+
+[
+  %{
+    full: "https://843179836f19f3543d8ed2866db92b5f.r2.cloudflarestorage.com/up-image/dff3a13e58c2fcb2d1382f8f016e035405bad359-m1440.webp",
+    base: "dff3a13e58c2fcb2d1382f8f016e035405bad359",
+    thumb: "https://843179836f19f3543d8ed2866db92b5f.r2.cloudflarestorage.com/up-image/dff3a13e58c2fcb2d1382f8f016e035405bad359-m200.webp",
+    pred_ref: "#Reference<0.0.698115.90977385.2484928517.100235>",
+    thumb_ref: "#Reference<0.0.698115.90977385.2484928517.100257>",
+    full_ref: "#Reference<0.0.698115.90977385.2484928517.100172>",
+    ml_name: "dff3a13e58c2fcb2d1382f8f016e035405bad359-m512.webp",
+    thumb_name: "dff3a13e58c2fcb2d1382f8f016e035405bad359-m200.webp",
+    full_name: "dff3a13e58c2fcb2d1382f8f016e035405bad359-m1440.webp"
+    },
+   %{
+    full: "https://843179836f19f3543d8ed2866db92b5f.r2.cloudflarestorage.com/up-image/dff3a13e58c2fcb2d1382f8f016e035405bad359-m1440.webp",
+    base: "dff3a13e58c2fcb2d1382f8f016e035405bad359",
+    thumb: "https://843179836f19f3543d8ed2866db92b5f.r2.cloudflarestorage.com/up-image/dff3a13e58c2fcb2d1382f8f016e035405bad359-m200.webp",
+    pred_ref: "#Reference<0.0.698115.90977385.2484928517.100235>",
+    thumb_ref: "#Reference<0.0.698115.90977385.2484928517.100257>",
+    full_ref: "#Reference<0.0.698115.90977385.2484928517.100172>",
+    ml_name: "dff3a13e58c2fcb2d1382f8f016e035405bad359-m512.webp",
+    thumb_name: "dff3a13e58c2fcb2d1382f8f016e035405bad359-m200.webp",
+    full_name: "dff3a13e58c2fcb2d1382f8f016e035405bad359-m1440.webp"
   }
 ]
 ```

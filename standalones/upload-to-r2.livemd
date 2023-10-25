@@ -1,0 +1,92 @@
+<!-- livebook:{"file_entries":[{"file":{"file_system_id":"local","file_system_type":"local","path":"/Users/nevendrean/Desktop/5ooil3d759vq8ng8hg0c.png"},"name":"5ooil3d759vq8ng8hg0c.png","type":"file"},{"name":"Screenshot_2023-08-04_at_21.04.26.png","type":"attachment"}]} -->
+
+# First trial: upload to R2
+
+```elixir
+Mix.install(
+  [
+    {:aws_signature, "~> 0.3.1"},
+    {:finch, "~> 0.13"},
+    {:kino, "~> 0.11.0"},
+    {:ex_image_info, "~> 0.2.4"}
+  ]
+  # config: Config.Reader.read!("#{__DIR__}/code/elixir/up_img/config/dev.exs")
+)
+
+{:ok, conn_f} = Finch.start_link(name: MyFinch)
+```
+
+## Section
+
+```elixir
+path = Kino.FS.file_path("Screenshot_2023-08-04_at_21.04.26.png")
+
+filename = Path.basename(path)
+```
+
+```elixir
+defmodule R2 do
+  def create_url(filename) do
+    System.fetch_env!("LB_R2_ENDPOINT") <>
+      "/" <>
+      System.fetch_env!("LB_R2_BUCKET") <>
+      "/" <>
+      URI.encode(filename)
+  end
+
+  def aws_sgn(filename) do
+    :aws_signature.sign_v4_query_params(
+      System.fetch_env!("LB_R2_CLIENT_ID"),
+      System.fetch_env!("LB_R2_CLIENT_SECRET"),
+      "auto",
+      "s3",
+      :calendar.universal_time(),
+      "PUT",
+      create_url(filename),
+      body_digest: "UNSIGNED-PAYLOAD",
+      ttl: 3600
+    )
+    |> dbg()
+  end
+
+  def size(path) do
+    %{size: size} = File.stat!(path)
+    Integer.to_string(size) |> dbg()
+  end
+
+  def find_mime(path) do
+    {mime, _, _, _} =
+      path
+      |> File.read!()
+      |> ExImageInfo.info()
+
+    mime
+  end
+
+  def upload(path, filename) do
+    mime = find_mime(path) |> dbg()
+    stream_file = File.stream!(path, [], 16_384)
+
+    headers =
+      [
+        {"Content-Type", mime},
+        {"Content-Length", size(path)}
+      ]
+      |> dbg()
+
+    Finch.build(
+      "PUT",
+      aws_sgn(filename),
+      headers,
+      {:stream, stream_file}
+    )
+    |> Finch.request(MyFinch)
+  end
+end
+```
+
+```elixir
+R2.upload(path, filename)
+```
+
+<!-- livebook:{"offset":1912,"stamp":{"token":"XCP.VlyjpeL9bi9C70xW9wo1ooH40xyBoGBR0rdz8-ZdGt9Qr0K-SHQkZMk4anqe3i6MMd3APwsw5ApLBGeUdumZSzEDu5ZTWIBvhbPjBgK8Frp8yOP7J6xfI4-YHpfWxO0K8yrxdG7D1y0Ysqp6HPKgcV3x_uareMxl8od0VrTFrAXyLx4kJnvdtacU8JYWHSYSHork19koMbs_8zMafrMEMjnlewl0nZpK6E7O8oS13wndIgRGjkNo","version":2}} -->

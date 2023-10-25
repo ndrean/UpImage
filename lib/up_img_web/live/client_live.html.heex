@@ -1,0 +1,17 @@
+<div id="lv_no_client" phx-hook="ScreenSize">
+  <div phx-hook="TabClosed" id="upload-observer">
+    <div class="flex flex-col justify-around md:flex-row" id="track">
+      <%!-- phx-hook="ActivityTracker" --%>
+      <UpImgWeb.DirectUploadForm.display uploads={@uploads} />
+    </div>
+
+    <%= for %{label: label, thumb: thumb, full: full_loc} <- @uploaded_files do %>
+      <figure>
+        <a href={full_loc} target="_blank" rel="noreferrer">
+          <img src={thumb} />
+        </a>
+        <figcaption><%= label %></figcaption>
+      </figure>
+    <% end %>
+  </div>
+</div>

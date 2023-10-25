@@ -8,7 +8,7 @@ defmodule UpImgWeb.WelcomeLive do
         <div class="text-center">
           <img src={~p"/images/camera.svg"} width={200} class="mx-auto h-24 w-auto" alt="workflow" />
           <h1 class="text-4xl mt-4 font-bold tracking-tight text-gray-900 sm:text-6xl">
-            Simple file uploader to WEBP
+            Simple file uploader to rescale into WEBP format
           </h1>
 
           <%= if @current_user do %>
@@ -19,6 +19,15 @@ defmodule UpImgWeb.WelcomeLive do
                 class="rounded-md bg-purple-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600"
               >
                 Go to files upload <.icon name="hero-cloud-arrow-up" />
+              </.link>
+            </div>
+            <div class="space-y-6 mb-4 mt-6">
+              <.link
+                id="direct-uploader"
+                navigate={~p"/direct"}
+                class="rounded-md bg-purple-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600"
+              >
+                Go to idrect upload
               </.link>
             </div>
           <% else %>
@@ -37,7 +46,7 @@ defmodule UpImgWeb.WelcomeLive do
             We only use your data to retrieve your files from the service.
           </p>
           <p class="mt-10 text-lg text-left leading-8 text-gray-600">
-            You can upload pictures. These pictures will be transformed into WEBP format. You are limited to sizes no more than <b>5Mb</b>.
+            You can upload pictures. These pictures will be rescaled and transformed into WEBP format. You are limited to sizes no more than <b>5Mb</b>.
           </p>
           <hr />
 
@@ -66,7 +75,7 @@ defmodule UpImgWeb.WelcomeLive do
               curl -X GET https://up-image.fly.dev/api?url=https://world-celebs.com/public/media/resize/800x-/2019/8/5/porter-robinson-3.jpg&h=600&w=600
             </code>
             <p>
-              You also have a POST endpoint where you can submit your FormData with several files from the client.
+              You also have a POST endpoint where you can submit your FormData with multiple files from the client.
               You can possibly the key "w" for the desired width resizing. Note that it is not set individually.
             </p>
           </details>

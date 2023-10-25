@@ -7,7 +7,7 @@
   </head>
   <body>
     <form
-      action="http://localhost:4000/api"
+      action="http://localhost:4000/api/r2"
       method="POST"
       enctype="multipart/form-data"
       id="uploadForm"
@@ -39,11 +39,34 @@
         }
       }
 
+      function reader(e) {
+        const imgFile = e.target.files[0],
+          reader = new FileReader(),
+          canvas = document.createElement("canvas"),
+          img = document.createElement("img");
+
+        reader.onload = function (e) {
+          img.onload = function (e) {
+            const ctx = canvas.getContext("2d");
+            // Actual resizing
+            ctx.drawImage(img, 0, 0, 200, 200);
+            // Show resized image in preview element
+            const dataurl = canvas.toDataURL(imgFile.type);
+            document.getElementById("preview").src = dataurl;
+          };
+          img.src = e.target.results;
+        };
+        reader.readAsDataURL(imgFile);
+      }
+
       let form = ({ action, method } = document.forms[0]);
 
       form.onsubmit = async (e) => {
         e.preventDefault();
         let fd = new FormData(form);
+        for (let f of fd.values()) {
+          console.log(f);
+        }
         // let i = 0,
         //   fd = new FormData();
 

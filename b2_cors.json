@@ -1,0 +1,23 @@
+[
+  {
+    "corsRuleName": "downloadFromAnyOrigin",
+    "allowedOrigins": ["*"],
+    "allowedHeaders": ["range", "Access-Control-Allow-Origin"],
+    "allowedOperations": [
+      "b2_download_file_by_id",
+      "b2_download_file_by_name",
+      "b2_upload_file",
+      "b2_upload_part",
+      "s3_delete",
+      "s3_get",
+      "s3_post",
+      "s3_put"
+    ],
+    "exposeHeaders": [
+      "x-bz-content-sha1",
+      "X-Bz-File-Name",
+      "X-Bz-Part-Number"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]

@@ -5,14 +5,26 @@ defmodule FileUtils do
   """
   require Logger
 
+  @doc """
+  Given a name, it copies a file at a given path into a new in the "priv/Static/image_uploads" folder.
+  """
+  def copy_path_into(path, name) do
+    tmp_path = UpImg.build_path(name)
+
+    path
+    |> File.stream!([], 64_000)
+    |> Stream.into(File.stream!(tmp_path))
+    |> Stream.run()
+
+    tmp_path
+  end
+
   def hash_file(%{path: path} = image) when is_map(image) do
-    try do
-      {:ok, FileUtils.sha256(path) <> ".webp"}
-    rescue
-      e in File.Error ->
-        Logger.error(inspect(e.reason))
-        {:error, :file_error}
-    end
+    {:ok, FileUtils.sha256(path) <> ".webp"}
+  rescue
+    e in File.Error ->
+      Logger.error(inspect(e.reason))
+      {:error, :file_error}
   end
 
   @doc """

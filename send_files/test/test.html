@@ -1,0 +1,211 @@
+<!-- action="https://843179836f19f3543d8ed2866db92b5f.r2.cloudflarestorage.com/up-image" -->
+<!-- action="http://localhost:4000/api/r2" -->
+<html>
+  <body>
+    <form
+      action="https://s3.eu-central-003.backblazeb2.com/up-image"
+      method="PUT"
+      enctype="multipart/form-data"
+    >
+      <!-- <input type="number" name="w" value="200" /> -->
+      <input
+        type="file"
+        name="files"
+        id="img-input"
+        accept="image/*"
+        multiple
+      />
+      <!-- <input type="checkbox" name="thumb" />
+      <input type="checkbox" name="predict" /> -->
+      <button type="submit">Submit</button>
+    </form>
+    <p style="display: block" id="preview"><img id="init-img" /></p>
+    <img id="img-preview" />
+    <img id="test-blob" />
+    <p id="response"></p>
+
+    <script>
+      // source: https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API/Non-cryptographic_uses_of_subtle_crypto
+      async function calcSHA1(file) {
+        const arrayBuffer = await file.arrayBuffer();
+        const hash = await window.crypto.subtle.digest("SHA-1", arrayBuffer);
+        const hashArray = Array.from(new Uint8Array(hash));
+        const hashAsString = hashArray
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+        return hashAsString;
+      }
+
+      function resizeMax(w, h, MAX) {
+        const MAX_WIDTH = MAX;
+        const MAX_HEIGHT = MAX;
+
+        if (w > h) {
+          if (w > MAX_WIDTH) {
+            h = h * (MAX_WIDTH / w);
+            w = MAX_WIDTH;
+          }
+        } else {
+          if (h > MAX_HEIGHT) {
+            w = w * (MAX_HEIGHT / h);
+            h = MAX_HEIGHT;
+          }
+        }
+        return { w, h };
+      }
+
+      let fList = [];
+
+      const imgInput = document.querySelector("#img-input");
+      imgInput.addEventListener("change", async (e) => {
+        try {
+          renamedFiles = await Promise.all(
+            [...e.target.files].map(async (file) => {
+              const ext = file.type.split("/").at(-1);
+              const SHA1name = await calcSHA1(file);
+              return new File([file], `${SHA1name}.${ext}`, {
+                type: file.type,
+              });
+            })
+          );
+
+          fList = await Promise.all(
+            renamedFiles.map((file) => processFile(file))
+          );
+
+          // preview
+          fList.forEach(([_ml, preview, _origin]) => {
+            const newDataUrl = URL.createObjectURL(preview);
+            const img = document.createElement("img");
+            img.src = newDataUrl;
+            document.body.appendChild(img);
+          });
+
+          fList = [...fList].flat();
+          console.log(fList);
+          // fList = [...renamedFiles, fList.flat()].flat();
+        } catch (err) {
+          throw new Error(err);
+        }
+      });
+
+      async function processFile(file) {
+        console.log(file.name);
+        // const sha1 = await calcSHA1(file);
+        const files = await Promise.all([
+          fReader(file, 512),
+          fReader(file, 200),
+          fReader(file, 1440),
+        ]);
+        return files;
+      }
+
+      function fReader(file, MAX) {
+        return new Promise((resolve, reject) => {
+          if (file) {
+            const img = new Image();
+            img.src = URL.createObjectURL(file);
+
+            img.onload = function () {
+              URL.revokeObjectURL(img.src);
+              const { w, h } = resizeMax(img.width, img.height, MAX);
+              const canvas = document.createElement("canvas");
+              if (canvas.getContext) {
+                const ctx = canvas.getContext("2d");
+                canvas.width = w;
+                canvas.height = h;
+                ctx.drawImage(img, 0, 0, w, h);
+                // convert the image from the canvas into a Blob and convert into WEBP format
+                canvas.toBlob(
+                  (blob) => {
+                    const name = file.name.split(".")[0];
+                    // let previewFile = new File([blob], `${sha1}-m${MAX}.webp`, {
+                    const convertedFile = new File(
+                      [blob],
+                      `${name}-m${MAX}.webp`,
+                      {
+                        type: "image/webp",
+                      }
+                    );
+                    resolve(convertedFile);
+                  },
+                  "image/webp",
+                  0.75
+                );
+              }
+            };
+            img.onerror = function () {
+              reject("Error loading image");
+            };
+          } else {
+            reject("No file selected");
+          }
+        });
+      }
+
+      const form = ({ action, method } = document.forms[0]);
+      console.log({ action, method });
+
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        let fd = new FormData(form);
+        fd.delete("files");
+
+        fList.forEach((file) => fd.append("files", file));
+
+        try {
+          console.log(action, method);
+          // let xhr = new XMLHttpRequest();
+          // const req = xhr.open("PUT", action, true);
+          const req = await fetch(action, {
+            method: "PUT",
+            body: fd,
+            headers: {
+              "x-amz-acl": "public-read",
+              acl: "null",
+            },
+          });
+
+          if (req.ok) {
+            const response = await req.json();
+            return setResponse(form, response);
+          } else {
+            throw new Error("File upload failed");
+          }
+        } catch (error) {
+          throw new Error(`Error uploading file:", ${error}`);
+        }
+      };
+
+      function setResponse(form, response) {
+        preview.innerHTML = "";
+        form.reset();
+        document.querySelector("#response").innerText =
+          JSON.stringify(response);
+      }
+    </script>
+
+    <p>
+      Run <code>nc -l localhost 8000</code> in a terminal, and
+      <code>serve</code> this folder or <code>open ....</code> and send files:
+      <code>nc</code> will capture the formdata
+    </p>
+    <p>
+      Or, you can also send the files with <code>cURL</code>. In another
+      terminal, run
+      <code
+        >curl --form 'text=ok' -F 'file1=@a.txt;type=text/plain'
+        localhost:8000</code
+      >
+    </p>
+    <p>and check the response</p>
+
+    <p>
+      cf
+      <a
+        href="https://stackoverflow.com/questions/913626/what-should-a-multipart-http-request-with-multiple-file-inputs-look-like"
+        >SO</a
+      >
+    </p>
+  </body>
+</html>

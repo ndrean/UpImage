@@ -11,24 +11,27 @@ defmodule UpImg.CleanFiles do
   end
 
   def run(period) do
-    hour_s = 60 * 60 * String.to_integer(period)
-    hour_ms = hour_s * 1000
-    clean(every_ms: hour_ms, older_than_seconds: hour_s)
+    interval = 1000 * 60 * String.to_integer(period)
+    time_min = 5
+    clean(every_h: interval, older_than_minutes: time_min)
   end
 
-  def clean(every_ms: interval, older_than_seconds: time_s) do
+  def clean(every_h: interval, older_than_minutes: time_min) do
     :ok = Process.sleep(interval)
     :ok = Logger.info("force clean ---")
 
-    Application.app_dir(:up_img, ["priv", "static", "image_uploads"])
-    |> File.ls!()
-    |> Enum.map(&UpImg.build_path/1)
-    |> Enum.filter(fn file ->
-      %File.Stat{atime: t} = File.stat!(file, time: :posix)
-      t < System.monotonic_time(:second) - time_s
-    end)
-    |> Enum.each(&File.rm_rf!/1)
+    :ok =
+      Application.app_dir(:up_img, ["priv", "static", "image_uploads"])
+      |> File.ls!()
+      |> Enum.map(&UpImg.build_path/1)
+      |> Enum.filter(fn file ->
+        %File.Stat{atime: t} = File.stat!(file, time: :posix)
+        last_read_date = DateTime.from_unix!(t)
+        time_target = DateTime.utc_now() |> DateTime.add(-time_min, :minute)
+        DateTime.compare(last_read_date, time_target) == :lt
+      end)
+      |> Enum.each(&File.rm_rf!/1)
 
-    clean(every_ms: interval, older_than_seconds: time_s)
+    clean(every_h: interval, older_than_minutes: time_min)
   end
 end

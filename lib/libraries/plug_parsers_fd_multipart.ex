@@ -1,5 +1,6 @@
 defmodule Plug.Parsers.FD_MULTIPART do
   @multipart Plug.Parsers.MULTIPART
+  alias Plug.Conn.Query
 
   @moduledoc """
   Custom multipart parser to enable multiple files upload.
@@ -30,11 +31,11 @@ defmodule Plug.Parsers.FD_MULTIPART do
       new_parts ->
         acc =
           for {name, _headers, body} <- Enum.reverse(new_parts),
-              reduce: Plug.Conn.Query.decode_init() do
-            acc -> Plug.Conn.Query.decode_each({name, body}, acc)
+              reduce: Query.decode_init() do
+            acc -> Query.decode_each({name, body}, acc)
           end
 
-        {:ok, Plug.Conn.Query.decode_done(acc, []), conn}
+        {:ok, Query.decode_done(acc, []), conn}
     end
   end
 

@@ -1,6 +1,5 @@
-// import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-// import { v4 as uuid } from "uuid";
 const DROP_CLASSES = ["bg-blue-100", "border-blue-300"];
+const SIZES = [200, 512, 1440];
 
 export default {
   async setHashName(file) {
@@ -19,8 +18,8 @@ export default {
       .join("");
     return hashAsString;
   },
-  async processFile(file, sizes) {
-    return Promise.all(sizes.map((size) => this.fReader(file, size)));
+  async processFile(file, SIZES) {
+    return Promise.all(SIZES.map((size) => this.fReader(file, size)));
   },
   fReader(file, MAX) {
     const self = this;
@@ -76,23 +75,22 @@ export default {
     }
     return { w, h };
   },
-  async handleFiles(files, sizes) {
+  async handleFiles(files, SIZES) {
     const renamedFiles = await Promise.all(
       [...files].map((file) => this.setHashName(file))
     );
 
     const fList = await Promise.all(
-      renamedFiles.map((file) => this.processFile(file, sizes))
+      renamedFiles.map((file) => this.processFile(file, SIZES))
     );
 
     this.upload("images", fList.flat());
   },
   mounted() {
-    const sizes = [200, 512, 1440];
     this.el.style.opacity = 0;
 
     this.el.addEventListener("change", async (evt) =>
-      this.handleFiles(evt.target.files, sizes)
+      this.handleFiles(evt.target.files, SIZES)
     );
 
     // Drag and drop
@@ -105,7 +103,7 @@ export default {
     this.el.addEventListener("drop", async (evt) => {
       evt.stopPropagation();
       evt.preventDefault();
-      return this.handleFiles(evt.dataTransfer.files, sizes);
+      return this.handleFiles(evt.dataTransfer.files, SIZES);
     });
 
     this.el.addEventListener("dragenter", () =>
