@@ -1,6 +1,7 @@
 defmodule UpImgWeb.ClientLive do
   use UpImgWeb, :live_view
 
+  require Logger
   @upload_dir Application.app_dir(:up_img, ["priv", "static", "image_uploads"])
 
   @impl true
@@ -106,6 +107,9 @@ defmodule UpImgWeb.ClientLive do
   @impl true
   def handle_info({ref, {:ok, %{body: %{location: location, key: key}}}}, socket) do
     Process.demonitor(ref, [:flush])
+
+    remove_safely(key)
+
     update_uploads(socket.assigns.uploaded_files, location, key)
     {:noreply, update(socket, :uploaded_files, &update_uploads(&1, location, key))}
   end
@@ -115,9 +119,23 @@ defmodule UpImgWeb.ClientLive do
 
     key = find_key(socket.assigns.uploaded_files, ref)
 
+    remove_safely(key)
     update_labels(socket.assigns.uploaded_files, label, key)
 
     {:noreply, update(socket, :uploaded_files, &update_labels(&1, label, key))}
+  end
+
+  def remove_safely(path) do
+    file = UpImg.build_path(path)
+
+    case File.rm(file) do
+      :ok ->
+        :ok
+
+      {:error, reason} ->
+        Logger.warning(inspect(reason))
+        :ok
+    end
   end
 
   def update_uploads(list, location, key) do
