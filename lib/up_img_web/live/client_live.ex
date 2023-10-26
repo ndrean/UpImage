@@ -91,7 +91,6 @@ defmodule UpImgWeb.ClientLive do
 
     remove_safely(key)
 
-    update_uploads(socket.assigns.uploaded_files, location, key)
     {:noreply, update(socket, :uploaded_files, &update_uploads(&1, location, key))}
   end
 
@@ -101,7 +100,6 @@ defmodule UpImgWeb.ClientLive do
     key = find_key(socket.assigns.uploaded_files, ref)
 
     remove_safely(key)
-    update_labels(socket.assigns.uploaded_files, label, key)
 
     {:noreply, update(socket, :uploaded_files, &update_labels(&1, label, key))}
   end

@@ -12,7 +12,7 @@ defmodule UpImgWeb.WelcomeLive do
           </h1>
 
           <%= if @current_user do %>
-            <div class="space-y-6 mb-4 mt-6">
+            <%!-- <div class="space-y-6 mb-4 mt-6">
               <.link
                 id="to-uploader"
                 navigate={~p"/liveview_clientless"}
@@ -20,14 +20,14 @@ defmodule UpImgWeb.WelcomeLive do
               >
                 Go to files upload <.icon name="hero-cloud-arrow-up" />
               </.link>
-            </div>
+            </div>--%>
             <div class="space-y-6 mb-4 mt-6">
               <.link
                 id="direct-uploader"
                 navigate={~p"/direct"}
                 class="rounded-md bg-purple-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600"
               >
-                Go to idrect upload
+                Upload pictures<.icon name="hero-cloud-arrow-up" />
               </.link>
             </div>
           <% else %>
