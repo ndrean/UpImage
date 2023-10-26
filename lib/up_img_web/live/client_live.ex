@@ -41,14 +41,10 @@ defmodule UpImgWeb.ClientLive do
 
             String.contains?(name, "m200.webp") ->
               UpImg.Upload.upload_task(tmp_path, name)
-
-              # %{base: base, thumb_name: name}
               %{base: base}
 
             String.contains?(name, "m1440.webp") ->
               UpImg.Upload.upload_task(tmp_path, name)
-
-              # %{base: base, full_name: name}
               %{base: base}
 
             true ->

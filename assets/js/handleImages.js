@@ -2,6 +2,12 @@ const DROP_CLASSES = ["bg-blue-100", "border-blue-300"];
 const SIZES = [200, 512, 1440];
 
 export default {
+  /**
+   * Renames a File object with its SHA1 hash and keep the extension
+   * source: https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest#converting_a_digest_to_a_hex_string
+   * @param {File} file - the file input
+   * @returns {Promise<File>} a promise that resolves with a renamed File object
+   */
   async setHashName(file) {
     const ext = file.type.split("/").at(-1);
     const SHA1name = await this.calcSHA1(file);
@@ -9,6 +15,11 @@ export default {
       type: file.type,
     });
   },
+  /**
+   * Calculates a SHA1 hash using the native Web Crypto API.
+   * @param {File} file - the file to calculate the hash on.
+   * @returns {Promise<String>} a promise that resolves to hash as String
+   */
   async calcSHA1(file) {
     const arrayBuffer = await file.arrayBuffer();
     const hash = await window.crypto.subtle.digest("SHA-1", arrayBuffer);
@@ -18,10 +29,22 @@ export default {
       .join("");
     return hashAsString;
   },
+  /**
+   *
+   * @param {File} file  - the file
+   * @param {number[]} SIZES - un array of sizes to resize to image to
+   * @returns {Promise<File[]>} a promise that resolves to an array of resized images
+   */
   async processFile(file, SIZES) {
     return Promise.all(SIZES.map((size) => this.fReader(file, size)));
   },
-  fReader(file, MAX) {
+  /**
+   * Reads an image file, resizes it to a given max size, and converts into WEBP format et returns it
+   * @param {File} file  - the file image
+   * @param {number} MAX  - the max size of the image in px
+   * @returns {Promise<File>} resolves with the converted file
+   */
+  async fReader(file, MAX) {
     const self = this;
 
     return new Promise((resolve, reject) => {
@@ -75,6 +98,11 @@ export default {
     }
     return { w, h };
   },
+  /**
+   * Takes a FileList and an array of sizes, then rename then with the SHA1 hash, then resizes the images according to a list of given sizes, converts them to WEBP format, and uploads them.
+   * @param {FileList} files
+   * @param {number[]} SIZES
+   */
   async handleFiles(files, SIZES) {
     const renamedFiles = await Promise.all(
       [...files].map((file) => this.setHashName(file))
@@ -86,6 +114,9 @@ export default {
 
     this.upload("images", fList.flat());
   },
+  /*
+  inspired by: https://github.com/elixir-nx/bumblebee/blob/main/examples/phoenix/image_classification.exs
+  */
   mounted() {
     this.el.style.opacity = 0;
 
