@@ -6,8 +6,13 @@ defmodule UpImgWeb.WelcomeLive do
     <div>
       <div class="mx-auto max-w-2xl py-6 sm:py-6 lg:py-6">
         <div class="text-center">
-          <img src={~p"/images/qrcode.svg"} alt="qr code" width={100} />
-          <img src={~p"/images/camera.svg"} width={200} class="mx-auto h-24 w-auto" alt="workflow" />
+          <img
+            src={~p"/images/qrcode.svg"}
+            alt="qr code"
+            class="mx-auto h-24 w-auto mb-4"
+            width={100}
+          />
+          <%!-- <img src={~p"/images/camera.svg"} class="mx-auto h-24 w-auto" alt="workflow" /> --%>
           <h1 class="text-4xl mt-4 font-bold tracking-tight text-gray-900 sm:text-6xl">
             Simple file uploader to rescale into WEBP format
           </h1>

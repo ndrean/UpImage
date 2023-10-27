@@ -64,7 +64,6 @@ defmodule UpImg.Application do
     _serving =
       Bumblebee.Vision.image_to_text(model_info, featurizer, tokenizer, generation_config,
         compile: [batch_size: 1],
-        max_new_tokens: 100,
         defn_options: [compiler: EXLA],
         preallocate_params: true
       )
