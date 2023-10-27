@@ -6,7 +6,8 @@ defmodule UpImg.Application do
   # @model_mn "microsoft/resnet-50"
 
   def serve_i2t do
-    model = System.fetch_env!("MODEL_I2T")
+    # model = System.fetch_env!("MODEL_I2T")
+    model = "Salesforce/blip-image-captioning-base"
     {:ok, model_info} = Bumblebee.load_model({:hf, model})
 
     {:ok, featurizer} =
