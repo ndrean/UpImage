@@ -72,11 +72,13 @@ if config_env() == :prod do
     secret_key_base: secret_key_base
 
   config :ex_aws,
-    access_key_id: System.get_env("R2_CLIEJT_ID"),
+    r2_account_id: System.get_env("R2_ACCOUNT_ID"),
+    host: System.get_env("R2_ENDPOINT"),
+    access_key_id: System.get_env("R2_CLIENT_ID"),
     secret_access_key: System.get_env("R2_CLIENT_SECRET"),
-    region: System.get_env("AWS_REGION"),
-    bucket: System.get_env("AWS_S3_BUCKET"),
-    request_config_override: %{}
+    bucket: System.get_env("R2_BUCKET")
+
+  # request_config_override: %{}
 
   config :up_img, :r2,
     r2_account_id: System.get_env("R2_ACCOUNT_ID"),
