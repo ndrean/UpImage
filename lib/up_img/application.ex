@@ -5,6 +5,29 @@ defmodule UpImg.Application do
   # @model_fb "facebook/deit-base-distilled-patch16-224"
   # @model_mn "microsoft/resnet-50"
 
+  def serve_i2t do
+    model = System.fetch_env!("MODEL_I2T")
+    {:ok, model_info} = Bumblebee.load_model({:hf, model})
+
+    {:ok, featurizer} =
+      Bumblebee.load_featurizer({:hf, model})
+
+    {:ok, tokenizer} =
+      Bumblebee.load_tokenizer({:hf, model})
+
+    {:ok, generation_config} =
+      Bumblebee.load_generation_config({:hf, model})
+
+    generation_config = Bumblebee.configure(generation_config, max_new_tokens: 100)
+
+    _serving =
+      Bumblebee.Vision.image_to_text(model_info, featurizer, tokenizer, generation_config,
+        compile: [batch_size: 1],
+        defn_options: [compiler: EXLA],
+        preallocate_params: true
+      )
+  end
+
   @impl true
   def start(_type, _args) do
     children = [
@@ -43,29 +66,6 @@ defmodule UpImg.Application do
         top_k: 1,
         compile: [batch_size: 10],
         defn_options: [compiler: EXLA]
-      )
-  end
-
-  def serve_i2t do
-    model = System.fetch_env!("MODEL_I2T")
-    {:ok, model_info} = Bumblebee.load_model({:hf, model})
-
-    {:ok, featurizer} =
-      Bumblebee.load_featurizer({:hf, model})
-
-    {:ok, tokenizer} =
-      Bumblebee.load_tokenizer({:hf, model})
-
-    {:ok, generation_config} =
-      Bumblebee.load_generation_config({:hf, model})
-
-    generation_config = Bumblebee.configure(generation_config, max_new_tokens: 100)
-
-    _serving =
-      Bumblebee.Vision.image_to_text(model_info, featurizer, tokenizer, generation_config,
-        compile: [batch_size: 1],
-        defn_options: [compiler: EXLA],
-        preallocate_params: true
       )
   end
 end
