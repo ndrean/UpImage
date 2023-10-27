@@ -24,6 +24,8 @@ defmodule UpImg.EnvReader do
     :ets.insert(:envs, {:bucket_secret, read_bucket_secret()})
     # :ets.insert(:envs, {:bucket_region, read_bucket_region()})
     :ets.insert(:envs, {:bucket_host, read_bucket_host()})
+
+    :ets.insert(:envs, {:cdn, read_cdn()})
   end
 
   defp fetch_app_key(app \\ __MODULE__, main, key),
@@ -56,6 +58,7 @@ defmodule UpImg.EnvReader do
   defp read_bucket_host, do: fetch_lib_key(:ex_aws, :s3, :host)
 
   defp read_cleaning_timer, do: Application.fetch_env!(:up_img, :cleaning_timer)
+  defp read_cdn, do: Application.fetch_env!(:up_img, :cdn)
 
   # Lookups from ETS
 
@@ -75,4 +78,6 @@ defmodule UpImg.EnvReader do
   def bucket_host, do: lookup(:bucket_host)
   def bucket, do: lookup(:bucket)
   def endpoint, do: lookup(:endpoint)
+
+  def cdn, do: lookup(:cdn)
 end

@@ -1,11 +1,14 @@
 defmodule UpImgWeb.ClientLive do
+  alias UpImg.EnvReader
   use UpImgWeb, :live_view
+  # use Phoenix.LiveComponent
 
   require Logger
   @upload_dir Application.app_dir(:up_img, ["priv", "static", "image_uploads"])
 
   @impl true
   def mount(_params, _session, socket) do
+    # def update(_assigns, socket) do
     File.mkdir_p!(@upload_dir)
 
     {:ok,
@@ -18,6 +21,12 @@ defmodule UpImgWeb.ClientLive do
        chunk_size: 64_000,
        max_file_size: 5_000_000
      )}
+  end
+
+  @impl true
+  def handle_params(x, y, socket) do
+    {x, y} |> dbg()
+    {:noreply, socket}
   end
 
   @impl true
@@ -86,10 +95,11 @@ defmodule UpImgWeb.ClientLive do
   end
 
   @impl true
-  def handle_info({ref, {:ok, %{body: %{location: location, key: key}}}}, socket) do
+  def handle_info({ref, {:ok, %{body: %{key: key}}}}, socket) do
     Process.demonitor(ref, [:flush])
 
     remove_safely(key)
+    location = EnvReader.cdn() <> "/" <> key
 
     {:noreply, update(socket, :uploaded_files, &update_uploads(&1, location, key))}
   end

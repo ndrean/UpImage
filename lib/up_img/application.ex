@@ -19,7 +19,7 @@ defmodule UpImg.Application do
       UpImg.CleanFiles,
       {GenMagic.Server, name: :gen_magic},
       # {UpImg.GsPredict, [model: System.fetch_env!("MODEL")]}
-      {Nx.Serving, serving: serve_i2t(), name: UpImg.Serving, batch_timeout: 100}
+      {Nx.Serving, serving: serve_i2t(), name: UpImg.Serving}
     ]
 
     opts = [strategy: :one_for_one, name: UpImg.Supervisor]
@@ -46,19 +46,6 @@ defmodule UpImg.Application do
       )
   end
 
-  def serve_2 do
-    model = System.fetch_env!("MODEL")
-    {:ok, resnet} = Bumblebee.load_model({:hf, model})
-    {:ok, featurizer} = Bumblebee.load_featurizer({:hf, model})
-
-    Bumblebee.Vision.image_classification(resnet, featurizer,
-      defn_options: [compiler: EXLA],
-      top_k: 1,
-      compile: [batch_size: 1],
-      preallocate_params: true
-    )
-  end
-
   def serve_i2t do
     model = System.fetch_env!("MODEL_I2T")
     {:ok, model_info} = Bumblebee.load_model({:hf, model})
@@ -77,6 +64,7 @@ defmodule UpImg.Application do
     _serving =
       Bumblebee.Vision.image_to_text(model_info, featurizer, tokenizer, generation_config,
         compile: [batch_size: 1],
+        max_new_tokens: 100,
         defn_options: [compiler: EXLA],
         preallocate_params: true
       )

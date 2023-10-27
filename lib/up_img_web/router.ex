@@ -67,7 +67,6 @@ defmodule UpImgWeb.Router do
       live "/liveview_clientless", NoClientLive
       live "/direct", ClientLive
       live "/api_liveview", ApiLive
-      # live "/:profile_username", ProfileLive
     end
   end
 

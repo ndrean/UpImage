@@ -33,6 +33,7 @@ RUN mix local.hex --force && \
 
 # set build ENV
 ENV MIX_ENV="prod"
+ENV BUMBLEBEE_CACHE_DIR=/app/.bumblebee
 
 # install mix dependencies
 COPY mix.exs mix.lock ./
@@ -60,6 +61,7 @@ RUN mix compile
 # Changes to config/runtime.exs don't require recompiling the code
 COPY config/runtime.exs config/
 
+RUN /app/bin/up_img eval 'UpImg.Application.server_i2t()'
 COPY rel rel
 RUN mix release
 
@@ -88,9 +90,12 @@ COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/up_img ./
 
 USER nobody
 
-CMD ["/app/bin/server"]
 
 # Appended by flyctl
 ENV ECTO_IPV6 true
 ENV ERL_AFLAGS "-proto_dist inet6_tcp"
 
+ENV BUMBLEBEE_CACHE_DIR=/app/.bumblebee
+ENV BUMBLEBEE_OFFLINE=true
+
+CMD ["/app/bin/server"]

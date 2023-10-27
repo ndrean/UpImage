@@ -19,6 +19,7 @@ DOMAIN = "up-image.fly.dev"
 NOTIFY_EMAIL = "nevendrean@gmail.com"
 PHX_HOST = "up-image.fly.dev"
 PORT = "8080"
+BUMBLEBEE_CACHE_DIR = "/app/.bumblebee"
 
 [http_service]
 internal_port = 8080
@@ -35,3 +36,8 @@ soft_limit = 1000
 [[statics]]
 guest_path = "/app/priv/static/images"
 url_prefix = "/images"
+
+# [mounts]
+# source = "data"
+# destination = "/model"
+# fly volumes create data --region <region> --size 2

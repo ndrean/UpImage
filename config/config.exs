@@ -9,6 +9,8 @@ import Config
 
 config :up_img, env: config_env()
 
+config :nx, :default_backend, {EXLA.Backend, client: :host}
+
 config :up_img,
   ecto_repos: [UpImg.Repo]
 

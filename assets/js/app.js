@@ -33,7 +33,13 @@ let csrfToken = document
   .getAttribute("content");
 let liveSocket = new LiveSocket("/live", Socket, {
   params: { _csrf_token: csrfToken },
-  hooks: { ActivityTracker, ScreenSize, TabClosed, Url2Clip, HandleImages },
+  hooks: {
+    ActivityTracker,
+    ScreenSize,
+    TabClosed,
+    Url2Clip,
+    HandleImages,
+  },
   uploaders: Uploaders,
 });
 

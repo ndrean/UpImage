@@ -26,7 +26,11 @@ defmodule UpImg.Upload do
     Task.Supervisor.async_nolink(UpImg.TaskSup, fn ->
       path
       |> S3.Upload.stream_file()
-      |> S3.upload(EnvReader.bucket(), name)
+      |> S3.upload(EnvReader.bucket(), name,
+        acl: :public_read,
+        content_type: "image/webp",
+        content_disposition: "inline"
+      )
       |> ExAws.request()
     end)
   rescue

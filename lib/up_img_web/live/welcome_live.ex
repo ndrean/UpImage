@@ -6,6 +6,7 @@ defmodule UpImgWeb.WelcomeLive do
     <div>
       <div class="mx-auto max-w-2xl py-6 sm:py-6 lg:py-6">
         <div class="text-center">
+          <img src={~p"/images/qrcode.svg"} alt="qr code" width={100} />
           <img src={~p"/images/camera.svg"} width={200} class="mx-auto h-24 w-auto" alt="workflow" />
           <h1 class="text-4xl mt-4 font-bold tracking-tight text-gray-900 sm:text-6xl">
             Simple file uploader to rescale into WEBP format
@@ -24,7 +25,7 @@ defmodule UpImgWeb.WelcomeLive do
             <div class="space-y-6 mb-4 mt-6">
               <.link
                 id="direct-uploader"
-                navigate={~p"/direct"}
+                patch={~p"/direct"}
                 class="rounded-md bg-purple-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600"
               >
                 Upload pictures<.icon name="hero-cloud-arrow-up" />
@@ -33,7 +34,7 @@ defmodule UpImgWeb.WelcomeLive do
           <% else %>
             <div class="mt-10 flex items-center justify-center gap-x-6">
               <.link
-                href={~p"/signin"}
+                navigate={~p"/signin"}
                 id="signin-link"
                 class="rounded-md bg-purple-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600"
               >
@@ -52,7 +53,7 @@ defmodule UpImgWeb.WelcomeLive do
 
           <h2 class="mb-4 mt-4">
             <.link
-              href="#"
+              navigate="#"
               class="rounded-md bg-purple-600 mb-2 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600"
             >
               Go to the API (not finished)
