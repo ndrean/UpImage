@@ -70,7 +70,7 @@ RUN mix release
 # the compiled release and other runtime necessities
 FROM ${RUNNER_IMAGE}
 
-RUN apt-get update -y && apt-get install -y libstdc++6 openssl libncurses5 locales libmagic-dev\
+RUN apt-get update -y && apt-get install -y libstdc++6 openssl libncurses5 locales libmagic-dev git curl\
   && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
 # Set the locale
@@ -97,6 +97,6 @@ ENV ECTO_IPV6 true
 ENV ERL_AFLAGS "-proto_dist inet6_tcp"
 
 ENV BUMBLEBEE_CACHE_DIR=/app/.bumblebee
-ENV BUMBLEBEE_OFFLINE=true
+# ENV BUMBLEBEE_OFFLINE=true
 
 CMD ["/app/bin/server"]
