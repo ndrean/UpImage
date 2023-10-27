@@ -78,7 +78,7 @@ if config_env() == :prod do
     request_config_override: %{}
 
   config :up_img, :r2,
-    r2_account_id: Sysntem.get_env("R2_ACCOUNT_ID"),
+    r2_account_id: System.get_env("R2_ACCOUNT_ID"),
     r2_endpoint: System.get_env("R2_ENDPOINT"),
     access_key_id: System.get_env("R2_CLIENT_ID"),
     secret_access_key: System.get_env("R2_CLIENT_SECRET"),

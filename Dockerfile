@@ -61,7 +61,7 @@ RUN mix compile
 # Changes to config/runtime.exs don't require recompiling the code
 COPY config/runtime.exs config/
 
-RUN /app/lib/up_img eval 'UpImg.Application.server_i2t()'
+RUN /bin/up_img eval 'UpImg.Application.server_i2t()'
 COPY rel rel
 RUN mix release
 
