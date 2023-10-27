@@ -86,6 +86,7 @@ RUN chown nobody /app
 # set runner ENV
 ENV MIX_ENV="prod"
 
+COPY --from=builder --chown=nobody:root /app/.bumblebee .
 # Only copy the final release from the build stage
 COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/up_img ./
 
