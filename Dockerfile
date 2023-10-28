@@ -61,10 +61,10 @@ RUN mix compile
 # Changes to config/runtime.exs don't require recompiling the code
 
 # RUN mix run -e 'UpImg.Application.serve_i2t()' --no-start
-RUN /app/bin/up_img eval 'UpImg.Application.serve_i2t()'
 COPY config/runtime.exs config/
 COPY rel rel
 RUN mix release
+RUN /app/bin/up_img eval 'UpImg.Application.serve_i2t()'
 
 # start a new build stage so that the final image will only contain
 # the compiled release and other runtime necessities
