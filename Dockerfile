@@ -33,7 +33,7 @@ RUN mix local.hex --force && \
 
 # set build ENV
 ENV MIX_ENV="prod"
-ENV BUMBLEBEE_CACHE_DIR=/app/.bumblebee
+ENV BUMBLEBEE_CACHE_DIR="/app/.bumblebee"
 
 # install mix dependencies
 COPY mix.exs mix.lock ./
