@@ -40,3 +40,10 @@ npm-debug.log
 /r2
 package.json
 pnpm-lock.yaml
+
+.env
+.DS_Store
+sql3/
+.bumblebee/*
+.elixir_ls
+.elixir-*

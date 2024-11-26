@@ -19,6 +19,7 @@ ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-$
 ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
 
 FROM ${BUILDER_IMAGE} as builder
+ARG MIX_ENV=prod
 
 # install build dependencies
 RUN apt-get update -y && apt-get install -y build-essential git libmagic-dev curl\
@@ -32,8 +33,9 @@ RUN mix local.hex --force && \
   mix local.rebar --force
 
 # set build ENV
-ENV MIX_ENV="prod"
+
 ENV BUMBLEBEE_CACHE_DIR="/app/.bumblebee"
+ENV MIX_ENV=${MIX_ENV}
 
 # install mix dependencies
 COPY mix.exs mix.lock ./
@@ -99,5 +101,6 @@ ENV ERL_AFLAGS "-proto_dist inet6_tcp"
 
 ENV BUMBLEBEE_CACHE_DIR="/app/.bumblebee"
 ENV BUMBLEBEE_OFFLINE=true
+EXPOSE 4000
 
 CMD ["/app/bin/server"]

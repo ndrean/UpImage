@@ -8,9 +8,7 @@ defmodule Plug.Parsers.FD_MULTIPART do
   It generates a unique key for each file input.
   """
   @spec init(any) :: any
-  def init(opts) do
-    opts
-  end
+  def init(opts), do: opts
 
   def parse(conn, "multipart", subtype, headers, opts) do
     length = System.fetch_env!("UPLOAD_LIMIT") |> String.to_integer()

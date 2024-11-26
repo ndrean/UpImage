@@ -9,9 +9,12 @@ export default {
    * @returns {Promise<File>} a promise that resolves with a renamed File object
    */
   async setHashName(file) {
+    if (!(file instanceof File)) {
+      throw new TypeError('Input must be a File object');
+    }
     const ext = file.type.split("/").at(-1);
-    const SHA1name = await this.calcSHA1(file);
-    return new File([file], `${SHA1name}.${ext}`, {
+    const name = await this.calcHash(file);
+    return new File([file], `${name}.${ext}`, {
       type: file.type,
     });
   },
@@ -20,14 +23,12 @@ export default {
    * @param {File} file - the file to calculate the hash on.
    * @returns {Promise<String>} a promise that resolves to hash as String
    */
-  async calcSHA1(file) {
+  async calcHash(file) {
     const arrayBuffer = await file.arrayBuffer();
     const hash = await window.crypto.subtle.digest("SHA-1", arrayBuffer);
-    const hashArray = Array.from(new Uint8Array(hash));
-    const hashAsString = hashArray
+    return [...new Uint8Array(hash)]
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
-    return hashAsString;
   },
   /**
    *
@@ -36,7 +37,8 @@ export default {
    * @returns {Promise<File[]>} a promise that resolves to an array of resized images
    */
   async processFile(file, SIZES) {
-    return Promise.all(SIZES.map((size) => this.fReader(file, size)));
+    // return Promise.all(SIZES.map((size) => this.fReader(file, size)));
+    return Promise.all(SIZES.map((size) => this.fileToWebp(file, size)));
   },
   /**
    * Reads an image file, resizes it to a given max size, and converts into WEBP format et returns it
@@ -44,60 +46,110 @@ export default {
    * @param {number} MAX  - the max size of the image in px
    * @returns {Promise<File>} resolves with the converted file
    */
-  async fReader(file, MAX) {
-    const self = this;
+  // async fReader(file, MAX) {
+  //   // Input validation
+  //   if (!file || !(file instanceof File) || !file.type.startsWith('image/')) {
+  //     throw new Error("Invalid image file");
+  //   }
 
-    return new Promise((resolve, reject) => {
-      if (file) {
-        const img = new Image();
-        const newUrl = URL.createObjectURL(file);
-        img.src = newUrl;
+  //   const self = this;
 
-        img.onload = function () {
-          URL.revokeObjectURL(newUrl);
-          const { w, h } = self.resizeMax(img.width, img.height, MAX);
-          const canvas = document.createElement("canvas");
-          if (canvas.getContext) {
-            const ctx = canvas.getContext("2d");
-            canvas.width = w;
-            canvas.height = h;
-            ctx.drawImage(img, 0, 0, w, h);
-            // convert the image from the canvas into a Blob and convert into WEBP format
-            canvas.toBlob(
-              (blob) => {
-                const name = file.name.split(".")[0];
-                const convertedFile = new File([blob], `${name}-m${MAX}.webp`, {
-                  type: "image/webp",
-                });
-                resolve(convertedFile);
-              },
-              "image/webp",
-              0.75
-            );
-          }
-        };
-        img.onerror = function () {
-          reject("Error loading image");
-        };
-      } else {
-        reject("No file selected");
-      }
-    });
-  },
-  resizeMax(w, h, MAX) {
-    if (w > h) {
-      if (w > MAX) {
-        h = h * (MAX / w);
-        w = MAX;
-      }
-    } else {
-      if (h > MAX) {
-        w = w * (MAX / h);
-        h = MAX;
-      }
+  //   return new Promise((resolve, reject) => {
+  //     if (file) {
+  //       const img = new Image();
+  //       const newUrl = URL.createObjectURL(file);
+  //       img.src = newUrl;
+
+  //       img.onload = function () {
+  //         URL.revokeObjectURL(newUrl);
+  //         const { w, h } = self.resizeMax(img.width, img.height, MAX);
+  //         const canvas = document.createElement("canvas");
+  //         if (canvas.getContext) {
+  //           const ctx = canvas.getContext("2d");
+  //           canvas.width = w;
+  //           canvas.height = h;
+  //           ctx.drawImage(img, 0, 0, w, h);
+  //           // convert the image from the canvas into a Blob and convert into WEBP format
+  //           canvas.toBlob(
+  //             (blob) => {
+  //               const name = file.name.split(".")[0];
+  //               const convertedFile = new File([blob], `${name}-m${MAX}.webp`, {
+  //                 type: "image/webp",
+  //               });
+  //               resolve(convertedFile);
+  //             },
+  //             "image/webp",
+  //             0.75
+  //           );
+  //         }
+  //       };
+  //       img.onerror = function () {
+  //         reject("Error loading image");
+  //       };
+  //     } else {
+  //       reject("No file selected");
+  //     }
+  //   });
+  // },
+  async fileToWebp(file, MAX = 1920) {
+    // Input validation
+    if (!file || !(file instanceof File) || !file.type.startsWith('image/')) {
+      throw new Error("Invalid image file");
     }
-    return { w, h };
+  
+    try {
+      // Use createImageBitmap directly
+      const imageBitmap = await createImageBitmap(file);
+  
+      // Calculate resize dimensions
+      const ratio = Math.min(1, MAX / Math.max(imageBitmap.width, imageBitmap.height));
+      const w = Math.round(imageBitmap.width * ratio);
+      const h = Math.round(imageBitmap.height * ratio);
+  
+      // Create canvas
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      
+      const ctx = canvas.getContext('2d', { 
+        alpha: false,
+        desynchronized: true 
+      });
+  
+      // Draw image
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(imageBitmap, 0, 0, w, h);
+  
+      const blob = await canvas.convertToBlob({
+        type: "image/webp",
+        quality: 0.75
+      });
+  
+      // Create and return File
+      const name = file.name.split(".")[0];
+      return new File([blob], `${name}-m${MAX}.webp`, {
+        type: "image/webp",
+      });
+  
+    } catch (error) {
+      console.error("Conversion failed:", error);
+      throw error;
+    }
   },
+  // resizeMax(w, h, MAX) {
+  //   if (w > h) {
+  //     if (w > MAX) {
+  //       h = h * (MAX / w);
+  //       w = MAX;
+  //     }
+  //   } else {
+  //     if (h > MAX) {
+  //       w = w * (MAX / h);
+  //       h = MAX;
+  //     }
+  //   }
+  //   return { w, h };
+  // },
   /**
    * Takes a FileList and an array of sizes, then rename then with the SHA1 hash, then resizes the images according to a list of given sizes, converts them to WEBP format, and uploads them.
    * @param {FileList} files

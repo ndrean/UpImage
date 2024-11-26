@@ -24,21 +24,14 @@ defmodule ElixirGoogleCerts do
     ```
   """
 
-  def verified_identity(%{jwt: jwt}) do
-    with {:ok,
-          %{
-            "sub" => sub,
-            "name" => name,
-            "email" => email,
-            "given_name" => given_name
-          } = claims} <-
-           check_identity_v1(jwt),
-         {:ok, true} <- run_checks(claims) do
-      {:ok, %{email: email, name: name, id: sub, given_name: given_name}}
-    else
-      {:error, msg} -> {:error, msg}
-    end
+def verified_identity(%{jwt: jwt}) do
+  with {:ok, profile} <- check_identity_v1(jwt),
+       {:ok, true} <- run_checks(profile) do
+    {:ok, profile}
+  else
+    {:error, msg} -> {:error, msg}
   end
+end
 
   @doc """
   Uses the Google Public key in PEM format. Takes the JWT and returns `{:ok, profile}` or `{:error, reason}`
@@ -147,4 +140,7 @@ defmodule ElixirGoogleCerts do
       false -> {:error, :wrong_issuer}
     end
   end
+
+  defp app_id, do: System.get_env("GOOGLE_CLIENT_ID")
+
 end
